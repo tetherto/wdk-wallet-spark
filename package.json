@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "build:types": "tsc",
     "lint": "standard",
     "lint:fix": "standard --fix"
   },
@@ -14,6 +15,7 @@
     "bip39": "^3.1.0"
   },
   "devDependencies": {
-    "standard": "^17.1.2"
+    "standard": "^17.1.2",
+    "typescript": "^5.8.3"
   }
 }

@@ -1,0 +1,17 @@
+{
+  "include": [
+    "index.js",
+    "src/wallet-manager-spark.js",
+    "src/wallet-account-spark.js"
+  ],
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "allowJs": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "noResolve": true,
+    "skipLibCheck": true
+  }
+}
