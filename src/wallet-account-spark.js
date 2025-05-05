@@ -79,7 +79,7 @@ export default class WalletAccountSpark {
 
   /**
    * Returns the account's address.
-   * 
+   *
    * @returns {Promise<string>} The account's address.
    */
   async getAddress () {
@@ -142,7 +142,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<number>} The token balance.
    */
   async getTokenBalance (_) {
-    throw new Error("Not supported by the spark blockchain.")
+    throw new Error('Not supported by the spark blockchain.')
   }
 
   /**

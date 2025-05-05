@@ -59,7 +59,7 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
     }
 
     this.masterKey = hdkey
-    
+
     this.identityKey = identityKey
     this.depositKey = depositKey
     this.signingKey = signingKey
