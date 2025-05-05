@@ -13,20 +13,47 @@
 // limitations under the License.
 'use strict'
 
-import { bytesToHex } from '@noble/curves/abstract/utils'
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
+
+import { bytesToHex } from '@noble/curves/abstract/utils'
+
+/**
+ * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
+ */
+
+/**
+ * @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest
+ */
+
+/**
+ * @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest
+ */
+
+/**
+ * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
+ */
+
+/**
+ * @typedef {Object} KeyPair
+ * @property {string} publicKey - The public key.
+ * @property {string} privateKey - The private key.
+ */
+
+/**
+ * @typedef {Object} SparkTransaction
+ * @property {string} to - The transaction's recipient.
+ * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
+ */
 
 export default class WalletAccountSpark {
   #index
   #wallet
   #signer
-  #address
 
-  constructor ({ index, wallet, signer, address }) {
+  constructor ({ index, signer, wallet }) {
     this.#index = index
-    this.#wallet = wallet
     this.#signer = signer
-    this.#address = address
+    this.#wallet = wallet
   }
 
   /**
@@ -39,31 +66,7 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * The account's address.
-   *
-   * @type {string}
-   */
-  get address () {
-    return this.#address
-  }
-
-  /**
-   * Returns the account's Spark address.
-   *
-   * @returns {Promise<string>} The Spark address.
-   */
-  async getSparkAddress () {
-    return this.#wallet.getSparkAddress()
-  }
-
-  /**
-   * @typedef {Object} KeyPair
-   * @property {string} publicKey - The public key.
-   * @property {string} privateKey - The private key.
-   */
-
-  /**
-   * The account's identity key pair.
+   * The account's key pair.
    *
    * @type {KeyPair}
    */
@@ -75,13 +78,23 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Signs a message using the account's signing key.
+   * Returns the account's address.
+   * 
+   * @returns {Promise<string>} The account's address.
+   */
+  async getAddress () {
+    return await this.#wallet.getSparkAddress()
+  }
+
+  /**
+   * Signs a message.
    *
    * @param {string} message - The message to sign.
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
     const signature = await this.#signer.signMessageHex(message)
+
     return signature
   }
 
@@ -97,16 +110,9 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * @typedef {Object} Transaction
-   * @property {string} to - The transaction's recipient.
-   * @property {number|string} value - The amount of native tokens to send to the recipient.
-   * @property {string} [data] - Optional data to include in the transaction.
-   */
-
-  /**
    * Sends a transaction.
    *
-   * @param {Transaction} tx - The transaction to send.
+   * @param {SparkTransaction} tx - The transaction to send.
    * @returns {Promise<string>} The transaction's hash.
    */
   async sendTransaction ({ to, value }) {
@@ -121,49 +127,61 @@ export default class WalletAccountSpark {
   /**
    * Returns the account's native token balance.
    *
-   * @returns {Promise<BigInt>} The native token balance.
+   * @returns {Promise<number>} The native token balance.
    */
   async getBalance () {
-    const balances = await this.#wallet.getBalance()
-    return Number(balances.balance)
+    const { balance } = await this.#wallet.getBalance()
+
+    return Number(balance)
   }
 
   /**
-   * Generates a single-use deposit address for Bitcoin deposits from L1.
-   * This address can only be used once.
+   * Returns the account balance for a specific token.
+   *
+   * @param {string} tokenAddress - The smart contract address of the token.
+   * @returns {Promise<number>} The token balance.
+   */
+  async getTokenBalance (_) {
+    throw new Error("Not supported by the spark blockchain.")
+  }
+
+  /**
+   * Generates a single-use deposit address for bitcoin deposits from layer 1.
+   * Once you deposit funds to this address, it cannot be used again.
    *
    * @returns {Promise<string>} The single-use deposit address.
    */
   async getSingleUseDepositAddress () {
-    return this.#wallet.getSingleUseDepositAddress()
+    return await this.#wallet.getSingleUseDepositAddress()
   }
 
   /**
-   * Claims a deposit made to a previously generated deposit address.
-   *
-   * @param {string} txId - The transaction ID of the deposit.
-   * @returns {Promise<Object>} The claim transaction result.
+   * Claims a deposit to the wallet.
+
+   * @param {string} txId - The transaction id of the deposit.
+   * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
   async claimDeposit (txId) {
-    return this.#wallet.claimDeposit(txId)
+    return await this.#wallet.claimDeposit(txId)
   }
 
   /**
    * Checks for a confirmed deposit to the specified deposit address.
    *
    * @param {string} depositAddress - The deposit address to check.
-   * @returns {Promise<string|null>} The transaction ID if found, null otherwise.
+   * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
   async checkDepositConfirmation (depositAddress) {
-    return getLatestDepositTxId(depositAddress)
+    return await getLatestDepositTxId(depositAddress)
   }
 
   /**
-   * Withdraws the given amount from spark to L1 mainchain.
+   * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
-   * @property {string} to - The transaction's recipient.
-   * @property {number|string} value - The amount of native tokens to send to the recipient.
-   * @returns {Promise<CoopExitRequest | null | undefined>} The transaction ID if found, null otherwise.
+   * @property {Object} options - The withdrawal's options.
+   * @property {string} options.to - The Bitcoin address where the funds should be sent.
+   * @property {number} options.value - The amount in satoshis to withdraw.
+   * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdrawSpark ({ to, value }) {
     return await this.#wallet.withdraw({
@@ -174,40 +192,40 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Generates a Lightning invoice to receive payment.
+   * Creates a Lightning invoice for receiving payments.
    *
    * @param {Object} options - The invoice options.
-   * @param {number|string} options.amountSats - The amount in satoshis.
-   * @param {string} [options.memo] - Optional description for the invoice.
-   * @returns {Promise<Object>} The generated invoice.
+   * @param {number} options.value - The amount in satoshis.
+   * @param {string} [options.memo] - An optional description for the invoice.
+   * @returns {Promise<LightningReceiveRequest>} BOLT11 encoded invoice.
    */
-  async createLightningInvoice ({ amountSats, memo }) {
-    return this.#wallet.createLightningInvoice({
-      amountSats,
+  async createLightningInvoice ({ value, memo }) {
+    return await this.#wallet.createLightningInvoice({
+      amountSats: value,
       memo
     })
   }
 
   /**
-   * Checks the status of a Lightning payment.
+   * Get a Lightning receive request by id.
    *
-   * @param {string} invoiceId - The invoice ID to check.
-   * @returns {Promise<Object>} The payment status.
+   * @param {string} invoiceId - The id of the Lightning receive request.
+   * @returns {Promise<LightningReceiveRequest | null>} The Lightning receive request.
    */
   async getLightningReceiveRequest (invoiceId) {
-    return this.#wallet.getLightningReceiveRequest(invoiceId)
+    return await this.#wallet.getLightningReceiveRequest(invoiceId)
   }
 
   /**
-   * Sends a Lightning payment using an invoice.
+   * Pays a Lightning invoice.
    *
    * @param {Object} options - The payment options.
-   * @param {string} options.invoice - The Lightning invoice to pay.
-   * @param {number|string} options.maxFeeSats - The maximum fee in satoshis to pay.
-   * @returns {Promise<Object>} The payment response.
+   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to pay.
+   * @param {number} options.maxFeeSats - The maximum fee in satoshis to pay.
+   * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    */
   async payLightningInvoice ({ invoice, maxFeeSats }) {
-    return this.#wallet.payLightningInvoice({
+    return await this.#wallet.payLightningInvoice({
       invoice,
       maxFeeSats
     })

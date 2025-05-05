@@ -1,1 +1,0 @@
-# wdk-wallet-spark

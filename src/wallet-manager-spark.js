@@ -17,7 +17,7 @@ import { SparkWallet } from '@buildonspark/spark-sdk'
 import bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
-import { CustomSparkSigner } from './wallet-signer-spark.js'
+import WalletSparkSigner from './wallet-spark-signer.js'
 
 export default class WalletManagerSpark {
   #seedPhrase
@@ -28,14 +28,15 @@ export default class WalletManagerSpark {
    *
    * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    * @param {Object} [config] - The configuration object.
-   * @param {string} [config.network] - The network type ('MAINNET', 'TESTNET', or 'REGTEST').
+   * @param {string} [config.network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
    */
   constructor (seedPhrase, config = {}) {
     if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {
-      throw new Error('Seed phrase is invalid.')
+      throw new Error('The seed phrase is invalid.')
     }
 
     this.#seedPhrase = seedPhrase
+
     this.#config = {
       network: 'MAINNET',
       ...config
@@ -73,25 +74,22 @@ export default class WalletManagerSpark {
   /**
    * Returns the wallet account at a specific index.
    *
-   * @example
-   * // Returns the account with index 1
-   * const account = wallet.getAccount(1);
    * @param {number} index - The index of the account to get (default: 0).
-   * @returns {WalletAccountSpark} The account.
+   * @returns {Promise<WalletAccountSpark>} The account.
    */
   async getAccount (index = 0) {
-    const wdkSparkSigner = new CustomSparkSigner(index)
+    const signer = new WalletSparkSigner(index)
 
     const { wallet } = await SparkWallet.initialize({
+      signer,
       mnemonicOrSeed: this.#seedPhrase,
-      signer: wdkSparkSigner,
       options: {
         network: this.#config.network
       }
     })
 
-    const address = await wallet.getSparkAddress()
+    const account = new WalletAccountSpark({ index, signer, wallet })
 
-    return new WalletAccountSpark({ index, wallet, signer: wdkSparkSigner, address })
+    return account
   }
 }

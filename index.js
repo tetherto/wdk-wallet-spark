@@ -13,4 +13,13 @@
 // limitations under the License.
 'use strict'
 
+/** @typedef {import('./src/wallet-account-spark.js').default} WalletAccountSpark */
+/** @typedef {import('./src/wallet-account-spark.js').KeyPair} KeyPair */
+/** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */
+
+/** @typedef {import('./src/wallet-account-spark.js').WalletLeaf} WalletLeaf */
+/** @typedef {import('./src/wallet-account-spark.js').CoopExitRequest} CoopExitRequest */
+/** @typedef {import('./src/wallet-account-spark.js').LightningReceiveRequest} LightningReceiveRequest */
+/** @typedef {import('./src/wallet-account-spark.js').LightningSendRequest} LightningSendRequest */
+
 export { default } from './src/wallet-manager-spark.js'
