@@ -1,3 +1,7 @@
+/**
+ * @typedef {Object} SparkWalletConfig
+ * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+ */
 export default class WalletManagerSpark {
     /**
      * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
@@ -16,12 +20,9 @@ export default class WalletManagerSpark {
      * Creates a new wallet manager for the Spark blockchain.
      *
      * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-     * @param {Object} [config] - The configuration object.
-     * @param {string} [config.network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+     * @param {SparkWalletConfig} [config] - The configuration object.
      */
-    constructor(seedPhrase: string, config?: {
-        network?: string;
-    });
+    constructor(seedPhrase: string, config?: SparkWalletConfig);
     /**
     * The seed phrase of the wallet.
     *
@@ -37,4 +38,10 @@ export default class WalletManagerSpark {
     getAccount(index?: number): Promise<WalletAccountSpark>;
     #private;
 }
+export type SparkWalletConfig = {
+    /**
+     * - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+     */
+    network?: string;
+};
 import WalletAccountSpark from './wallet-account-spark.js';

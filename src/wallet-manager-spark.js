@@ -19,6 +19,11 @@ import bip39 from 'bip39'
 import WalletAccountSpark from './wallet-account-spark.js'
 import WalletSparkSigner from './wallet-spark-signer.js'
 
+/**
+ * @typedef {Object} SparkWalletConfig
+ * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+ */
+
 export default class WalletManagerSpark {
   #seedPhrase
   #config
@@ -27,8 +32,7 @@ export default class WalletManagerSpark {
    * Creates a new wallet manager for the Spark blockchain.
    *
    * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-   * @param {Object} [config] - The configuration object.
-   * @param {string} [config.network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+   * @param {SparkWalletConfig} [config] - The configuration object.
    */
   constructor (seedPhrase, config = {}) {
     if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {

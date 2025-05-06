@@ -13,6 +13,8 @@
 // limitations under the License.
 'use strict'
 
+/** @typedef {import('./src/wallet-manager-spark.js').SparkWalletConfig} SparkWalletConfig */
+
 /** @typedef {import('./src/wallet-account-spark.js').default} WalletAccountSpark */
 /** @typedef {import('./src/wallet-account-spark.js').KeyPair} KeyPair */
 /** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */

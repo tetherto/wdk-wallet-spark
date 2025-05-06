@@ -1,4 +1,5 @@
 export { default } from "./src/wallet-manager-spark.js";
+export type SparkWalletConfig = import("./src/wallet-manager-spark.js").SparkWalletConfig;
 export type WalletAccountSpark = import("./src/wallet-account-spark.js").default;
 export type KeyPair = import("./src/wallet-account-spark.js").KeyPair;
 export type SparkTransaction = import("./src/wallet-account-spark.js").SparkTransaction;
