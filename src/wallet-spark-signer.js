@@ -40,9 +40,9 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
 
     const rootPath = `m/8797555'/${accountType}'/${this.index}'`
 
-    const identityKey = masterKey.derive(`${rootPath}/0'`),
-          signingKey = masterKey.derive(`${rootPath}/1'`),
-          depositKey = masterKey.derive(`${rootPath}/2'`)
+    const identityKey = masterKey.derive(`${rootPath}/0'`)
+    const signingKey = masterKey.derive(`${rootPath}/1'`)
+    const depositKey = masterKey.derive(`${rootPath}/2'`)
 
     if (
       !identityKey.privateKey || !identityKey.publicKey ||
@@ -67,7 +67,7 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
 
     this.publicKeyToPrivateKeyMap.set(
       bytesToHex(identityKey.publicKey), bytesToHex(identityKey.privateKey))
-    
+
     this.publicKeyToPrivateKeyMap.set(
       bytesToHex(depositKey.publicKey), bytesToHex(depositKey.privateKey))
 
