@@ -27,9 +27,9 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
   async createSparkWalletFromSeed (seed, network) {
     const buffer = hexToBytes(seed)
 
-    const hdkey = getMasterHDKeyFromSeed(buffer)
+    const masterKey = getMasterHDKeyFromSeed(buffer)
 
-    if (!hdkey.privateKey || !hdkey.publicKey) {
+    if (!masterKey.privateKey || !masterKey.publicKey) {
       throw new ValidationError('Failed to derive keys from seed.', {
         field: 'hdkey',
         value: buffer
@@ -38,17 +38,16 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
 
     const accountType = network === Network.REGTEST ? 0 : 1
 
-    const identityKey = hdkey.derive(`m/8797555'/${accountType}'/${this.index}'/0'`)
-    const signingKey = hdkey.derive(`m/8797555'/${accountType}'/${this.index}'/1'`)
-    const depositKey = hdkey.derive(`m/8797555'/${accountType}'/${this.index}'/2'`)
+    const rootPath = `m/8797555'/${accountType}'/${this.index}'`
+
+    const identityKey = masterKey.derive(`${rootPath}/0'`),
+          signingKey = masterKey.derive(`${rootPath}/1'`),
+          depositKey = masterKey.derive(`${rootPath}/2'`)
 
     if (
-      !identityKey.privateKey ||
-      !depositKey.privateKey ||
-      !signingKey.privateKey ||
-      !identityKey.publicKey ||
-      !depositKey.publicKey ||
-      !signingKey.publicKey
+      !identityKey.privateKey || !identityKey.publicKey ||
+      !depositKey.privateKey || !depositKey.publicKey ||
+      !signingKey.privateKey || !signingKey.publicKey
     ) {
       throw new ValidationError(
         'Failed to derive all required keys from seed.',
@@ -58,21 +57,22 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
       )
     }
 
-    this.masterKey = hdkey
+    this.path = `${rootPath}/0'`
+
+    this.masterKey = masterKey
 
     this.identityKey = identityKey
     this.depositKey = depositKey
     this.signingKey = signingKey
 
     this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(identityKey.publicKey),
-      bytesToHex(identityKey.privateKey)
-    )
+      bytesToHex(identityKey.publicKey), bytesToHex(identityKey.privateKey))
+    
     this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(depositKey.publicKey),
-      bytesToHex(depositKey.privateKey)
-    )
+      bytesToHex(depositKey.publicKey), bytesToHex(depositKey.privateKey))
 
-    return bytesToHex(identityKey.publicKey)
+    const publicKey = bytesToHex(identityKey.publicKey)
+
+    return publicKey
   }
 }

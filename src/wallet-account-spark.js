@@ -66,6 +66,15 @@ export default class WalletAccountSpark {
   }
 
   /**
+   * The derivation path of this account.
+   *
+   * @type {string}
+   */
+  get path () {
+    return this.#signer.path
+  }
+
+  /**
    * The account's key pair.
    *
    * @type {KeyPair}
@@ -141,7 +150,7 @@ export default class WalletAccountSpark {
    * @param {string} tokenAddress - The smart contract address of the token.
    * @returns {Promise<number>} The token balance.
    */
-  async getTokenBalance (_) {
+  async getTokenBalance (tokenAddress) {
     throw new Error('Not supported by the spark blockchain.')
   }
 

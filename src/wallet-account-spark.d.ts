@@ -33,6 +33,12 @@ export default class WalletAccountSpark {
      */
     get index(): number;
     /**
+     * The derivation path of this account.
+     *
+     * @type {string}
+     */
+    get path(): string;
+    /**
      * The account's key pair.
      *
      * @type {KeyPair}
@@ -78,7 +84,7 @@ export default class WalletAccountSpark {
      * @param {string} tokenAddress - The smart contract address of the token.
      * @returns {Promise<number>} The token balance.
      */
-    getTokenBalance(_: any): Promise<number>;
+    getTokenBalance(tokenAddress: string): Promise<number>;
     /**
      * Generates a single-use deposit address for bitcoin deposits from layer 1.
      * Once you deposit funds to this address, it cannot be used again.
