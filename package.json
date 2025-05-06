@@ -1,0 +1,21 @@
+{
+  "name": "@wdk/wallet-spark",
+  "version": "1.0.0-beta.1",
+  "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "build:types": "tsc",
+    "lint": "standard",
+    "lint:fix": "standard --fix"
+  },
+  "dependencies": {
+    "@buildonspark/spark-sdk": "^0.1.10",
+    "@noble/curves": "^1.2.0",
+    "bip39": "^3.1.0"
+  },
+  "devDependencies": {
+    "standard": "^17.1.2",
+    "typescript": "^5.8.3"
+  }
+}
