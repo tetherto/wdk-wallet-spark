@@ -25,9 +25,7 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
   }
 
   async createSparkWalletFromSeed (seed, network) {
-    const buffer = hexToBytes(seed)
-
-    const masterKey = getMasterHDKeyFromSeed(buffer)
+    const masterKey = getMasterHDKeyFromSeed(typeof seed === 'string' ? hexToBytes(seed) : seed)
 
     if (!masterKey.privateKey || !masterKey.publicKey) {
       throw new ValidationError('Failed to derive keys from seed.', {
