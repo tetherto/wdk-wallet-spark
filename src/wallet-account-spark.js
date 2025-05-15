@@ -13,6 +13,8 @@
 // limitations under the License.
 'use strict'
 
+import { Buffer } from 'buffer'
+
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
@@ -112,9 +114,9 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const signature = await this.#signer.signMessage(message)
-
-    return signature
+    const signature = await this.#signer.signMessageWithIdentityKey(Buffer.from(message))
+    
+    return Buffer.from(signature).toString('hex')
   }
 
   /**
@@ -125,7 +127,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    return this.#signer.verifySignatureHex(message, signature)
+    return signature === await this.sign(message)
   }
 
   /**
