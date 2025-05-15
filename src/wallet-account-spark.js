@@ -264,4 +264,13 @@ export default class WalletAccountSpark {
       maxFeeSats
     })
   }
+
+  /**
+   * Returns the fee rates for transactions.
+   *
+   * @returns {Promise<{ normal: number, fast: number }>} The fee rates.
+   */
+  async getFeeRates () {
+    return { normal: 0, fast: 0 }
+  }
 }

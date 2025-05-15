@@ -168,6 +168,15 @@ export default class WalletAccountSpark {
         invoice: string;
         maxFeeSats: number;
     }): Promise<LightningSendRequest>;
+    /**
+     * Returns the fee rates for transactions.
+     *
+     * @returns {Promise<{ normal: number, fast: number }>} The fee rates.
+     */
+    getFeeRates(): Promise<{
+        normal: number;
+        fast: number;
+    }>;
     #private;
 }
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
