@@ -112,7 +112,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const signature = await this.#signer.signMessageWithIdentityKey(message)
+    const signature = await this.#signer.signMessage(message)
 
     return signature
   }
