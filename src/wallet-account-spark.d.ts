@@ -11,6 +11,15 @@
  * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
  */
 /**
+ * @typedef {Object} LightningFeeEstimate
+ * @property {Object} feeEstimate - The fee estimate information.
+ * @property {number} feeEstimate.originalValue - The fee amount in satoshis.
+ * @property {string} feeEstimate.originalUnit - The original unit of the fee (e.g., 'SATOSHI').
+ * @property {string} feeEstimate.preferredCurrencyUnit - The preferred currency unit for display (e.g., 'USD').
+ * @property {number} feeEstimate.preferredCurrencyValueRounded - The fee amount in the preferred currency, rounded.
+ * @property {number} feeEstimate.preferredCurrencyValueApprox - The approximate fee amount in the preferred currency.
+ */
+/**
  * @typedef {Object} KeyPair
  * @property {string} publicKey - The public key.
  * @property {string} privateKey - The private key.
@@ -137,6 +146,16 @@ export default class WalletAccountSpark {
      * @returns {Promise<LightningReceiveRequest | null>} The Lightning receive request.
      */
     getLightningReceiveRequest(invoiceId: string): Promise<LightningReceiveRequest | null>;
+    /**
+     * Gets an estimate of the fee for sending a Lightning payment.
+     *
+     * @param {Object} options - The fee estimation options.
+     * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+     * @returns {Promise<LightningFeeEstimate>} The fee estimate details.
+     */
+    getLightningSendFeeEstimate({ invoice }: {
+        invoice: string;
+    }): Promise<LightningFeeEstimate>;
     /**
      * Pays a Lightning invoice.
      *
