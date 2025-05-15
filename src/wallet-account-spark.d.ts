@@ -177,6 +177,22 @@ export default class WalletAccountSpark {
         normal: number;
         fast: number;
     }>;
+    /**
+     * Returns the bitcoin transfers history of the account.
+     *
+     * @param {Object} [options] - The options for fetching transfers.
+     * @param {"incoming" | "outgoing" | "all"} [options.direction="all"] - The direction of transfers to return.
+     * @param {number} [options.limit=20] - The number of transfers to return.
+     * @param {number} [options.skip=0] - The number of transfers to skip.
+     * @param {"asc" | "desc"} [options.sort="desc"] - The order of the transfers.
+     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+     */
+    getTransfers(options?: {
+        direction?: "incoming" | "outgoing" | "all";
+        limit?: number;
+        skip?: number;
+        sort?: "asc" | "desc";
+    }): Promise<SparkTransfer[]>;
     #private;
 }
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;

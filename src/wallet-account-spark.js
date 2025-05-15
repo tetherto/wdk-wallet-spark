@@ -273,4 +273,56 @@ export default class WalletAccountSpark {
   async getFeeRates () {
     return { normal: 0, fast: 0 }
   }
+
+  /**
+   * Returns the bitcoin transfers history of the account.
+   *
+   * @param {Object} [options] - The options for fetching transfers.
+   * @param {"incoming" | "outgoing" | "all"} [options.direction="all"] - The direction of transfers to return.
+   * @param {number} [options.limit=20] - The number of transfers to return.
+   * @param {number} [options.skip=0] - The number of transfers to skip.
+   * @param {"asc" | "desc"} [options.sort="desc"] - The order of the transfers.
+   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+   */
+  async getTransfers (options = {}) {
+    const { direction = 'all', limit = 20, skip = 0, sort = 'desc' } = options
+    
+    let allTransfers = []
+    const batchSize = 20
+    const totalBatches = Math.ceil(limit / batchSize)
+    
+    // Fetch transfers in batches of 20
+    for (let i = 0; i < totalBatches; i++) {
+      const currentSkip = skip + (i * batchSize)
+      const currentBatch = await this.#wallet.getTransfers({ skip: currentSkip, limit: batchSize })
+      
+      // If we got fewer results than batchSize, we've reached the end
+      if (currentBatch.length < batchSize) {
+        allTransfers = [...allTransfers, ...currentBatch]
+        break
+      }
+      
+      allTransfers = [...allTransfers, ...currentBatch]
+      
+      // If we have enough transfers, stop fetching
+      if (allTransfers.length >= limit) {
+        allTransfers = allTransfers.slice(0, limit)
+        break
+      }
+    }
+
+    // Filter transfers based on direction
+    const filteredTransfers = allTransfers.filter(transfer => {
+      if (direction === 'all') return true
+      return transfer.direction === direction
+    })
+
+    // Sort transfers
+    const sortedTransfers = filteredTransfers.sort((a, b) => {
+      if (sort === 'asc') return a.createdTime - b.createdTime
+      return b.createdTime - a.createdTime
+    })
+
+    return sortedTransfers
+  }
 }
