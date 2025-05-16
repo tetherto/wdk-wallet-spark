@@ -96,4 +96,13 @@ export default class WalletManagerSpark {
 
     return account
   }
+
+  /**
+   * Returns the current fee rates.
+   *
+   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+   */
+  async getFeeRates () {
+    return { normal: 0, fast: 0 }
+  }
 }

@@ -36,13 +36,7 @@ import { bytesToHex } from '@noble/curves/abstract/utils'
  */
 
 /**
- * @typedef {Object} LightningFeeEstimate
- * @property {Object} feeEstimate - The fee estimate information.
- * @property {number} feeEstimate.originalValue - The fee amount in satoshis.
- * @property {string} feeEstimate.originalUnit - The original unit of the fee (e.g., 'SATOSHI').
- * @property {string} feeEstimate.preferredCurrencyUnit - The preferred currency unit for display (e.g., 'USD').
- * @property {number} feeEstimate.preferredCurrencyValueRounded - The fee amount in the preferred currency, rounded.
- * @property {number} feeEstimate.preferredCurrencyValueApprox - The approximate fee amount in the preferred currency.
+ * @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer
  */
 
 /**
@@ -115,7 +109,7 @@ export default class WalletAccountSpark {
    */
   async sign (message) {
     const signature = await this.#signer.signMessageWithIdentityKey(Buffer.from(message))
-    
+
     return Buffer.from(signature).toString('hex')
   }
 
@@ -192,7 +186,7 @@ export default class WalletAccountSpark {
    * @param {string} depositAddress - The deposit address to check.
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
-  async checkDepositConfirmation (depositAddress) {
+  async getLatestDepositTxId (depositAddress) {
     return await getLatestDepositTxId(depositAddress)
   }
 
@@ -204,7 +198,7 @@ export default class WalletAccountSpark {
    * @property {number} options.value - The amount in satoshis to withdraw.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
-  async withdrawSpark ({ to, value }) {
+  async withdraw ({ to, value }) {
     return await this.#wallet.withdraw({
       onchainAddress: to,
       amountSats: value,
@@ -238,19 +232,6 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Gets an estimate of the fee for sending a Lightning payment.
-   *
-   * @param {Object} options - The fee estimation options.
-   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
-   * @returns {Promise<LightningFeeEstimate>} The fee estimate details.
-   */
-  async getLightningSendFeeEstimate ({ invoice }) {
-    return await this.#wallet.getLightningSendFeeEstimate({
-      encodedInvoice: invoice
-    })
-  }
-
-  /**
    * Pays a Lightning invoice.
    *
    * @param {Object} options - The payment options.
@@ -266,63 +247,58 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Returns the fee rates for transactions.
+   * Gets fee estimate for sending Lightning payments.
    *
-   * @returns {Promise<{ normal: number, fast: number }>} The fee rates.
+   * @param {Object} options - The fee estimation options.
+   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+   * @returns {Promise<number>} Fee estimate for sending Lightning payments.
    */
-  async getFeeRates () {
-    return { normal: 0, fast: 0 }
+  async getLightningSendFeeEstimate ({ invoice }) {
+    return await this.#wallet.getLightningSendFeeEstimate({
+      encodedInvoice: invoice
+    })
   }
 
   /**
    * Returns the bitcoin transfers history of the account.
    *
-   * @param {Object} [options] - The options for fetching transfers.
-   * @param {"incoming" | "outgoing" | "all"} [options.direction="all"] - The direction of transfers to return.
-   * @param {number} [options.limit=20] - The number of transfers to return.
-   * @param {number} [options.skip=0] - The number of transfers to skip.
-   * @param {"asc" | "desc"} [options.sort="desc"] - The order of the transfers.
+   * @param {Object} [options] - The options.
+   * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
+   * @param {number} [options.limit] - The number of transfers to return (default: 10).
+   * @param {number} [options.skip] - The number of transfers to skip (default: 0).
    * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
    */
   async getTransfers (options = {}) {
-    const { direction = 'all', limit = 20, skip = 0, sort = 'desc' } = options
-    
-    let allTransfers = []
-    const batchSize = 20
-    const totalBatches = Math.ceil(limit / batchSize)
-    
-    // Fetch transfers in batches of 20
-    for (let i = 0; i < totalBatches; i++) {
-      const currentSkip = skip + (i * batchSize)
-      const currentBatch = await this.#wallet.getTransfers({ skip: currentSkip, limit: batchSize })
-      
-      // If we got fewer results than batchSize, we've reached the end
-      if (currentBatch.length < batchSize) {
-        allTransfers = [...allTransfers, ...currentBatch]
+    const { direction = 'all', limit = 10, skip = 0 } = options
+
+    const transfers = []
+
+    let i = 0
+
+    while (true) {
+      const offset = skip + (i * limit)
+
+      let { transfers: batch } = await this.#wallet.getTransfers({ limit, offset })
+
+      if (!batch) {
         break
       }
-      
-      allTransfers = [...allTransfers, ...currentBatch]
-      
-      // If we have enough transfers, stop fetching
-      if (allTransfers.length >= limit) {
-        allTransfers = allTransfers.slice(0, limit)
+
+      if (direction !== 'all') {
+        batch = batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
+      }
+
+      transfers.push(...batch)
+
+      if (transfers.length >= limit) {
         break
       }
+
+      i++
     }
 
-    // Filter transfers based on direction
-    const filteredTransfers = allTransfers.filter(transfer => {
-      if (direction === 'all') return true
-      return transfer.direction === direction
-    })
+    const result = transfers.slice(skip, limit)
 
-    // Sort transfers
-    const sortedTransfers = filteredTransfers.sort((a, b) => {
-      if (sort === 'asc') return a.createdTime - b.createdTime
-      return b.createdTime - a.createdTime
-    })
-
-    return sortedTransfers
+    return result
   }
 }
