@@ -66,6 +66,13 @@ export default class WalletAccountSpark {
      */
     verify(message: string, signature: string): Promise<boolean>;
     /**
+     * Quotes a transaction.
+     *
+     * @param {SparkTransaction} tx - The transaction to quote.
+     * @returns {Promise<number>} The transaction’s fee (in satoshis).
+     */
+    quoteTransaction({ to, value }: SparkTransaction): Promise<number>;
+    /**
      * Sends a transaction.
      *
      * @param {SparkTransaction} tx - The transaction to send.
