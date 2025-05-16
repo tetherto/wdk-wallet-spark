@@ -36,6 +36,15 @@ export default class WalletManagerSpark {
      * @returns {Promise<WalletAccountSpark>} The account.
      */
     getAccount(index?: number): Promise<WalletAccountSpark>;
+    /**
+     * Returns the current fee rates.
+     *
+     * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+     */
+    getFeeRates(): Promise<{
+        normal: number;
+        fast: number;
+    }>;
     #private;
 }
 export type SparkWalletConfig = {

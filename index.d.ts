@@ -7,3 +7,4 @@ export type WalletLeaf = import("./src/wallet-account-spark.js").WalletLeaf;
 export type CoopExitRequest = import("./src/wallet-account-spark.js").CoopExitRequest;
 export type LightningReceiveRequest = import("./src/wallet-account-spark.js").LightningReceiveRequest;
 export type LightningSendRequest = import("./src/wallet-account-spark.js").LightningSendRequest;
+export type SparkTransfer = import("./src/wallet-account-spark.js").SparkTransfer;

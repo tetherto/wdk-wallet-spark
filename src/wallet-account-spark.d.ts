@@ -11,6 +11,9 @@
  * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
  */
 /**
+ * @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer
+ */
+/**
  * @typedef {Object} KeyPair
  * @property {string} publicKey - The public key.
  * @property {string} privateKey - The private key.
@@ -105,7 +108,7 @@ export default class WalletAccountSpark {
      * @param {string} depositAddress - The deposit address to check.
      * @returns {Promise<string | null>} The transaction id if found, null otherwise.
      */
-    checkDepositConfirmation(depositAddress: string): Promise<string | null>;
+    getLatestDepositTxId(depositAddress: string): Promise<string | null>;
     /**
      * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
      *
@@ -114,7 +117,7 @@ export default class WalletAccountSpark {
      * @property {number} options.value - The amount in satoshis to withdraw.
      * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
      */
-    withdrawSpark({ to, value }: {
+    withdraw({ to, value }: {
         to: any;
         value: any;
     }): Promise<CoopExitRequest | null | undefined>;
@@ -149,12 +152,37 @@ export default class WalletAccountSpark {
         invoice: string;
         maxFeeSats: number;
     }): Promise<LightningSendRequest>;
+    /**
+     * Gets fee estimate for sending Lightning payments.
+     *
+     * @param {Object} options - The fee estimation options.
+     * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+     * @returns {Promise<number>} Fee estimate for sending Lightning payments.
+     */
+    getLightningSendFeeEstimate({ invoice }: {
+        invoice: string;
+    }): Promise<number>;
+    /**
+     * Returns the bitcoin transfers history of the account.
+     *
+     * @param {Object} [options] - The options.
+     * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
+     * @param {number} [options.limit] - The number of transfers to return (default: 10).
+     * @param {number} [options.skip] - The number of transfers to skip (default: 0).
+     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+     */
+    getTransfers(options?: {
+        direction?: "incoming" | "outgoing" | "all";
+        limit?: number;
+        skip?: number;
+    }): Promise<SparkTransfer[]>;
     #private;
 }
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
 export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
+export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
 export type KeyPair = {
     /**
      * - The public key.
