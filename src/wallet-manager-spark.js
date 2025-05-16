@@ -92,6 +92,8 @@ export default class WalletManagerSpark {
       }
     })
 
+    await wallet.cleanupConnections()
+
     const account = new WalletAccountSpark({ index, signer, wallet })
 
     return account
