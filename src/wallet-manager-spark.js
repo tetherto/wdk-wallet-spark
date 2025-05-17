@@ -14,7 +14,7 @@
 'use strict'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
-import bip39 from 'bip39'
+import * as bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
 import WalletSparkSigner from './wallet-spark-signer.js'
