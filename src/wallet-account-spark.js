@@ -278,9 +278,9 @@ export default class WalletAccountSpark {
     while (true) {
       const offset = skip + (i * limit)
 
-      let { transfers: batch } = await this.#wallet.getTransfers({ limit, offset })
+      let { transfers: batch } = await this.#wallet.getTransfers(limit, offset)
 
-      if (!batch) {
+      if (batch.length === 0) {
         break
       }
 
