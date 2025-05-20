@@ -13,9 +13,12 @@
 // limitations under the License.
 'use strict'
 
+import { Buffer } from 'buffer'
+
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
-import { bytesToHex } from '@noble/curves/abstract/utils'
+import { schnorr } from '@noble/curves/secp256k1'
+import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -31,6 +34,10 @@ import { bytesToHex } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
+ */
+
+/**
+ * @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer
  */
 
 /**
@@ -102,9 +109,12 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const signature = await this.#signer.signMessageHex(message)
+    const msg = Buffer.from(message),
+          privateKey = this.#signer.identityKey.privateKey
 
-    return signature
+    const signature = schnorr.sign(msg, privateKey)
+
+    return bytesToHex(signature)
   }
 
   /**
@@ -115,7 +125,21 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    return this.#signer.verifySignatureHex(message, signature)
+    const sig = hexToBytes(signature),
+          msg = Buffer.from(message),
+          publicKey = this.#signer.identityKey.publicKey.slice(1)
+    
+    return schnorr.verify(sig, msg, publicKey)
+  }
+
+  /**
+   * Quotes a transaction.
+   *
+   * @param {SparkTransaction} tx - The transaction to quote.
+   * @returns {Promise<number>} The transaction's fee (in satoshis).
+   */
+  async quoteTransaction ({ to, value }) {
+    return 0
   }
 
   /**
@@ -180,7 +204,7 @@ export default class WalletAccountSpark {
    * @param {string} depositAddress - The deposit address to check.
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
-  async checkDepositConfirmation (depositAddress) {
+  async getLatestDepositTxId (depositAddress) {
     return await getLatestDepositTxId(depositAddress)
   }
 
@@ -192,7 +216,7 @@ export default class WalletAccountSpark {
    * @property {number} options.value - The amount in satoshis to withdraw.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
-  async withdrawSpark ({ to, value }) {
+  async withdraw ({ to, value }) {
     return await this.#wallet.withdraw({
       onchainAddress: to,
       amountSats: value,
@@ -238,5 +262,61 @@ export default class WalletAccountSpark {
       invoice,
       maxFeeSats
     })
+  }
+
+  /**
+   * Gets fee estimate for sending Lightning payments.
+   *
+   * @param {Object} options - The fee estimation options.
+   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+   * @returns {Promise<number>} Fee estimate for sending Lightning payments.
+   */
+  async getLightningSendFeeEstimate ({ invoice }) {
+    return await this.#wallet.getLightningSendFeeEstimate({
+      encodedInvoice: invoice
+    })
+  }
+
+  /**
+   * Returns the bitcoin transfers history of the account.
+   *
+   * @param {Object} [options] - The options.
+   * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
+   * @param {number} [options.limit] - The number of transfers to return (default: 10).
+   * @param {number} [options.skip] - The number of transfers to skip (default: 0).
+   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+   */
+  async getTransfers (options = {}) {
+    const { direction = 'all', limit = 10, skip = 0 } = options
+
+    const transfers = []
+
+    let i = 0
+
+    while (true) {
+      const offset = skip + (i * limit)
+
+      let { transfers: batch } = await this.#wallet.getTransfers(limit, offset)
+
+      if (batch.length === 0) {
+        break
+      }
+
+      if (direction !== 'all') {
+        batch = batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
+      }
+
+      transfers.push(...batch)
+
+      if (transfers.length >= limit) {
+        break
+      }
+
+      i++
+    }
+
+    const result = transfers.slice(skip, limit)
+
+    return result
   }
 }

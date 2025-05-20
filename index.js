@@ -23,5 +23,6 @@
 /** @typedef {import('./src/wallet-account-spark.js').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('./src/wallet-account-spark.js').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('./src/wallet-account-spark.js').LightningSendRequest} LightningSendRequest */
+/** @typedef {import('./src/wallet-account-spark.js').SparkTransfer} SparkTransfer */
 
 export { default } from './src/wallet-manager-spark.js'

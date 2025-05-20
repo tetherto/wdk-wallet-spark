@@ -14,7 +14,7 @@
 'use strict'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
-import bip39 from 'bip39'
+import * as bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
 import WalletSparkSigner from './wallet-spark-signer.js'
@@ -95,5 +95,24 @@ export default class WalletManagerSpark {
     const account = new WalletAccountSpark({ index, signer, wallet })
 
     return account
+  }
+
+  /**
+   * Returns the wallet account at a specific BIP-44 derivation path.
+   *
+   * @param {string} path - The derivation path (e.g. "0'/0/0").
+   * @returns {Promise<WalletAccountSpark>} The account.
+   */
+  async getAccountByPath (path) {
+    throw new Error('Method not supported on the spark blockchain.')
+  }
+
+  /**
+   * Returns the current fee rates.
+   *
+   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+   */
+  async getFeeRates () {
+    return { normal: 0, fast: 0 }
   }
 }
