@@ -17,7 +17,8 @@ import { Buffer } from 'buffer'
 
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
-import { bytesToHex } from '@noble/curves/abstract/utils'
+import { schnorr } from '@noble/curves/secp256k1'
+import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -108,9 +109,12 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const signature = await this.#signer.signMessageWithIdentityKey(Buffer.from(message))
+    const msg = Buffer.from(message),
+          privateKey = this.#signer.identityKey.privateKey
 
-    return Buffer.from(signature).toString('hex')
+    const signature = schnorr.sign(msg, privateKey)
+
+    return bytesToHex(signature)
   }
 
   /**
@@ -121,14 +125,18 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    return signature === await this.sign(message)
+    const sig = hexToBytes(signature),
+          msg = Buffer.from(message),
+          publicKey = this.#signer.identityKey.publicKey.slice(1)
+    
+    return schnorr.verify(sig, msg, publicKey)
   }
 
   /**
    * Quotes a transaction.
    *
    * @param {SparkTransaction} tx - The transaction to quote.
-   * @returns {Promise<number>} The transaction’s fee (in satoshis).
+   * @returns {Promise<number>} The transaction's fee (in satoshis).
    */
   async quoteTransaction ({ to, value }) {
     return 0
