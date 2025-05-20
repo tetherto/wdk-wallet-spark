@@ -17,8 +17,8 @@ import { Buffer } from 'buffer'
 
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
-import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 import { schnorr } from '@noble/curves/secp256k1'
+import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -109,8 +109,10 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
+    const buffer = Buffer.from(message)
     const privateKey = this.#signer.identityKey.privateKey
-    const signature = schnorr.sign(Buffer.from(message), privateKey)
+    const signature = schnorr.sign(buffer, privateKey)
+
     return bytesToHex(signature)
   }
 
@@ -122,14 +124,11 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    // Remove the first byte (compression flag) and return the x-coordinate only
-    const publicKey = this.#signer.identityKey.publicKey.slice(1)
+    const sig = hexToBytes(signature),
+          msg = Buffer.from(message),
+          publicKey = this.#signer.identityKey.publicKey.slice(1)
     
-    return schnorr.verify(
-      hexToBytes(signature),
-      Buffer.from(message),
-      publicKey
-    )
+    return schnorr.verify(sig, msg, publicKey)
   }
 
   /**
