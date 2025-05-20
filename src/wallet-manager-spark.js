@@ -98,6 +98,16 @@ export default class WalletManagerSpark {
   }
 
   /**
+   * Returns the wallet account at a specific BIP-44 derivation path.
+   *
+   * @param {string} path - The derivation path (e.g. "0'/0/0").
+   * @returns {Promise<WalletAccountSpark>} The account.
+   */
+  async getAccountByPath (path) {
+    throw new Error('Method not supported on the spark blockchain.')
+  }
+
+  /**
    * Returns the current fee rates.
    *
    * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).

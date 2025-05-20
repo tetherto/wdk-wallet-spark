@@ -72,7 +72,7 @@ export default class WalletAccountSpark {
      * Quotes a transaction.
      *
      * @param {SparkTransaction} tx - The transaction to quote.
-     * @returns {Promise<number>} The transaction’s fee (in satoshis).
+     * @returns {Promise<number>} The transaction's fee (in satoshis).
      */
     quoteTransaction({ to, value }: SparkTransaction): Promise<number>;
     /**
