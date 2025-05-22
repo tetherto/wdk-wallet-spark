@@ -15,7 +15,7 @@
 
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils'
-import { getMasterHDKeyFromSeed, Network, ValidationError } from '@buildonspark/spark-sdk'
+import { getMasterHDKeyFromSeed, Network, ValidationError } from '@buildonspark/spark-sdk/utils'
 
 export default class WalletSparkSigner extends DefaultSparkSigner {
   constructor (index = 0) {
