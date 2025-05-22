@@ -13,9 +13,9 @@
 // limitations under the License.
 'use strict'
 
+import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils'
 import { getMasterHDKeyFromSeed, Network, ValidationError } from '@buildonspark/spark-sdk/utils'
-import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 
 export default class WalletSparkSigner extends DefaultSparkSigner {
   constructor (index = 0) {
