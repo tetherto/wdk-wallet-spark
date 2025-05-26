@@ -15,7 +15,7 @@
 
 import { Buffer } from 'buffer'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
+import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
 
 import { schnorr } from '@noble/curves/secp256k1'
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
