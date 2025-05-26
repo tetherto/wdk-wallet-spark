@@ -319,4 +319,15 @@ export default class WalletAccountSpark {
 
     return result
   }
+
+  /**
+   * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
+   */
+  close () {
+    this.#signer.close()
+    
+    this.#index = null
+    this.#signer = null
+    this.#wallet = null
+  }
 }

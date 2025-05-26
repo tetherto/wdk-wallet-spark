@@ -19,16 +19,16 @@ export default class WalletManagerSpark {
     /**
      * Creates a new wallet manager for the Spark blockchain.
      *
-     * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+     * @param {Uint8Array} seedBuffer - Uint8Array seedBuffer buffer.
      * @param {SparkWalletConfig} [config] - The configuration object.
      */
-    constructor(seedPhrase: string, config?: SparkWalletConfig);
+    constructor(seedBuffer: Uint8Array, config?: SparkWalletConfig);
     /**
-    * The seed phrase of the wallet.
+    * The seed of the wallet.
     *
-    * @type {string}
+    * @type {Uint8Array}
     */
-    get seedPhrase(): string;
+    get seedBuffer(): Uint8Array;
     /**
      * Returns the wallet account at a specific index.
      *
@@ -52,6 +52,10 @@ export default class WalletManagerSpark {
         normal: number;
         fast: number;
     }>;
+    /**
+     * Close the wallet manager and erase the seed buffer.
+     */
+    close(): void;
     #private;
 }
 export type SparkWalletConfig = {

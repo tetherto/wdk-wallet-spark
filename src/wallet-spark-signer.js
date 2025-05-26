@@ -13,68 +13,54 @@
 // limitations under the License.
 'use strict'
 
+import { bytesToHex } from '@noble/curves/abstract/utils'
+import sodium from 'libsodium-wrappers-sumo'
+import { getMasterHDKeyFromSeed, Network } from '@buildonspark/spark-sdk'
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
-import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils'
-import { getMasterHDKeyFromSeed, Network, ValidationError } from '@buildonspark/spark-sdk'
 
 export default class WalletSparkSigner extends DefaultSparkSigner {
   constructor (index = 0) {
     super()
 
     this.index = index
+    this.masterKey = null
+    this.identityKey = null
+    this.depositKey = null
+    this.signingKey = null
   }
 
   async createSparkWalletFromSeed (seed, network) {
-    if (typeof seed === 'string') {
-      seed = hexToBytes(seed)
-    }
-
-    const masterKey = getMasterHDKeyFromSeed(seed)
-
-    if (!masterKey.privateKey || !masterKey.publicKey) {
-      throw new ValidationError('Failed to derive keys from seed.', {
-        field: 'hdkey',
-        value: seed
-      })
-    }
+    this.masterKey = getMasterHDKeyFromSeed(seed)
 
     const accountType = network === Network.REGTEST ? 0 : 1
 
     const rootPath = `m/8797555'/${accountType}'/${this.index}'`
 
-    const identityKey = masterKey.derive(`${rootPath}/0'`)
-    const signingKey = masterKey.derive(`${rootPath}/1'`)
-    const depositKey = masterKey.derive(`${rootPath}/2'`)
-
-    if (
-      !identityKey.privateKey || !identityKey.publicKey ||
-      !depositKey.privateKey || !depositKey.publicKey ||
-      !signingKey.privateKey || !signingKey.publicKey
-    ) {
-      throw new ValidationError(
-        'Failed to derive all required keys from seed.',
-        {
-          field: 'derivedKeys'
-        }
-      )
-    }
+    this.identityKey = this.masterKey.derive(`${rootPath}/0'`)
+    this.signingKey = this.masterKey.derive(`${rootPath}/1'`)
+    this.depositKey = this.masterKey.derive(`${rootPath}/2'`)
 
     this.path = `${rootPath}/0'`
 
-    this.masterKey = masterKey
-
-    this.identityKey = identityKey
-    this.depositKey = depositKey
-    this.signingKey = signingKey
-
-    this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(identityKey.publicKey), bytesToHex(identityKey.privateKey))
-
-    this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(depositKey.publicKey), bytesToHex(depositKey.privateKey))
-
-    const publicKey = bytesToHex(identityKey.publicKey)
+    const publicKey = bytesToHex(this.identityKey.publicKey)
 
     return publicKey
+  }
+
+  close () {
+    sodium.memzero(this.masterKey.privateKey)
+    sodium.memzero(this.masterKey.publicKey)
+    sodium.memzero(this.identityKey.privateKey)
+    sodium.memzero(this.identityKey.publicKey)
+    sodium.memzero(this.depositKey.privateKey)
+    sodium.memzero(this.depositKey.publicKey)
+    sodium.memzero(this.signingKey.privateKey)
+    sodium.memzero(this.signingKey.publicKey)
+
+    this.index = null
+    this.masterKey = null
+    this.identityKey = null
+    this.depositKey = null
+    this.signingKey = null
   }
 }

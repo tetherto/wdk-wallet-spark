@@ -183,13 +183,17 @@ export default class WalletAccountSpark {
         limit?: number;
         skip?: number;
     }): Promise<SparkTransfer[]>;
+    /**
+     * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
+     */
+    close(): void;
     #private;
 }
-export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
-export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
-export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
-export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
-export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
+export type WalletLeaf = any;
+export type CoopExitRequest = any;
+export type LightningReceiveRequest = any;
+export type LightningSendRequest = any;
+export type SparkTransfer = any;
 export type KeyPair = {
     /**
      * - The public key.

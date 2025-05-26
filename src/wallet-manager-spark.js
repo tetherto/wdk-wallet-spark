@@ -14,6 +14,7 @@
 'use strict'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
+import sodium from 'libsodium-wrappers-sumo'
 import * as bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
@@ -25,21 +26,17 @@ import WalletSparkSigner from './wallet-spark-signer.js'
  */
 
 export default class WalletManagerSpark {
-  #seedPhrase
+  #seedBuffer
   #config
 
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {Uint8Array} seedBuffer - Uint8Array seedBuffer buffer.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
-  constructor (seedPhrase, config = {}) {
-    if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {
-      throw new Error('The seed phrase is invalid.')
-    }
-
-    this.#seedPhrase = seedPhrase
+  constructor (seedBuffer, config = {}) {
+    this.#seedBuffer = seedBuffer
 
     this.#config = {
       network: 'MAINNET',
@@ -67,12 +64,12 @@ export default class WalletManagerSpark {
   }
 
   /**
-  * The seed phrase of the wallet.
+  * The seed of the wallet.
   *
-  * @type {string}
+  * @type {Uint8Array}
   */
-  get seedPhrase () {
-    return this.#seedPhrase
+  get seedBuffer () {
+    return this.#seedBuffer
   }
 
   /**
@@ -86,7 +83,7 @@ export default class WalletManagerSpark {
 
     const { wallet } = await SparkWallet.initialize({
       signer,
-      mnemonicOrSeed: this.#seedPhrase,
+      mnemonicOrSeed: this.#seedBuffer,
       options: {
         network: this.#config.network
       }
@@ -114,5 +111,14 @@ export default class WalletManagerSpark {
    */
   async getFeeRates () {
     return { normal: 0, fast: 0 }
+  }
+
+  /**
+   * Close the wallet manager and erase the seed buffer.
+   */
+  close () {
+    sodium.memzero(this.#seedBuffer)
+    this.#seedBuffer = null
+    this.#config = null
   }
 }
