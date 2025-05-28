@@ -14,6 +14,9 @@ const walletFromSeed = new WalletManagerSpark(seedBuffer, {})
 const accountFromSeed = await walletFromSeed.getAccount(0)
 const addressFromSeed = await accountFromSeed.getAddress()
 
+const keyPair = accountFromSeed.keyPair
+console.log('Key pair:', keyPair)
+
 console.log('Derived address:', addressFromSeed)
 
 // try to sign a message

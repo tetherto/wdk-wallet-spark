@@ -15,8 +15,8 @@
  */
 /**
  * @typedef {Object} KeyPair
- * @property {string} publicKey - The public key.
- * @property {string} privateKey - The private key.
+ * @property {Uint8Array} publicKey - The public key.
+ * @property {Uint8Array} privateKey - The private key.
  */
 /**
  * @typedef {Object} SparkTransaction
@@ -198,11 +198,11 @@ export type KeyPair = {
     /**
      * - The public key.
      */
-    publicKey: string;
+    publicKey: Uint8Array;
     /**
      * - The private key.
      */
-    privateKey: string;
+    privateKey: Uint8Array;
 };
 export type SparkTransaction = {
     /**

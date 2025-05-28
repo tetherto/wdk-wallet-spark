@@ -42,8 +42,8 @@ import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {Object} KeyPair
- * @property {string} publicKey - The public key.
- * @property {string} privateKey - The private key.
+ * @property {Uint8Array} publicKey - The public key.
+ * @property {Uint8Array} privateKey - The private key.
  */
 
 /**
@@ -88,8 +88,8 @@ export default class WalletAccountSpark {
    */
   get keyPair () {
     return {
-      publicKey: bytesToHex(this.#signer.identityKey.publicKey),
-      privateKey: bytesToHex(this.#signer.identityKey.privateKey)
+      publicKey: this.#signer.identityKey.publicKey,
+      privateKey: this.#signer.identityKey.privateKey
     }
   }
 
