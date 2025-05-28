@@ -14,7 +14,7 @@
 'use strict'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
-import sodium from 'libsodium-wrappers-sumo'
+import sodium from 'sodium-universal'
 import * as bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
@@ -117,7 +117,7 @@ export default class WalletManagerSpark {
    * Close the wallet manager and erase the seed buffer.
    */
   close () {
-    sodium.memzero(this.#seedBuffer)
+    sodium.sodium_memzero(this.#seedBuffer)
     this.#seedBuffer = null
     this.#config = null
   }

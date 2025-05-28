@@ -13,7 +13,7 @@
     "@buildonspark/spark-sdk": "^0.1.27",
     "@noble/curves": "^1.2.0",
     "bip39": "^3.1.0",
-    "libsodium-wrappers-sumo": "^0.7.15"
+    "sodium-universal": "^5.0.1"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",

@@ -1,6 +1,5 @@
 // npm i davi0kprogramsthings/wdk-wallet-spark#develop
 // npm i bip39
-// npm i libsodium-wrappers-sumo
 
 import WalletManagerSpark from '../index.js'
 import { mnemonicToSeedSync } from 'bip39'

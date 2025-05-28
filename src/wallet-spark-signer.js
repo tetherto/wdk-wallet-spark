@@ -14,7 +14,7 @@
 'use strict'
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
-import sodium from 'libsodium-wrappers-sumo'
+import sodium from 'sodium-universal'
 import { getMasterHDKeyFromSeed, Network } from '@buildonspark/spark-sdk'
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 
@@ -48,14 +48,14 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
   }
 
   close () {
-    sodium.memzero(this.masterKey.privateKey)
-    sodium.memzero(this.masterKey.publicKey)
-    sodium.memzero(this.identityKey.privateKey)
-    sodium.memzero(this.identityKey.publicKey)
-    sodium.memzero(this.depositKey.privateKey)
-    sodium.memzero(this.depositKey.publicKey)
-    sodium.memzero(this.signingKey.privateKey)
-    sodium.memzero(this.signingKey.publicKey)
+    sodium.sodium_memzero(this.masterKey.privateKey)
+    sodium.sodium_memzero(this.masterKey.publicKey)
+    sodium.sodium_memzero(this.identityKey.privateKey)
+    sodium.sodium_memzero(this.identityKey.publicKey)
+    sodium.sodium_memzero(this.depositKey.privateKey)
+    sodium.sodium_memzero(this.depositKey.publicKey)
+    sodium.sodium_memzero(this.signingKey.privateKey)
+    sodium.sodium_memzero(this.signingKey.publicKey)
 
     this.index = null
     this.masterKey = null
