@@ -13,9 +13,9 @@
 // limitations under the License.
 'use strict'
 
-import { Buffer } from 'buffer'
+import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
+import { bytesToHex } from '@noble/curves/abstract/utils'
 
 import { schnorr } from '@noble/curves/secp256k1'
 import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
@@ -109,12 +109,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const msg = Buffer.from(message),
-          privateKey = this.#signer.identityKey.privateKey
-
-    const signature = schnorr.sign(msg, privateKey)
-
-    return bytesToHex(signature)
+    return await this.#wallet.signMessageWithIdentityKey(message)
   }
 
   /**
@@ -125,11 +120,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const sig = hexToBytes(signature),
-          msg = Buffer.from(message),
-          publicKey = this.#signer.identityKey.publicKey.slice(1)
-    
-    return schnorr.verify(sig, msg, publicKey)
+    return await this.#wallet.validateMessageWithIdentityKey(message, signature)
   }
 
   /**
