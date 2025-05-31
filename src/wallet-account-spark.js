@@ -17,8 +17,9 @@ import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
 
-import { schnorr } from '@noble/curves/secp256k1'
-import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
+/**
+ * @typedef {import('@buildonspark/spark-sdk').SparkWallet} SparkWallet
+ */
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -53,14 +54,15 @@ import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
  */
 
 export default class WalletAccountSpark {
-  #index
   #wallet
   #signer
 
-  constructor ({ index, signer, wallet }) {
-    this.#index = index
-    this.#signer = signer
+  /**
+   * @param {SparkWallet} wallet - The wallet.
+   */
+  constructor (wallet) {
     this.#wallet = wallet
+    this.#signer = wallet.config.signer
   }
 
   /**
@@ -69,7 +71,7 @@ export default class WalletAccountSpark {
    * @type {number}
    */
   get index () {
-    return this.#index
+    return this.#signer.index
   }
 
   /**

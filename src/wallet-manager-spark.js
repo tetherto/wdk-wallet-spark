@@ -92,7 +92,7 @@ export default class WalletManagerSpark {
       }
     })
 
-    const account = new WalletAccountSpark({ index, signer, wallet })
+    const account = new WalletAccountSpark(wallet)
 
     return account
   }
