@@ -28,6 +28,7 @@ import WalletSparkSigner from './wallet-spark-signer.js'
 export default class WalletManagerSpark {
   #seedBuffer
   #config
+  #accounts
 
   /**
    * Creates a new wallet manager for the Spark blockchain.
@@ -37,6 +38,7 @@ export default class WalletManagerSpark {
    */
   constructor (seedBuffer, config = {}) {
     this.#seedBuffer = seedBuffer
+    this.#accounts = new Set()
 
     this.#config = {
       network: 'MAINNET',
@@ -90,6 +92,7 @@ export default class WalletManagerSpark {
     })
 
     const account = new WalletAccountSpark({ index, signer, wallet })
+    this.#accounts.add(account)
 
     return account
   }
@@ -117,6 +120,9 @@ export default class WalletManagerSpark {
    * Close the wallet manager and erase the seed buffer.
    */
   close () {
+    for (const account of this.#accounts) account.close()
+    this.#accounts.clear()
+
     sodium.sodium_memzero(this.#seedBuffer)
     this.#seedBuffer = null
     this.#config = null
