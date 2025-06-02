@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk/utils'
+import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
 
@@ -311,5 +311,15 @@ export default class WalletAccountSpark {
     const result = transfers.slice(skip, limit)
 
     return result
+  }
+
+  /**
+   * Cleans up any active wallet connections.
+   * This should be called when you're done using the account to free up resources.
+   *
+   * @returns {Promise<void>}
+   */
+  async cleanupConnections () {
+    await this.#wallet.cleanupConnections()
   }
 }

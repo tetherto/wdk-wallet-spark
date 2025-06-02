@@ -70,6 +70,8 @@ describe('WalletManagerSpark', () => {
 
       expect(account).toBeInstanceOf(WalletAccountSpark)
       expect(account.index).toBe(0)
+
+      await account.cleanupConnections()
     })
 
     test('returns different accounts for different indices', async () => {
@@ -80,7 +82,10 @@ describe('WalletManagerSpark', () => {
       expect(account1.index).toBe(1)
 
       expect(await account0.getAddress()).not.toBe(await account1.getAddress())
-    })
+
+      await account0.cleanupConnections()
+      await account1.cleanupConnections()
+    }, 10000)
 
     test('throws if index is negative', async () => {
       expect(walletManager.getAccount(-1)).rejects.toThrow()
@@ -91,6 +96,9 @@ describe('WalletManagerSpark', () => {
       const accountB = await walletManager.getAccount(5)
 
       expect(await accountA.getAddress()).toBe(await accountB.getAddress())
+
+      await accountA.cleanupConnections()
+      await accountB.cleanupConnections()
     })
   })
 
