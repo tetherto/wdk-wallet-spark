@@ -25,21 +25,21 @@ import WalletSparkSigner from './wallet-spark-signer.js'
  */
 
 export default class WalletManagerSpark {
-  #seedPhrase
+  #seed
   #config
 
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {string} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
-  constructor (seedPhrase, config = {}) {
-    if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {
+  constructor (seed, config = {}) {
+    if (!WalletManagerSpark.isValidSeedPhrase(seed)) {
       throw new Error('The seed phrase is invalid.')
     }
 
-    this.#seedPhrase = seedPhrase
+    this.#seed = seed
 
     this.#config = {
       network: 'MAINNET',
@@ -71,8 +71,8 @@ export default class WalletManagerSpark {
   *
   * @type {string}
   */
-  get seedPhrase () {
-    return this.#seedPhrase
+  get seed () {
+    return this.#seed
   }
 
   /**
@@ -86,7 +86,7 @@ export default class WalletManagerSpark {
 
     const { wallet } = await SparkWallet.initialize({
       signer,
-      mnemonicOrSeed: this.#seedPhrase,
+      mnemonicOrSeed: this.#seed,
       options: {
         network: this.#config.network
       }

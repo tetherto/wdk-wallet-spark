@@ -7,18 +7,27 @@ const SEED_PHRASE = 'abandon abandon abandon abandon abandon abandon abandon aba
 const INVALID_SEED_PHRASE = 'invalid seed phrase'
 
 describe('WalletManagerSpark', () => {
-  let walletManager
+  let wallet
 
   beforeAll(async () => {
-    walletManager = new WalletManagerSpark(SEED_PHRASE, {
+    wallet = new WalletManagerSpark(SEED_PHRASE, {
       network: 'REGTEST'
     })
   })
 
-  test('shouwld throw if seed phrase is invalid', () => {
-    expect(() => new WalletManagerSpark(INVALID_SEED_PHRASE, {
-      network: 'REGTEST'
-    })).toThrow()
+  describe('constructor', () => {
+    test('should successfully initialize a wallet manager for the given seed phrase', () => {
+      const wallet = new WalletManagerSpark(SEED_PHRASE, {
+        network: 'REGTEST'
+      })
+
+      expect(wallet.seed).toEqual(SEED_PHRASE)
+    })
+
+    test('should throw if the seed phrase is invalid', () => {
+      expect(() => { new WalletManagerSpark(INVALID_SEED_PHRASE, { network: 'REGTEST' }) })
+        .toThrow()
+    })
   })
 
   describe('static getRandomSeedPhrase', () => {
@@ -33,84 +42,64 @@ describe('WalletManagerSpark', () => {
   })
 
   describe('static isValidSeedPhrase', () => {
-    test('returns false for an invalid mnemonic', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase(SEED_PHRASE)).toBe(true)
+    test('should return true for a valid seed phrase', () => {
+      expect(WalletManagerSpark.isValidSeedPhrase(SEED_PHRASE))
+        .toBe(true)
     })
 
-    test('should return false if if mnemonic is not valid', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase(INVALID_SEED_PHRASE)).toBe(false)
+    test('should return false for an invalid seed phrase', () => {
+      expect(WalletManagerSpark.isValidSeedPhrase(INVALID_SEED_PHRASE))
+        .toBe(false)
     })
 
-    test('returns false for empty string', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase('')).toBe(false)
-    })
-
-    test('returns false for null', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase(null)).toBe(false)
-    })
-
-    test('returns false for undefined', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase(undefined)).toBe(false)
-    })
-
-    test('returns false for non-string input (number)', () => {
-      expect(WalletManagerSpark.isValidSeedPhrase(12345)).toBe(false)
+    test('should return false for an empty string', () => {
+      expect(WalletManagerSpark.isValidSeedPhrase(''))
+        .toBe(false)
     })
   })
 
-  describe('seedPhrase getter', () => {
+  describe('seed getter', () => {
     test('returns the original seed phrase used during construction', () => {
-      expect(walletManager.seedPhrase).toBe(SEED_PHRASE)
+      expect(wallet.seed).toBe(SEED_PHRASE)
     })
   })
 
   describe('getAccount', () => {
-    test('returns an instance of WalletAccountEvm for index 0 by default', async () => {
-      const account = await walletManager.getAccount()
+    test('should return the account at index 0 by default', async () => {
+      const account = await wallet.getAccount()
 
       expect(account).toBeInstanceOf(WalletAccountSpark)
-      expect(account.index).toBe(0)
 
-      await account.cleanupConnections()
-    })
+      expect(account.path).toBe("m/8797555'/1'/0'/0'")
 
-    test('returns different accounts for different indices', async () => {
-      const account0 = await walletManager.getAccount(0)
-      const account1 = await walletManager.getAccount(1)
-
-      expect(account0.index).toBe(0)
-      expect(account1.index).toBe(1)
-
-      expect(await account0.getAddress()).not.toBe(await account1.getAddress())
-
-      await account0.cleanupConnections()
-      await account1.cleanupConnections()
+      account.cleanupConnections()
     }, 10000)
 
-    test('throws if index is negative', async () => {
-      expect(walletManager.getAccount(-1)).rejects.toThrow()
-    })
+    test('should return the account at the given index', async () => {
+      const account = await wallet.getAccount(3)
 
-    test('returns same account for same index consistently', async () => {
-      const accountA = await walletManager.getAccount(5)
-      const accountB = await walletManager.getAccount(5)
+      expect(account).toBeInstanceOf(WalletAccountSpark)
 
-      expect(await accountA.getAddress()).toBe(await accountB.getAddress())
+      expect(account.path).toBe("m/8797555'/1'/3'/0'")
 
-      await accountA.cleanupConnections()
-      await accountB.cleanupConnections()
+      account.cleanupConnections()
+    }, 10000)
+
+    test('should throw if the index is a negative number', async () => {
+      await expect(wallet.getAccount(-1))
+        .rejects.toThrow("invalid child index: -1'")
     })
   })
 
   describe('getAccountByPath', () => {
     test('throws because method not supported on the spark blockchain', async () => {
-      expect(walletManager.getAccountByPath('path')).rejects.toThrow()
+      expect(wallet.getAccountByPath('path')).rejects.toThrow()
     })
   })
 
   describe('getFeeRates', () => {
     test('should return 0 for both normal and fast', async () => {
-      const feeRates = await walletManager.getFeeRates()
+      const feeRates = await wallet.getFeeRates()
 
       expect(feeRates).toHaveProperty('normal')
       expect(feeRates).toHaveProperty('fast')

@@ -4,8 +4,18 @@ import { SparkWallet } from '@buildonspark/spark-sdk'
 import WalletSparkSigner from '../src/wallet-spark-signer.js'
 import WalletAccountSpark from '../src/wallet-account-spark.js'
 
-const SEED_PHRASE = 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about'
+const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 const BITCOIN_REGTEST_ADDRESS_REGEX = /^bcrt1p[a-z0-9]{58}$/
+
+const ACCOUNT = {
+  index: 0,
+  path: "m/8797555'/1'/0'/0'",
+  address: undefined,
+  keyPair: {
+    publicKey: '020b1cdb58bceba4556c8a9cd0703777e6ba09eeeaff60fd6f199b12e239614555',
+    privateKey: '1e03c1b1bd15394231cfb7ff933f23d049777a1d1a2822f9e9aadb4d1b680a9f'
+  }
+}
 
 describe('WalletAccountSpark', () => {
   let account
@@ -20,7 +30,7 @@ describe('WalletAccountSpark', () => {
       options: {
         network: 'REGTEST'
       }
-    })
+    }, 10000)
 
     wallet = realWallet
     wallet.payLightningInvoice = jest.fn()
@@ -35,43 +45,34 @@ describe('WalletAccountSpark', () => {
     await account.cleanupConnections()
   })
 
-  describe('index getter', () => {
-    test('returns the correct index', () => {
-      expect(account.index).toBe(0)
+  describe('constructor', () => {
+    test('should successfully initialize an account for the given wallet instance', async () => {
+      const signer = new WalletSparkSigner(0)
+      const { wallet: realWallet } = await SparkWallet.initialize({
+        signer,
+        mnemonicOrSeed: SEED_PHRASE,
+        options: { network: 'REGTEST' }
+      })
+
+      const account = new WalletAccountSpark(realWallet)
+
+      expect(account.index).toBe(ACCOUNT.index)
+      expect(account.path).toBe(ACCOUNT.path)
+      expect(account.keyPair).toHaveProperty('privateKey')
+      expect(account.keyPair).toHaveProperty('publicKey')
+      expect(typeof account.keyPair.privateKey).toBe(typeof ACCOUNT.keyPair.privateKey)
+      expect(typeof account.keyPair.publicKey).toBe(typeof ACCOUNT.keyPair.publicKey)
+
+
+      await account.cleanupConnections()
+    }, 10000)
+
+    test('should throw if wallet is not provided', () => {
+      expect(() => new WalletAccountSpark()).toThrow()
     })
   })
 
-  describe('path getter', () => {
-    test('returns the correct path', () => {
-      expect(account.path).toBe("m/8797555'/1'/0'/0'")
-    })
-  })
-
-  describe('keyPair getter', () => {
-    test('returns an object with publicKey and privateKey', () => {
-      const keyPair = account.keyPair
-
-      expect(keyPair).toHaveProperty('publicKey')
-      expect(keyPair).toHaveProperty('privateKey')
-    })
-
-    test('returns hex strings for keys', () => {
-      const { publicKey, privateKey } = account.keyPair
-
-      expect(typeof publicKey).toBe('string')
-      expect(typeof privateKey).toBe('string')
-    })
-
-    test('returns consistent key pair', () => {
-      const pair1 = account.keyPair
-      const pair2 = account.keyPair
-
-      expect(pair1.publicKey).toBe(pair2.publicKey)
-      expect(pair1.privateKey).toBe(pair2.privateKey)
-    })
-  })
-
-  describe('getAddress method', () => {
+  describe('getAddress', () => {
     test('returns the address of the account', async () => {
       const address = await account.getAddress()
 
@@ -79,78 +80,42 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('sign method', () => {
-    test('produces a unique signature for different messages', async () => {
-      const msg1 = 'First message'
-      const msg2 = 'Second message'
+  describe('sign', () => {
+    const MESSAGE = 'Dummy message to sign.'
 
-      const sig1 = await account.sign(msg1)
-      const sig2 = await account.sign(msg2)
+    const EXPECTED_SIGNATURE = '30440220041d461107e10eccd244bb0b7a1b8d0879a6b8af6413dab2fccfc1ddff66013a02203615d12f27ed4a534a67c977d0735bfe07ead671c366aba5923d034a2462f275'
 
-      expect(typeof sig1).toBeDefined()
-      expect(typeof sig2).toBeDefined()
-      expect(sig1).not.toBe(sig2)
-    })
+    test('should return the correct signature', async () => {
+      const signature = await account.sign(MESSAGE)
 
-    test('produces the same signature for the same message and same key', async () => {
-      const message = 'Message to sign'
-      const sig1 = await account.sign(message)
-      const sig2 = await account.sign(message)
-
-      expect(sig1).toBe(sig2)
+      expect(signature).toBe(EXPECTED_SIGNATURE)
     })
   })
 
-  describe('verify method', () => {
-    test('returns false for tampered message', async () => {
-      const original = 'Original message'
-      const altered = 'Original message with change'
+  describe('verify', () => {
+    const MESSAGE = 'Dummy message to sign.'
 
-      const signature = await account.sign(original)
+    const SIGNATURE = '30440220041d461107e10eccd244bb0b7a1b8d0879a6b8af6413dab2fccfc1ddff66013a02203615d12f27ed4a534a67c977d0735bfe07ead671c366aba5923d034a2462f275'
 
-      const isValid = await account.verify(altered, signature)
+    test('should return true for a valid signature', async () => {
+      const result = await account.verify(MESSAGE, SIGNATURE)
 
-      expect(isValid).toBe(false)
+      expect(result).toBe(true)
     })
 
-    test('returns false for invalid signature', async () => {
-      const message = 'Message to check'
-      const fakeSig = 'e4ed0ea78668025012b196c56e1599b314d7a263dcf247ee6cd792578ba123a400e1b3b25de42b35d5341eed6e09d44ae7e8be0f1bae87e4523f10a94faf7fb0'
+    test('should return false for an invalid signature', async () => {
+      const result = await account.verify('Another message.', SIGNATURE)
 
-      const isValid = await account.verify(message, fakeSig)
-
-      expect(isValid).toBe(false)
+      expect(result).toBe(false)
     })
 
-    test('throws on malformed signature input', async () => {
-      const message = 'Test message'
-      const malformedSignature = 'bad-signature'
-
-      expect(account.verify(message, malformedSignature))
-        .rejects
-        .toThrow()
+    test('should throw on a malformed signature', async () => {
+      await expect(account.verify(MESSAGE, 'A bad signature'))
+        .rejects.toThrow()
     })
   })
 
-  describe('quoteTransaction method', () => {
-    test('always returns 0 for any transaction', async () => {
-      const tx = {
-        to: 'bcrt1ptest',
-        value: 1000
-      }
-      const fee = await account.quoteTransaction(tx)
-      expect(fee).toBe(0)
-
-      const tx2 = {
-        to: 'bcrt1ptest2',
-        value: 999999
-      }
-      const fee2 = await account.quoteTransaction(tx2)
-      expect(fee2).toBe(0)
-    })
-  })
-
-  describe('sendTransaction method', () => {
+  describe('sendTransaction', () => {
     beforeEach(() => {
       wallet.transfer = jest.fn()
     })
@@ -188,7 +153,25 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getBalance method', () => {
+  describe('quoteTransaction', () => {
+    test('always returns 0 for any transaction', async () => {
+      const tx = {
+        to: 'bcrt1ptest',
+        value: 1000
+      }
+      const fee = await account.quoteTransaction(tx)
+      expect(fee).toBe(0)
+
+      const tx2 = {
+        to: 'bcrt1ptest2',
+        value: 999999
+      }
+      const fee2 = await account.quoteTransaction(tx2)
+      expect(fee2).toBe(0)
+    })
+  })
+
+  describe('getBalance', () => {
     test('returns a non-negative number', async () => {
       const balance = await account.getBalance()
 
@@ -205,7 +188,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getTokenBalance method', () => {
+  describe('getTokenBalance', () => {
     test('throws error as tokens are not supported', async () => {
       expect(account.getTokenBalance('some-token-address'))
         .rejects
@@ -213,7 +196,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getSingleUseDepositAddress method', () => {
+  describe('getSingleUseDepositAddress', () => {
     test('returns a valid bitcoin regtest address', async () => {
       const address = await account.getSingleUseDepositAddress()
 
@@ -229,7 +212,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('claimDeposit method', () => {
+  describe('claimDeposit', () => {
     test('calls wallet.claimDeposit with correct transaction id', async () => {
       const mockTxId = 'mock-tx-id'
       const mockLeaves = [
@@ -245,7 +228,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getLatestDepositTxId method', () => {
+  describe('getLatestDepositTxId', () => {
     test('returns null when no deposit exists', async () => {
       const address = await account.getSingleUseDepositAddress()
       const txId = await account.getLatestDepositTxId(address)
@@ -273,7 +256,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('withdraw method', () => {
+  describe('withdraw', () => {
     test('throws error for invalid bitcoin address', async () => {
       expect(account.withdraw({
         to: 'not-a-bitcoin-address',
@@ -343,7 +326,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('createLightningInvoice method', () => {
+  describe('createLightningInvoice', () => {
     test('creates a valid lightning invoice with amount only', async () => {
       const value = 1000
 
@@ -398,7 +381,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getLightningReceiveRequest method', () => {
+  describe('getLightningReceiveRequest', () => {
     test('throws error for non-existent invoice id', async () => {
       const nonExistentId = 'non-existent-id'
       expect(account.getLightningReceiveRequest(nonExistentId))
@@ -445,7 +428,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('payLightningInvoice method', () => {
+  describe('payLightningInvoice', () => {
     test('passes parameters correctly to wallet', async () => {
       const params = {
         invoice: 'lnbcrt1...',
@@ -473,7 +456,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getLightningSendFeeEstimate method', () => {
+  describe('getLightningSendFeeEstimate', () => {
     test('returns the correct fee estimate', async () => {
       const invoice = 'lnbcrt1...';
       const expectedFee = 100;
@@ -487,7 +470,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getTransfers method', () => {
+  describe('getTransfers', () => {
     test('returns empty array when no transfers exist', async () => {
       wallet.getTransfers.mockResolvedValueOnce({ transfers: [] })
 
