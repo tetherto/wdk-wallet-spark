@@ -1,7 +1,4 @@
 /**
- * @typedef {import('@buildonspark/spark-sdk').SparkWallet} SparkWallet
- */
-/**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
  */
 /**
@@ -27,10 +24,6 @@
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 export default class WalletAccountSpark {
-    /**
-     * @param {SparkWallet} wallet - The wallet.
-     */
-    constructor(wallet: SparkWallet);
     /**
      * The derivation path's index of this account.
      *
@@ -187,7 +180,6 @@ export default class WalletAccountSpark {
     }): Promise<SparkTransfer[]>;
     #private;
 }
-export type SparkWallet = import("@buildonspark/spark-sdk").SparkWallet;
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
