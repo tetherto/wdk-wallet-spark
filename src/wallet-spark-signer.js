@@ -13,68 +13,76 @@
 // limitations under the License.
 'use strict'
 
+import { ValidationError } from '@buildonspark/spark-sdk'
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
+import { getMasterHDKeyFromSeed } from '@buildonspark/spark-sdk/utils'
+
 import { hexToBytes, bytesToHex } from '@noble/curves/abstract/utils'
-import { getMasterHDKeyFromSeed, Network, ValidationError } from '@buildonspark/spark-sdk'
 
 export default class WalletSparkSigner extends DefaultSparkSigner {
+  #index
+
   constructor (index = 0) {
     super()
 
-    this.index = index
+    this.#index = index
   }
 
-  async createSparkWalletFromSeed (seed, network) {
+  get index () {
+    return this.#index
+  }
+
+  async createSparkWalletFromSeed (seed, accountNumber) {
     if (typeof seed === 'string') {
       seed = hexToBytes(seed)
     }
 
-    const masterKey = getMasterHDKeyFromSeed(seed)
+    const hdkey = getMasterHDKeyFromSeed(seed)
 
-    if (!masterKey.privateKey || !masterKey.publicKey) {
-      throw new ValidationError('Failed to derive keys from seed.', {
+    if (!hdkey.privateKey || !hdkey.publicKey) {
+      throw new ValidationError('Failed to derive keys from seed', {
         field: 'hdkey',
         value: seed
       })
     }
 
-    const accountType = network === Network.REGTEST ? 0 : 1
+    const root = `m/8797555'/${accountNumber}'/${this.index}'`
 
-    const rootPath = `m/8797555'/${accountType}'/${this.index}'`
-
-    const identityKey = masterKey.derive(`${rootPath}/0'`)
-    const signingKey = masterKey.derive(`${rootPath}/1'`)
-    const depositKey = masterKey.derive(`${rootPath}/2'`)
+    const identityKey = hdkey.derive(`${root}/0'`)
+    const signingKey = hdkey.derive(`${root}/1'`)
+    const depositKey = hdkey.derive(`${root}/2'`)
 
     if (
-      !identityKey.privateKey || !identityKey.publicKey ||
-      !depositKey.privateKey || !depositKey.publicKey ||
-      !signingKey.privateKey || !signingKey.publicKey
+      !identityKey.privateKey || 
+      !signingKey.privateKey ||
+      !depositKey.privateKey || 
+      !identityKey.publicKey ||
+      !signingKey.publicKey || 
+      !depositKey.publicKey
     ) {
       throw new ValidationError(
-        'Failed to derive all required keys from seed.',
+        'Failed to derive all required keys from seed',
         {
           field: 'derivedKeys'
         }
       )
     }
 
-    this.path = `${rootPath}/0'`
-
-    this.masterKey = masterKey
-
+    this.masterKey = hdkey
     this.identityKey = identityKey
     this.depositKey = depositKey
     this.signingKey = signingKey
 
     this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(identityKey.publicKey), bytesToHex(identityKey.privateKey))
+      bytesToHex(identityKey.publicKey),
+      bytesToHex(identityKey.privateKey)
+    )
 
     this.publicKeyToPrivateKeyMap.set(
-      bytesToHex(depositKey.publicKey), bytesToHex(depositKey.privateKey))
+      bytesToHex(depositKey.publicKey),
+      bytesToHex(depositKey.privateKey)
+    )
 
-    const publicKey = bytesToHex(identityKey.publicKey)
-
-    return publicKey
+    return bytesToHex(identityKey.publicKey)
   }
 }

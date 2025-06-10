@@ -82,17 +82,15 @@ export default class WalletManagerSpark {
    * @returns {Promise<WalletAccountSpark>} The account.
    */
   async getAccount (index = 0) {
-    const signer = new WalletSparkSigner(index)
-
     const { wallet } = await SparkWallet.initialize({
-      signer,
+      signer: new WalletSparkSigner(index),
       mnemonicOrSeed: this.#seedPhrase,
       options: {
         network: this.#config.network
       }
     })
 
-    const account = new WalletAccountSpark({ index, signer, wallet })
+    const account = new WalletAccountSpark(wallet)
 
     return account
   }

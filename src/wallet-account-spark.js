@@ -13,12 +13,9 @@
 // limitations under the License.
 'use strict'
 
-import { Buffer } from 'buffer'
+import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk/utils'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
-
-import { schnorr } from '@noble/curves/secp256k1'
-import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
+import { bytesToHex } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -53,14 +50,13 @@ import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
  */
 
 export default class WalletAccountSpark {
-  #index
   #wallet
   #signer
 
-  constructor ({ index, signer, wallet }) {
-    this.#index = index
-    this.#signer = signer
+  constructor (wallet) {
     this.#wallet = wallet
+
+    this.#signer = wallet.config.signer
   }
 
   /**
@@ -69,7 +65,7 @@ export default class WalletAccountSpark {
    * @type {number}
    */
   get index () {
-    return this.#index
+    return this.#signer.index
   }
 
   /**
@@ -78,7 +74,9 @@ export default class WalletAccountSpark {
    * @type {string}
    */
   get path () {
-    return this.#signer.path
+    const accountNumber = Network[this.#wallet.config.config.network]
+
+    return `m/8797555'/${accountNumber}'/${this.index}'/0'`
   }
 
   /**
@@ -109,12 +107,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const msg = Buffer.from(message),
-          privateKey = this.#signer.identityKey.privateKey
-
-    const signature = schnorr.sign(msg, privateKey)
-
-    return bytesToHex(signature)
+    return await this.#wallet.signMessageWithIdentityKey(message)
   }
 
   /**
@@ -125,11 +118,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const sig = hexToBytes(signature),
-          msg = Buffer.from(message),
-          publicKey = this.#signer.identityKey.publicKey.slice(1)
-    
-    return schnorr.verify(sig, msg, publicKey)
+    return await this.#wallet.validateMessageWithIdentityKey(message, signature)
   }
 
   /**

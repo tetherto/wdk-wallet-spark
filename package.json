@@ -10,7 +10,7 @@
     "lint:fix": "standard --fix"
   },
   "dependencies": {
-    "@buildonspark/spark-sdk": "^0.1.27",
+    "@buildonspark/spark-sdk": "^0.1.33",
     "@noble/curves": "^1.2.0",
     "bip39": "^3.1.0"
   },
