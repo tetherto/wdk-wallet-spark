@@ -28,10 +28,6 @@
  */
 export default class WalletAccountSpark {
     /**
-     * @param {SparkWallet} wallet - The wallet.
-     */
-    constructor(wallet: SparkWallet);
-    /**
      * The derivation path's index of this account.
      *
      * @type {number}

@@ -13,13 +13,9 @@
 // limitations under the License.
 'use strict'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
+import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk/utils'
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
-
-/**
- * @typedef {import('@buildonspark/spark-sdk').SparkWallet} SparkWallet
- */
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -57,11 +53,9 @@ export default class WalletAccountSpark {
   #wallet
   #signer
 
-  /**
-   * @param {SparkWallet} wallet - The wallet.
-   */
   constructor (wallet) {
     this.#wallet = wallet
+
     this.#signer = wallet.config.signer
   }
 
@@ -80,7 +74,9 @@ export default class WalletAccountSpark {
    * @type {string}
    */
   get path () {
-    return this.#signer.path
+    const accountNumber = Network[this.#wallet.config.config.network]
+
+    return `m/8797555'/${accountNumber}'/${this.index}'/0'`
   }
 
   /**
