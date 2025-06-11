@@ -43,7 +43,7 @@ if (signature === signature2) {
 console.log('Signing still works')
 
 console.log('Now we erase private key buffer')
-await accountFromSeed.close()
+await accountFromSeed.dispose()
 
 // now try to sign again
 try {
