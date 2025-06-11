@@ -117,10 +117,10 @@ export default class WalletManagerSpark {
   }
 
   /**
-   * Close the wallet manager and erase the seed buffer.
+   * Disposes the wallet manager, erasing the seed buffer.
    */
-  close () {
-    for (const account of this.#accounts) account.close()
+  dispose () {
+    for (const account of this.#accounts) account.dispose()
     this.#accounts.clear()
 
     sodium.sodium_memzero(this.#seedBuffer)

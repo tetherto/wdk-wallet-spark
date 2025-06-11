@@ -47,7 +47,7 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
     return publicKey
   }
 
-  close () {
+  dispose () {
     sodium.sodium_memzero(this.masterKey.privateKey)
     sodium.sodium_memzero(this.masterKey.publicKey)
     sodium.sodium_memzero(this.identityKey.privateKey)

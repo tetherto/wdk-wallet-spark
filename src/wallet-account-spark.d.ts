@@ -186,7 +186,7 @@ export default class WalletAccountSpark {
     /**
      * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
      */
-    close(): void;
+    dispose(): void;
     #private;
 }
 export type WalletLeaf = any;

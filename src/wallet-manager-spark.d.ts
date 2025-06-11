@@ -53,9 +53,9 @@ export default class WalletManagerSpark {
         fast: number;
     }>;
     /**
-     * Close the wallet manager and erase the seed buffer.
+     * Disposes the wallet manager, erasing the seed buffer.
      */
-    close(): void;
+    dispose(): void;
     #private;
 }
 export type SparkWalletConfig = {

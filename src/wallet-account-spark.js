@@ -109,8 +109,8 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const msg = Buffer.from(message),
-          privateKey = this.#signer.identityKey.privateKey
+    const msg = Buffer.from(message)
+    const privateKey = this.#signer.identityKey.privateKey
 
     const signature = schnorr.sign(msg, privateKey)
 
@@ -125,10 +125,10 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const sig = hexToBytes(signature),
-          msg = Buffer.from(message),
-          publicKey = this.#signer.identityKey.publicKey.slice(1)
-    
+    const sig = hexToBytes(signature)
+    const msg = Buffer.from(message)
+    const publicKey = this.#signer.identityKey.publicKey.slice(1)
+
     return schnorr.verify(sig, msg, publicKey)
   }
 
@@ -323,9 +323,9 @@ export default class WalletAccountSpark {
   /**
    * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
    */
-  close () {
-    this.#signer.close()
-    
+  dispose () {
+    this.#signer.dispose()
+
     this.#index = null
     this.#signer = null
     this.#wallet = null
