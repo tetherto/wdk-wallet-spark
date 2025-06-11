@@ -24,11 +24,6 @@
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 export default class WalletAccountSpark {
-    constructor({ index, signer, wallet }: {
-        index: any;
-        signer: any;
-        wallet: any;
-    });
     /**
      * The derivation path's index of this account.
      *

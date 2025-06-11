@@ -109,12 +109,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const msg = Buffer.from(message)
-    const privateKey = this.#signer.identityKey.privateKey
-
-    const signature = schnorr.sign(msg, privateKey)
-
-    return bytesToHex(signature)
+    return await this.#wallet.signMessageWithIdentityKey(message)
   }
 
   /**
@@ -125,11 +120,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const sig = hexToBytes(signature)
-    const msg = Buffer.from(message)
-    const publicKey = this.#signer.identityKey.publicKey.slice(1)
-
-    return schnorr.verify(sig, msg, publicKey)
+    return await this.#wallet.validateMessageWithIdentityKey(message, signature)
   }
 
   /**
