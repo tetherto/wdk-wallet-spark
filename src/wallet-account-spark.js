@@ -13,12 +13,8 @@
 // limitations under the License.
 'use strict'
 
-import { Buffer } from 'buffer'
-
+import { IWalletAccount } from '@wdk/wallet'
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
-
-import { schnorr } from '@noble/curves/secp256k1'
-import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
 
 /**
  * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
@@ -52,12 +48,14 @@ import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 
-export default class WalletAccountSpark {
+export default class WalletAccountSpark extends IWalletAccount {
   #index
   #wallet
   #signer
 
   constructor ({ index, signer, wallet }) {
+    super()
+
     this.#index = index
     this.#signer = signer
     this.#wallet = wallet
@@ -309,6 +307,16 @@ export default class WalletAccountSpark {
     const result = transfers.slice(skip, limit)
 
     return result
+  }
+
+  /**
+   * Cleans up any active wallet connections.
+   * This should be called when you're done using the account to free up resources.
+   *
+   * @returns {Promise<void>}
+   */
+  async cleanupConnections () {
+    if (this.#wallet) await this.#wallet.cleanupConnections()
   }
 
   /**

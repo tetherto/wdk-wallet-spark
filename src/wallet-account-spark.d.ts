@@ -24,6 +24,11 @@
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 export default class WalletAccountSpark {
+    constructor({ index, signer, wallet }: {
+        index: any;
+        signer: any;
+        wallet: any;
+    });
     /**
      * The derivation path's index of this account.
      *
@@ -179,16 +184,23 @@ export default class WalletAccountSpark {
         skip?: number;
     }): Promise<SparkTransfer[]>;
     /**
+     * Cleans up any active wallet connections.
+     * This should be called when you're done using the account to free up resources.
+     *
+     * @returns {Promise<void>}
+     */
+    cleanupConnections(): Promise<void>;
+    /**
      * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
      */
     dispose(): void;
     #private;
 }
-export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
-export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
-export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
-export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
-export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
+export type WalletLeaf = any;
+export type CoopExitRequest = any;
+export type LightningReceiveRequest = any;
+export type LightningSendRequest = any;
+export type SparkTransfer = any;
 export type KeyPair = {
     /**
      * - The public key.

@@ -17,6 +17,7 @@ import { SparkWallet } from '@buildonspark/spark-sdk'
 import sodium from 'sodium-universal'
 import * as bip39 from 'bip39'
 
+import AbstractWalletManager from '@wdk/wallet'
 import WalletAccountSpark from './wallet-account-spark.js'
 import WalletSparkSigner from './wallet-spark-signer.js'
 
@@ -25,19 +26,21 @@ import WalletSparkSigner from './wallet-spark-signer.js'
  * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
  */
 
-export default class WalletManagerSpark {
-  #seedBuffer
+export default class WalletManagerSpark extends AbstractWalletManager {
+  #seed
   #config
   #accounts
 
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {Uint8Array} seedBuffer - Uint8Array seedBuffer buffer.
+   * @param {Uint8Array | string} seed - Uint8Array seed buffer or string seed phrase.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
-  constructor (seedBuffer, config = {}) {
-    this.#seedBuffer = seedBuffer
+  constructor (seed, config = {}) {
+    super(seed)
+
+    this.#seed = seed
     this.#accounts = new Set()
 
     this.#config = {
@@ -70,8 +73,8 @@ export default class WalletManagerSpark {
   *
   * @type {Uint8Array}
   */
-  get seedBuffer () {
-    return this.#seedBuffer
+  get seed () {
+    return this.#seed
   }
 
   /**
@@ -85,7 +88,7 @@ export default class WalletManagerSpark {
 
     const { wallet } = await SparkWallet.initialize({
       signer,
-      mnemonicOrSeed: this.#seedBuffer,
+      mnemonicOrSeed: this.#seed,
       options: {
         network: this.#config.network
       }
@@ -123,8 +126,8 @@ export default class WalletManagerSpark {
     for (const account of this.#accounts) account.dispose()
     this.#accounts.clear()
 
-    sodium.sodium_memzero(this.#seedBuffer)
-    this.#seedBuffer = null
+    sodium.sodium_memzero(this.#seed)
+    this.#seed = null
     this.#config = null
   }
 }

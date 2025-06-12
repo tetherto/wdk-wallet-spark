@@ -19,16 +19,16 @@ export default class WalletManagerSpark {
     /**
      * Creates a new wallet manager for the Spark blockchain.
      *
-     * @param {Uint8Array} seedBuffer - Uint8Array seedBuffer buffer.
+     * @param {Uint8Array | string} seed - Uint8Array seed buffer or string seed phrase.
      * @param {SparkWalletConfig} [config] - The configuration object.
      */
-    constructor(seedBuffer: Uint8Array, config?: SparkWalletConfig);
+    constructor(seed: Uint8Array | string, config?: SparkWalletConfig);
     /**
     * The seed of the wallet.
     *
     * @type {Uint8Array}
     */
-    get seedBuffer(): Uint8Array;
+    get seed(): Uint8Array;
     /**
      * Returns the wallet account at a specific index.
      *
