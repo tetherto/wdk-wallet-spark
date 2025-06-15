@@ -15,7 +15,8 @@
 
 import { bytesToHex } from '@noble/curves/abstract/utils'
 import sodium from 'sodium-universal'
-import { getMasterHDKeyFromSeed, Network } from '@buildonspark/spark-sdk'
+import { HDKey } from "@scure/bip32";
+import { Network } from '@buildonspark/spark-sdk'
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 
 export default class WalletSparkSigner extends DefaultSparkSigner {
@@ -30,7 +31,7 @@ export default class WalletSparkSigner extends DefaultSparkSigner {
   }
 
   async createSparkWalletFromSeed (seed, network) {
-    this.masterKey = getMasterHDKeyFromSeed(seed)
+    this.masterKey = HDKey.fromMasterSeed(seed)
 
     const accountType = network === Network.REGTEST ? 0 : 1
 

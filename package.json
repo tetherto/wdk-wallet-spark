@@ -11,18 +11,18 @@
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "dependencies": {
-    "@buildonspark/spark-sdk": "^0.1.33",
-    "@noble/curves": "^1.2.0",
-    "bip39": "^3.1.0",
+    "@buildonspark/spark-sdk": "0.1.40",
+    "@noble/curves": "1.2.0",
+    "bip39": "3.1.0",
     "@wdk/wallet": "https://github.com/tetherto/wdk-wallet.git#develop",
-    "sodium-universal": "^5.0.1"
+    "sodium-universal": "5.0.1"
   },
   "devDependencies": {
-    "@jest/globals": "^29.7.0",
-    "cross-env": "^7.0.3",
-    "jest": "^29.7.0",
-    "rimraf": "^6.0.1",
-    "standard": "^17.1.2",
-    "typescript": "^5.8.3"
+    "@jest/globals": "29.7.0",
+    "cross-env": "7.0.3",
+    "jest": "29.7.0",
+    "rimraf": "6.0.1",
+    "standard": "17.1.2",
+    "typescript": "5.8.3"
   }
 }
