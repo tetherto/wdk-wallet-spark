@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 'use strict'
-
-import { IWalletAccount } from '@wdk/wallet'
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
 
 /**
@@ -37,6 +35,10 @@ import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
  */
 
 /**
+ * @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount
+ */
+
+/**
  * @typedef {Object} KeyPair
  * @property {Uint8Array} publicKey - The public key.
  * @property {Uint8Array} privateKey - The private key.
@@ -48,14 +50,13 @@ import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 
-export default class WalletAccountSpark extends IWalletAccount {
+export default class WalletAccountSpark {
+  /** @implements {IWalletAccount} */
   #index
   #wallet
   #signer
 
   constructor ({ index, signer, wallet }) {
-    super()
-
     this.#index = index
     this.#signer = signer
     this.#wallet = wallet
