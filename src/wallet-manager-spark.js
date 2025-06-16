@@ -15,7 +15,6 @@
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
 import sodium from 'sodium-universal'
-import * as bip39 from 'bip39'
 
 import AbstractWalletManager from '@wdk/wallet'
 import WalletAccountSpark from './wallet-account-spark.js'
@@ -47,34 +46,6 @@ export default class WalletManagerSpark extends AbstractWalletManager {
       network: 'MAINNET',
       ...config
     }
-  }
-
-  /**
-   * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-   *
-   * @returns {string} The seed phrase.
-   */
-  static getRandomSeedPhrase () {
-    return bip39.generateMnemonic()
-  }
-
-  /**
-   * Checks if a seed phrase is valid.
-   *
-   * @param {string} seedPhrase - The seed phrase.
-   * @returns {boolean} True if the seed phrase is valid.
-   */
-  static isValidSeedPhrase (seedPhrase) {
-    return bip39.validateMnemonic(seedPhrase)
-  }
-
-  /**
-  * The seed of the wallet.
-  *
-  * @type {Uint8Array}
-  */
-  get seed () {
-    return this.#seed
   }
 
   /**
