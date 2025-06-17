@@ -1,10 +1,14 @@
 export { default } from "./src/wallet-manager-spark.js";
-export type SparkWalletConfig = import("./src/wallet-manager-spark.js").SparkWalletConfig;
-export type WalletAccountSpark = import("./src/wallet-account-spark.js").default;
-export type KeyPair = import("./src/wallet-account-spark.js").KeyPair;
-export type SparkTransaction = import("./src/wallet-account-spark.js").SparkTransaction;
+export { default as WalletAccountSpark } from "./src/wallet-account-spark.js";
+export type FeeRates = import("@wdk/wallet").FeeRates;
+export type KeyPair = import("@wdk/wallet").KeyPair;
+export type TransactionResult = import("@wdk/wallet").TransactionResult;
+export type TransferOptions = import("@wdk/wallet").TransferOptions;
+export type TransferResult = import("@wdk/wallet").TransferResult;
 export type WalletLeaf = import("./src/wallet-account-spark.js").WalletLeaf;
 export type CoopExitRequest = import("./src/wallet-account-spark.js").CoopExitRequest;
 export type LightningReceiveRequest = import("./src/wallet-account-spark.js").LightningReceiveRequest;
 export type LightningSendRequest = import("./src/wallet-account-spark.js").LightningSendRequest;
 export type SparkTransfer = import("./src/wallet-account-spark.js").SparkTransfer;
+export type SparkWalletConfig = import("./src/wallet-manager-spark.js").SparkWalletConfig;
+export type SparkTransaction = import("./src/wallet-account-spark.js").SparkTransaction;

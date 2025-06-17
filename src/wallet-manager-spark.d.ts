@@ -1,37 +1,19 @@
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
- */
 export default class WalletManagerSpark {
-    /**
-     * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
-     *
-     * @returns {string} The seed phrase.
-     */
-    static getRandomSeedPhrase(): string;
-    /**
-     * Checks if a seed phrase is valid.
-     *
-     * @param {string} seedPhrase - The seed phrase.
-     * @returns {boolean} True if the seed phrase is valid.
-     */
-    static isValidSeedPhrase(seedPhrase: string): boolean;
     /**
      * Creates a new wallet manager for the Spark blockchain.
      *
-     * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+     * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
      * @param {SparkWalletConfig} [config] - The configuration object.
      */
-    constructor(seedPhrase: string, config?: SparkWalletConfig);
+    constructor(seed: string | Uint8Array, config?: SparkWalletConfig);
+    /** @private */
+    private _accounts;
     /**
-    * The seed phrase of the wallet.
-    *
-    * @type {string}
-    */
-    get seedPhrase(): string;
-    /**
-     * Returns the wallet account at a specific index.
+     * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
+     * @example
+     * // Returns the account with derivation path m/44'/998'/0'/0/1
+     * const account = await wallet.getAccount(1);
      * @param {number} index - The index of the account to get (default: 0).
      * @returns {Promise<WalletAccountSpark>} The account.
      */
@@ -46,18 +28,19 @@ export default class WalletManagerSpark {
     /**
      * Returns the current fee rates.
      *
-     * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+     * @returns {Promise<FeeRates>} The fee rates.
      */
-    getFeeRates(): Promise<{
-        normal: number;
-        fast: number;
-    }>;
-    #private;
+    getFeeRates(): Promise<FeeRates>;
+    /**
+     * Disposes all the wallet accounts, erasing their private keys from the memory.
+     */
+    dispose(): void;
 }
+export type FeeRates = import("@wdk/wallet").FeeRates;
 export type SparkWalletConfig = {
     /**
-     * - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+     * - The network (default: "MAINNET").
      */
-    network?: string;
+    network?: "MAINNET" | "REGTEST" | "TESTNET";
 };
 import WalletAccountSpark from './wallet-account-spark.js';

@@ -13,86 +13,62 @@
 // limitations under the License.
 'use strict'
 
+import AbstractWalletManager from '@wdk/wallet'
+
 import { SparkWallet } from '@buildonspark/spark-sdk'
-import * as bip39 from 'bip39'
 
 import WalletAccountSpark from './wallet-account-spark.js'
-import WalletSparkSigner from './wallet-spark-signer.js'
+
+import Bip44SparkSigner from './bip-44/spark-signer.js'
+
+/** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
 /**
  * @typedef {Object} SparkWalletConfig
- * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+ * @property {'MAINNET' | 'REGTEST' | 'TESTNET'} [network] - The network (default: "MAINNET").
  */
 
-export default class WalletManagerSpark {
-  #seedPhrase
-  #config
+const DEFAULT_NETWORK = 'MAINNET'
 
+export default class WalletManagerSpark extends AbstractWalletManager {
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
-  constructor (seedPhrase, config = {}) {
-    if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {
-      throw new Error('The seed phrase is invalid.')
-    }
+  constructor (seed, config = {}) {
+    super(seed, config)
 
-    this.#seedPhrase = seedPhrase
-
-    this.#config = {
-      network: 'MAINNET',
-      ...config
-    }
+    /** @private */
+    this._accounts = { }
   }
 
   /**
-   * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
-   * @returns {string} The seed phrase.
-   */
-  static getRandomSeedPhrase () {
-    return bip39.generateMnemonic()
-  }
-
-  /**
-   * Checks if a seed phrase is valid.
-   *
-   * @param {string} seedPhrase - The seed phrase.
-   * @returns {boolean} True if the seed phrase is valid.
-   */
-  static isValidSeedPhrase (seedPhrase) {
-    return bip39.validateMnemonic(seedPhrase)
-  }
-
-  /**
-  * The seed phrase of the wallet.
-  *
-  * @type {string}
-  */
-  get seedPhrase () {
-    return this.#seedPhrase
-  }
-
-  /**
-   * Returns the wallet account at a specific index.
-   *
+   * @example
+   * // Returns the account with derivation path m/44'/998'/0'/0/1
+   * const account = await wallet.getAccount(1);
    * @param {number} index - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountSpark>} The account.
    */
   async getAccount (index = 0) {
-    const { wallet } = await SparkWallet.initialize({
-      signer: new WalletSparkSigner(index),
-      mnemonicOrSeed: this.#seedPhrase,
-      options: {
-        network: this.#config.network
-      }
-    })
+    if (!this._accounts[index]) {
+      const { wallet } = await SparkWallet.initialize({
+        signer: new Bip44SparkSigner(index),
+        mnemonicOrSeed: this.seed,
+        options: {
+          network: this._config.network || DEFAULT_NETWORK
+        }
+      })
 
-    const account = new WalletAccountSpark(wallet)
+      const account = new WalletAccountSpark(wallet)
 
-    return account
+      this._accounts[index] = account
+    }
+
+    return this._accounts[index]
   }
 
   /**
@@ -108,9 +84,20 @@ export default class WalletManagerSpark {
   /**
    * Returns the current fee rates.
    *
-   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+   * @returns {Promise<FeeRates>} The fee rates.
    */
   async getFeeRates () {
     return { normal: 0, fast: 0 }
+  }
+
+  /**
+   * Disposes all the wallet accounts, erasing their private keys from the memory.
+   */
+  dispose () {
+    for (const account of Object.values(this._accounts)) {
+      account.dispose()
+    }
+
+    this._accounts = { }
   }
 }
