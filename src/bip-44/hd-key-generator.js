@@ -15,7 +15,7 @@
 
 import { ValidationError } from '@buildonspark/spark-sdk'
 
-import { HDKey } from "@scure/bip32";
+import { HDKey } from '@scure/bip32'
 
 export const BIP_44_LBTC_DERIVATION_PATH_PREFIX = "m/44'/998'"
 
@@ -28,22 +28,22 @@ export default class Bip44HDKeyGenerator {
     return this._index
   }
 
-  async deriveHDKeysFromSeed(seed, accountNumber) {
-    const hdkey = HDKey.fromMasterSeed(seed);
+  async deriveHDKeysFromSeed (seed, accountNumber) {
+    const hdkey = HDKey.fromMasterSeed(seed)
 
     if (!hdkey.privateKey || !hdkey.publicKey) {
-      throw new ValidationError("Failed to derive keys from seed", {
-        field: "hdkey",
-        value: seed,
-      });
+      throw new ValidationError('Failed to derive keys from seed', {
+        field: 'hdkey',
+        value: seed
+      })
     }
 
     const root = `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${accountNumber}'/0/${this.index}`
 
-    const identityKey = hdkey.derive(root),
-          signingKey = hdkey.derive(`${root}/0'`),
-          depositKey = hdkey.derive(`${root}/1'`),
-          staticDepositKey = hdkey.derive(`${root}/2'`);
+    const identityKey = hdkey.derive(root)
+    const signingKey = hdkey.derive(`${root}/0'`)
+    const depositKey = hdkey.derive(`${root}/1'`)
+    const staticDepositKey = hdkey.derive(`${root}/2'`)
 
     if (
       !identityKey.privateKey ||
@@ -56,39 +56,39 @@ export default class Bip44HDKeyGenerator {
       !staticDepositKey.publicKey
     ) {
       throw new ValidationError(
-        "Failed to derive all required keys from seed",
+        'Failed to derive all required keys from seed',
         {
-          field: "derivedKeys",
-        },
-      );
+          field: 'derivedKeys'
+        }
+      )
     }
 
     return {
       masterKey: {
         hdKey: hdkey,
         privateKey: hdkey.privateKey,
-        publicKey: hdkey.publicKey,
+        publicKey: hdkey.publicKey
       },
       identityKey: {
         hdKey: identityKey,
         privateKey: identityKey.privateKey,
-        publicKey: identityKey.publicKey,
+        publicKey: identityKey.publicKey
       },
       signingKey: {
         hdKey: signingKey,
         privateKey: signingKey.privateKey,
-        publicKey: signingKey.publicKey,
+        publicKey: signingKey.publicKey
       },
       depositKey: {
         hdKey: depositKey,
         privateKey: depositKey.privateKey,
-        publicKey: depositKey.publicKey,
+        publicKey: depositKey.publicKey
       },
       staticDepositKey: {
         hdKey: staticDepositKey,
         privateKey: staticDepositKey.privateKey,
-        publicKey: staticDepositKey.publicKey,
-      },
-    };
+        publicKey: staticDepositKey.publicKey
+      }
+    }
   }
 }

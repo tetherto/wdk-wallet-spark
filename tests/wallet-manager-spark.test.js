@@ -36,7 +36,7 @@ describe('WalletManagerSpark', () => {
 
     test('should throw if the index is a negative number', async () => {
       await expect(wallet.getAccount(-1))
-        .rejects.toThrow("invalid child index: -1")
+        .rejects.toThrow('invalid child index: -1')
     })
   })
 

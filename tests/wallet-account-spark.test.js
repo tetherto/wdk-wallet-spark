@@ -107,7 +107,7 @@ describe('WalletAccountSpark', () => {
     const DUMMY_ID = 'dummy-id'
 
     test('should successfully send a transaction', async () => {
-      wallet.transfer = jest.fn(({ receiverSparkAddress, amountSats }) => 
+      wallet.transfer = jest.fn(({ receiverSparkAddress, amountSats }) =>
         receiverSparkAddress === TRANSACTION.to &&
         amountSats === TRANSACTION.value &&
         {

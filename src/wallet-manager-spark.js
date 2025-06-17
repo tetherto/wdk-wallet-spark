@@ -99,7 +99,7 @@ export default class WalletManagerSpark extends AbstractWalletManager {
     for (const account of Object.values(this._accounts)) {
       account.dispose()
     }
-    
+
     this._accounts = { }
   }
 }
