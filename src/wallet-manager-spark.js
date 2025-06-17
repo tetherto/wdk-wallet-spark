@@ -21,9 +21,7 @@ import WalletAccountSpark from './wallet-account-spark.js'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
-/**
- * @typedef {import('@wdk/wallet').FeeRates} FeeRates
- */
+/** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
 /**
  * @typedef {Object} SparkWalletConfig

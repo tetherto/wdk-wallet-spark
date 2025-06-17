@@ -1,34 +1,11 @@
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
- */
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest
- */
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest
- */
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
- */
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer
- */
-/**
- * @typedef {Object} KeyPair
- * @property {Uint8Array} publicKey - The public key.
- * @property {Uint8Array} privateKey - The private key.
- */
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
-export default class WalletAccountSpark {
-    constructor({ index, signer, wallet }: {
-        index: any;
-        signer: any;
-        wallet: any;
-    });
+/** @implements {IWalletAccount} */
+export default class WalletAccountSpark implements IWalletAccount {
+    /** @package */
+    constructor(wallet: any);
+    /** @private */
+    private _wallet;
+    /** @private */
+    private _signer;
     /**
      * The derivation path's index of this account.
      *
@@ -36,7 +13,7 @@ export default class WalletAccountSpark {
      */
     get index(): number;
     /**
-     * The derivation path of this account.
+     * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
      * @type {string}
      */
@@ -69,23 +46,39 @@ export default class WalletAccountSpark {
      */
     verify(message: string, signature: string): Promise<boolean>;
     /**
-     * Quotes a transaction.
-     *
-     * @param {SparkTransaction} tx - The transaction to quote.
-     * @returns {Promise<number>} The transaction's fee (in satoshis).
-     */
-    quoteTransaction({ to, value }: SparkTransaction): Promise<number>;
-    /**
      * Sends a transaction.
      *
-     * @param {SparkTransaction} tx - The transaction to send.
-     * @returns {Promise<string>} The transaction's hash.
+     * @param {SparkTransaction} tx - The transaction.
+     * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction({ to, value }: SparkTransaction): Promise<string>;
+    sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
-     * Returns the account's native token balance.
+     * Quotes the costs of a send transaction operation.
      *
-     * @returns {Promise<number>} The native token balance.
+     * @see {sendTransaction}
+     * @param {SparkTransaction} tx - The transaction.
+     * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
+     */
+    quoteSendTransaction({ to, value }: SparkTransaction): Promise<Omit<TransactionResult, "hash">>;
+    /**
+     * Transfers a token to another address.
+     *
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<TransferResult>} The transfer's result.
+     */
+    transfer(options: TransferOptions): Promise<TransferResult>;
+    /**
+     * Quotes the costs of a transfer operation.
+     *
+     * @see {transfer}
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
+     */
+    quoteTransfer(options: TransferOptions): Promise<Omit<TransferResult, "hash">>;
+    /**
+     * Returns the account's bitcoin balance.
+     *
+     * @returns {Promise<number>} The bitcoin balance (in satoshis).
      */
     getBalance(): Promise<number>;
     /**
@@ -119,14 +112,14 @@ export default class WalletAccountSpark {
     /**
      * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
      *
-     * @property {Object} options - The withdrawal's options.
-     * @property {string} options.to - The Bitcoin address where the funds should be sent.
-     * @property {number} options.value - The amount in satoshis to withdraw.
+     * @param {Object} options - The withdrawal's options.
+     * @param {string} options.to - The Bitcoin address where the funds should be sent.
+     * @param {number} options.value - The amount in satoshis to withdraw.
      * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
      */
     withdraw({ to, value }: {
-        to: any;
-        value: any;
+        to: string;
+        value: number;
     }): Promise<CoopExitRequest | null | undefined>;
     /**
      * Creates a Lightning invoice for receiving payments.
@@ -184,33 +177,20 @@ export default class WalletAccountSpark {
         skip?: number;
     }): Promise<SparkTransfer[]>;
     /**
-     * Cleans up any active wallet connections.
-     * This should be called when you're done using the account to free up resources.
-     *
-     * @returns {Promise<void>}
-     */
-    cleanupConnections(): Promise<void>;
-    /**
-     * Close the wallet account, erase all sensitive buffers, and cleanup provider connections.
+     * Disposes the wallet account, erasing its private keys from the memory.
      */
     dispose(): void;
-    #private;
 }
+export type IWalletAccount = import("@wdk/wallet").IWalletAccount;
+export type KeyPair = import("@wdk/wallet").KeyPair;
+export type TransactionResult = import("@wdk/wallet").TransactionResult;
+export type TransferOptions = import("@wdk/wallet").TransferOptions;
+export type TransferResult = import("@wdk/wallet").TransferResult;
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
 export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
 export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
-export type KeyPair = {
-    /**
-     * - The public key.
-     */
-    publicKey: Uint8Array;
-    /**
-     * - The private key.
-     */
-    privateKey: Uint8Array;
-};
 export type SparkTransaction = {
     /**
      * - The transaction's recipient.

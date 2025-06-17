@@ -18,6 +18,8 @@ import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk'
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-key-generator.js'
 
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
+
+/** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
 /** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
@@ -27,12 +29,6 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-key-generator.js
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
-
-/**
- * @typedef {Object} KeyPair
- * @property {Uint8Array} publicKey - The public key.
- * @property {Uint8Array} privateKey - The private key.
- */
 
 /**
  * @typedef {Object} SparkTransaction
@@ -214,9 +210,9 @@ export default class WalletAccountSpark {
   /**
    * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
-   * @property {Object} options - The withdrawal's options.
-   * @property {string} options.to - The Bitcoin address where the funds should be sent.
-   * @property {number} options.value - The amount in satoshis to withdraw.
+   * @param {Object} options - The withdrawal's options.
+   * @param {string} options.to - The Bitcoin address where the funds should be sent.
+   * @param {number} options.value - The amount in satoshis to withdraw.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
