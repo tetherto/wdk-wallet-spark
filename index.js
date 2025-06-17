@@ -15,7 +15,6 @@
 
 /** @typedef {import('./src/wallet-manager-spark.js').SparkWalletConfig} SparkWalletConfig */
 
-/** @typedef {import('./src/wallet-account-spark.js').default} WalletAccountSpark */
 /** @typedef {import('./src/wallet-account-spark.js').KeyPair} KeyPair */
 /** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */
 
@@ -26,3 +25,5 @@
 /** @typedef {import('./src/wallet-account-spark.js').SparkTransfer} SparkTransfer */
 
 export { default } from './src/wallet-manager-spark.js'
+
+export { default as WalletAccountSpark } from './src/wallet-account-spark.js'

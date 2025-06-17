@@ -13,62 +13,64 @@
 // limitations under the License.
 'use strict'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
-import sodium from 'sodium-universal'
-
 import AbstractWalletManager from '@wdk/wallet'
+
+import { SparkWallet } from '@buildonspark/spark-sdk'
+
 import WalletAccountSpark from './wallet-account-spark.js'
-import WalletSparkSigner from './wallet-spark-signer.js'
+
+import Bip44SparkSigner from './bip-44/spark-signer.js'
+
+/**
+ * @typedef {import('@wdk/wallet').FeeRates} FeeRates
+ */
 
 /**
  * @typedef {Object} SparkWalletConfig
- * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
+ * @property {'MAINNET' | 'REGTEST' | 'TESTNET'} [network] - The network (default: "MAINNET").
  */
 
-export default class WalletManagerSpark extends AbstractWalletManager {
-  #seed
-  #config
-  #accounts
+const DEFAULT_NETWORK = 'MAINNET'
 
+export default class WalletManagerSpark extends AbstractWalletManager {
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {Uint8Array | string} seed - Uint8Array seed buffer or string seed phrase.
+   * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
   constructor (seed, config = {}) {
-    super(seed)
+    super(seed, config)
 
-    this.#seed = seed
-    this.#accounts = new Set()
-
-    this.#config = {
-      network: 'MAINNET',
-      ...config
-    }
+    /** @private */
+    this._accounts = { }
   }
 
   /**
-   * Returns the wallet account at a specific index.
+   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
+   * @example
+   * // Returns the account with derivation path m/44'/998'/0'/0/1
+   * const account = await wallet.getAccount(1);
    * @param {number} index - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountSpark>} The account.
    */
   async getAccount (index = 0) {
-    const signer = new WalletSparkSigner(index)
+    if (!this._accounts[index]) {
+      const { wallet } = await SparkWallet.initialize({
+        signer: new Bip44SparkSigner(index),
+        mnemonicOrSeed: this.seed,
+        options: {
+          network: this._config.network || DEFAULT_NETWORK
+        }
+      })
 
-    const { wallet } = await SparkWallet.initialize({
-      signer,
-      mnemonicOrSeed: this.#seed,
-      options: {
-        network: this.#config.network
-      }
-    })
+      const account = new WalletAccountSpark(wallet)
 
-    const account = new WalletAccountSpark({ index, signer, wallet })
-    this.#accounts.add(account)
+      this._accounts[index] = account
+    }
 
-    return account
+    return this._accounts[index]
   }
 
   /**
@@ -84,21 +86,20 @@ export default class WalletManagerSpark extends AbstractWalletManager {
   /**
    * Returns the current fee rates.
    *
-   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+   * @returns {Promise<FeeRates>} The fee rates.
    */
   async getFeeRates () {
     return { normal: 0, fast: 0 }
   }
 
   /**
-   * Disposes the wallet manager, erasing the seed buffer.
+   * Disposes all the wallet accounts, erasing their private keys from the memory.
    */
   dispose () {
-    for (const account of this.#accounts) account.dispose()
-    this.#accounts.clear()
-
-    sodium.sodium_memzero(this.#seed)
-    this.#seed = null
-    this.#config = null
+    for (const account of Object.values(this._accounts)) {
+      account.dispose()
+    }
+    
+    this._accounts = { }
   }
 }
