@@ -92,10 +92,12 @@ export default class WalletManagerSpark extends AbstractWalletManager {
 
   /**
    * Disposes all the wallet accounts, erasing their private keys from the memory.
+   *
+   * @returns {Promise<void>}
    */
-  dispose () {
+  async dispose () {
     for (const account of Object.values(this._accounts)) {
-      account.dispose()
+      await account.dispose()
     }
 
     this._accounts = { }
