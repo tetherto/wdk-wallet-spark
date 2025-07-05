@@ -24,7 +24,7 @@ const ACCOUNT = {
 
 describe('WalletAccountSpark', () => {
   let wallet,
-      account
+    account
 
   beforeEach(async () => {
     ({ wallet } = await SparkWallet.initialize({
@@ -138,14 +138,14 @@ describe('WalletAccountSpark', () => {
 
   describe('transfer', () => {
     test('should throw an unsupported operation error', async () => {
-      await expect(account.transfer({ }))
+      await expect(account.transfer({}))
         .rejects.toThrow('Method not supported on the spark blockchain.')
     })
   })
 
   describe('quoteTransfer', () => {
     test('should throw an unsupported operation error', async () => {
-      await expect(account.quoteTransfer({ }))
+      await expect(account.quoteTransfer({}))
         .rejects.toThrow('Method not supported on the spark blockchain.')
     })
   })
@@ -166,6 +166,16 @@ describe('WalletAccountSpark', () => {
     test('should throw an unsupported operation error', async () => {
       await expect(account.getTokenBalance('token-address'))
         .rejects.toThrow('Method not supported on the spark blockchain.')
+    })
+  })
+
+  describe('cleanupConnections', () => {
+    test('should close and clean up connections with the blockchain', async () => {
+      wallet.cleanupConnections = jest.fn()
+
+      await account.cleanupConnections()
+
+      expect(wallet.cleanupConnections).toHaveBeenCalled()
     })
   })
 })

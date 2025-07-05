@@ -320,6 +320,15 @@ export default class WalletAccountSpark {
   }
 
   /**
+   * Cleans up and closes the connections with the spark blockchain.
+   *
+   * @returns {Promise<void>}
+   */
+  async cleanupConnections () {
+    await this._wallet.cleanupConnections()
+  }
+
+  /**
    * Disposes the wallet account, erasing its private keys from the memory.
    */
   dispose () {

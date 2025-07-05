@@ -177,6 +177,12 @@ export default class WalletAccountSpark implements IWalletAccount {
         skip?: number;
     }): Promise<SparkTransfer[]>;
     /**
+     * Cleans up and closes the connections with the spark blockchain.
+     *
+     * @returns {Promise<void>}
+     */
+    cleanupConnections(): Promise<void>;
+    /**
      * Disposes the wallet account, erasing its private keys from the memory.
      */
     dispose(): void;
