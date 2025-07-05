@@ -33,10 +33,8 @@ export default class WalletManagerSpark {
     getFeeRates(): Promise<FeeRates>;
     /**
      * Disposes all the wallet accounts, erasing their private keys from the memory.
-     *
-     * @returns {Promise<void>}
      */
-    dispose(): Promise<void>;
+    dispose(): void;
 }
 export type FeeRates = import("@wdk/wallet").FeeRates;
 export type SparkWalletConfig = {

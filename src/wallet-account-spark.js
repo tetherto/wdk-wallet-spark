@@ -330,11 +330,8 @@ export default class WalletAccountSpark {
 
   /**
    * Disposes the wallet account, erasing its private keys from the memory.
-   *
-   * @returns {Promise<void>}
    */
-  async dispose () {
-    await this.cleanupConnections()
+  dispose () {
     this._signer.dispose()
   }
 }

@@ -184,10 +184,8 @@ export default class WalletAccountSpark implements IWalletAccount {
     cleanupConnections(): Promise<void>;
     /**
      * Disposes the wallet account, erasing its private keys from the memory.
-     *
-     * @returns {Promise<void>}
      */
-    dispose(): Promise<void>;
+    dispose(): void;
 }
 export type IWalletAccount = import("@wdk/wallet").IWalletAccount;
 export type KeyPair = import("@wdk/wallet").KeyPair;
