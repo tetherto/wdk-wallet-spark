@@ -178,4 +178,55 @@ describe('WalletAccountSpark', () => {
       expect(wallet.cleanupConnections).toHaveBeenCalled()
     })
   })
+
+  describe('getTransactionReceipt', () => {
+    const TRANSACTION_HASH = 'transfer-123'
+
+    const TRANSACTION_RECEIPT = {
+      id: TRANSACTION_HASH,
+      senderIdentityPublicKey: '03f6c2a8f823f7c9e391b5ee4beed18e1fcb72e421c7bba903d7b4f154c54d37ab',
+      receiverIdentityPublicKey: '02a2d2f3b84f1b9c4d86e8a3f2c62cc59f0c622a6fc285308dbf1d71e51d34b4fd',
+      status: 'COMPLETED',
+      totalValue: 1000,
+      expiryTime: new Date('2025-08-01T12:00:00Z'),
+      leaves: [
+        {
+          id: 'leaf-1',
+          value: 1000,
+          createdTime: new Date('2025-07-14T10:00:00Z'),
+          updatedTime: new Date('2025-07-14T10:10:00Z'),
+          metadata: {
+            type: 'PAYMENT',
+            note: 'Test transaction'
+          }
+        }
+      ],
+      createdTime: new Date('2025-07-14T10:00:00Z'),
+      updatedTime: new Date('2025-07-14T10:10:00Z'),
+      type: 'PUSH',
+      transferDirection: 'OUTGOING'
+    }
+
+    test('should return the correct transaction receipt', async () => {
+      wallet.getTransfer = jest.fn(() => Promise.resolve(TRANSACTION_RECEIPT))
+
+      const receipt = await account.getTransactionReceipt(TRANSACTION_HASH)
+
+      expect(receipt).toEqual(TRANSACTION_RECEIPT)
+    })
+
+    test('should return null if the transaction has not been included in a block yet', async () => {
+      const receipt = await account.getTransactionReceipt(TRANSACTION_HASH)
+
+      wallet.getTransfer = jest.fn(() => Promise.resolve(null))
+
+      expect(receipt).toBe(null)
+    })
+
+    test('should throw if the account is not connected to a provider', async () => {
+      const account = new WalletAccountSpark(SEED_PHRASE, "0'/0/0")
+
+      await expect(account.getTransactionReceipt('0x123')).rejects.toThrow('The wallet must be connected to a provider to get the transaction receipt.')
+    })
+  })
 })

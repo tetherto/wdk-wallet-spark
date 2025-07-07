@@ -28,7 +28,7 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-key-generator.js
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransactionReceipt */
 
 /**
  * @typedef {Object} SparkTransaction
@@ -178,6 +178,18 @@ export default class WalletAccountSpark {
   }
 
   /**
+   * Returns a transaction’s receipt.
+   *
+   * @param {string} hash - The transaction’s hash.
+   * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
+   */
+  async getTransactionReceipt (hash) {
+    const transfer = await this._wallet.getTransfer(hash)
+
+    return transfer || null
+  }
+
+  /**
    * Generates a single-use deposit address for bitcoin deposits from layer 1.
    * Once you deposit funds to this address, it cannot be used again.
    *
@@ -283,7 +295,7 @@ export default class WalletAccountSpark {
    * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
    * @param {number} [options.limit] - The number of transfers to return (default: 10).
    * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+   * @returns {Promise<SparkTransactionReceipt[]>} - The bitcoin transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options

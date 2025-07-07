@@ -12,7 +12,7 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "@buildonspark/spark-sdk": "0.1.40",
+    "@buildonspark/spark-sdk": "0.1.45",
     "@scure/bip32": "1.7.0",
     "@wdk/wallet": "https://github.com/tetherto/wdk-wallet.git#develop",
     "bip39": "3.1.0",
