@@ -142,14 +142,13 @@ describe('@wdk/wallet-spark', () => {
   let wallet
   let account0, account1
 
-  let bip39, WalletManagerSpark, walletModule, WalletAccountSpark, Bip44SparkSigner, SEED
+  let bip39, WalletManagerSpark, walletModule, WalletAccountSpark, SEED
 
   beforeAll(async () => {
     bip39 = await import('bip39')
     walletModule = await import('../../index.js')
     WalletManagerSpark = walletModule.default
     WalletAccountSpark = walletModule.WalletAccountSpark
-    Bip44SparkSigner = (await import('../../src/bip-44/spark-signer.js')).default
     SEED = bip39.mnemonicToSeedSync(SEED_PHRASE)
   })
 
