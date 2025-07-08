@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, beforeAll, jest } from '@jest/globals'
+import { describe, expect, test, beforeEach, beforeAll, jest } from '@jest/globals'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
@@ -22,9 +22,7 @@ const ACCOUNT1 = {
   }
 }
 
-// Mock the Spark SDK BEFORE importing our modules
 jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
-  // Define different key pairs for different indexes
   const mockKeyPairs = {
     0: {
       privateKey: new Uint8Array([
@@ -46,7 +44,6 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
     }
   }
 
-  // Track balances for each account to simulate real balance changes
   const accountBalances = new Map()
   const initializeBalance = (address) => {
     if (!accountBalances.has(address)) {
@@ -55,25 +52,23 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
     return accountBalances.get(address)
   }
 
-  // const reInitializeBalance = (address) => {
-  //   accountBalances.set(address, 10000n)
-  // }
-
-  // Create mock wallet instance factory
   const createMockWalletInstance = (index) => {
     const keyPair = mockKeyPairs[index] || mockKeyPairs[0] // fallback to index 0
 
     return {
       getSparkAddress: jest.fn().mockResolvedValue(keyPair.address),
-      signMessageWithIdentityKey: jest.fn().mockResolvedValue('mock-signature'),
+      signMessageWithIdentityKey: jest.fn().mockImplementation(async (message) => {
+        if (!keyPair.privateKey) throw new TypeError('Uint8Array expected')
+        return 'mock-signature'
+      }),
       validateMessageWithIdentityKey: jest.fn().mockResolvedValue(true),
       transfer: jest.fn().mockImplementation(async (options) => {
-        // Simulate balance changes
+        if (!keyPair.privateKey) throw new TypeError('Uint8Array expected')
+
         const { receiverSparkAddress, amountSats } = options
         const senderBalance = initializeBalance(keyPair.address)
         const recipientBalance = initializeBalance(receiverSparkAddress)
 
-        // Update balances
         accountBalances.set(keyPair.address, senderBalance - BigInt(amountSats))
         accountBalances.set(receiverSparkAddress, recipientBalance + BigInt(amountSats))
 
@@ -98,13 +93,14 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
             this.depositKey = undefined
             this.staticDepositKey = undefined
             if (this.publicKeyToPrivateKeyMap) this.publicKeyToPrivateKeyMap.clear()
+            keyPair.privateKey = undefined
+            keyPair.publicKey = undefined
           })
         },
         config: {
           network: 'TESTNET'
         }
       },
-      // Add all keys expected by dispose
       masterKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
       identityKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
       signingKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
@@ -125,21 +121,8 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
           initializedWallets.set(index, createMockWalletInstance(index))
         }
         return { wallet: initializedWallets.get(index) }
-      }),
-      // Optional: If your app calls SparkWallet.getInstance()
-      getInstance: jest.fn().mockReturnValue({ wallet: createMockWalletInstance(0) }),
-      // Optional: if your app calls `new SparkWallet(...)`
-      prototype: {
-        initialize: jest.fn().mockImplementation(async ({ signer }) => {
-          const index = signer.index
-          if (!initializedWallets.has(index)) {
-            initializedWallets.set(index, createMockWalletInstance(index))
-          }
-          return { wallet: initializedWallets.get(index) }
-        })
-      }
+      })
     },
-    // Add the missing ValidationError export
     ValidationError: class ValidationError extends Error {
       constructor (message, context) {
         super(message)
@@ -147,19 +130,13 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
         this.context = context
       }
     },
-    // Add the missing Network export
     Network: {
       MAINNET: 0,
       TESTNET: 0
     },
-    // Add the missing getLatestDepositTxId export
     getLatestDepositTxId: jest.fn().mockResolvedValue('mock-deposit-tx-id')
   }
 })
-
-// function mockReset () {
-//   jest.resetAllMocks()
-// }
 
 describe('@wdk/wallet-spark', () => {
   let wallet
@@ -168,7 +145,6 @@ describe('@wdk/wallet-spark', () => {
   let bip39, WalletManagerSpark, walletModule, WalletAccountSpark, Bip44SparkSigner, SEED
 
   beforeAll(async () => {
-    // const { SparkWallet } = await import('@buildonspark/spark-sdk')
     bip39 = await import('bip39')
     walletModule = await import('../../index.js')
     WalletManagerSpark = walletModule.default
@@ -185,10 +161,6 @@ describe('@wdk/wallet-spark', () => {
     account1 = await wallet.getAccount(1)
   })
 
-  afterEach(async () => {
-    // mockReset()
-  })
-
   test('should derive an account, quote the cost of a tx and check the fee', async () => {
     const txAmount = 1_000
 
@@ -198,7 +170,6 @@ describe('@wdk/wallet-spark', () => {
     account0 = await wallet.getAccount(0)
     account1 = await wallet.getAccount(1)
 
-    // Verify both accounts are instances of WalletAccountSpark
     expect(account0).toBeInstanceOf(WalletAccountSpark)
     expect(account1).toBeInstanceOf(WalletAccountSpark)
 
@@ -262,5 +233,17 @@ describe('@wdk/wallet-spark', () => {
 
     const verified = await account0.verify(message, signature)
     expect(verified).toBe(true)
+  })
+
+  test('should dispose the wallet and throw an error when trying to access the private key', async () => {
+    const message = 'Hello, world!'
+
+    wallet.dispose()
+
+    expect(() => account0.keyPair).toThrow('Cannot read properties of undefined')
+    expect(() => account1.keyPair).toThrow('Cannot read properties of undefined')
+
+    await expect(account0.sendTransaction({ to: await account1.getAddress(), value: 1000 })).rejects.toThrow('Uint8Array expected')
+    await expect(account0.sign(message)).rejects.toThrow('Uint8Array expected')
   })
 })
