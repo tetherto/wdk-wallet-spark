@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, jest } from '@jest/globals'
+import { describe, expect, test, beforeEach, afterEach, beforeAll, jest } from '@jest/globals'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
@@ -252,5 +252,15 @@ describe('@wdk/wallet-spark', () => {
     const endBalance1 = await account1.getBalance()
 
     expect(endBalance1).toEqual(startBalance1 + txAmount)
+  })
+
+  test('should sign a message and verify its signature', async () => {
+    const message = 'Hello, world!'
+
+    const signature = await account0.sign(message)
+    expect(signature).toBeDefined()
+
+    const verified = await account0.verify(message, signature)
+    expect(verified).toBe(true)
   })
 })
