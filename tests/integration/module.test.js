@@ -65,7 +65,12 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
         if (!keyPair.privateKey) throw new TypeError('Uint8Array expected')
         return 'mock-signature'
       }),
-      validateMessageWithIdentityKey: jest.fn().mockResolvedValue(true),
+      validateMessageWithIdentityKey: jest.fn().mockImplementation(async (message, signature) => {
+        if (message === 'Hello, world!' && signature === 'mock-signature') {
+          return true
+        }
+        return false
+      }),
       transfer: jest.fn().mockImplementation(async (options) => {
         if (!keyPair.privateKey) throw new TypeError('Uint8Array expected')
 
@@ -225,8 +230,8 @@ describe('@wdk/wallet-spark', () => {
     const message = 'Hello, world!'
 
     const signature = await account0.sign(message)
-    expect(signature).toBeDefined()
-
+    expect(signature).toBe('mock-signature')
+    
     const verified = await account0.verify(message, signature)
     expect(verified).toBe(true)
   })
