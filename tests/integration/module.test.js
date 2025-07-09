@@ -15,7 +15,7 @@ const ACCOUNT0 = {
 const ACCOUNT1 = {
   index: 1,
   path: "m/44'/998'/0'/0/1",
-  address: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf', // this is a mock address
+  address: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
   keyPair: {
     privateKey: 'b8f67273f2e81f709d6b835d1f7d9b15066c8a5ef8b5c6eae124592116be4b90',
     publicKey: '0372b256eca0c453e08a2a6ca58d5f90e73004c3d8c6db8474542df0494550a086'
