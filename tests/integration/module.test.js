@@ -95,11 +95,7 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
             publicKey: keyPair.publicKey
           },
           dispose: jest.fn().mockImplementation(function () {
-            this.masterKey = undefined
             this.identityKey = undefined
-            this.signingKey = undefined
-            this.depositKey = undefined
-            this.staticDepositKey = undefined
             if (this.publicKeyToPrivateKeyMap) this.publicKeyToPrivateKeyMap.clear()
             keyPair.privateKey = undefined
             keyPair.publicKey = undefined
@@ -109,11 +105,7 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
           network: 'TESTNET'
         }
       },
-      masterKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
       identityKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
-      signingKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
-      depositKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
-      staticDepositKey: { privateKey: keyPair.privateKey, publicKey: keyPair.publicKey },
       publicKeyToPrivateKeyMap: new Map()
     }
   }
@@ -231,7 +223,7 @@ describe('@wdk/wallet-spark', () => {
 
     const signature = await account0.sign(message)
     expect(signature).toBe('mock-signature')
-    
+
     const verified = await account0.verify(message, signature)
     expect(verified).toBe(true)
   })
