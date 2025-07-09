@@ -78,7 +78,6 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
         const balance = initializeBalance(keyPair.address)
         return { balance }
       }),
-      getSingleUseDepositAddress: jest.fn().mockResolvedValue('mock-deposit-address'),
       config: {
         signer: {
           index,
@@ -110,7 +109,6 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
     }
   }
 
-  // Track initialized wallets by index
   const initializedWallets = new Map()
 
   return {
@@ -193,11 +191,9 @@ describe('@wdk/wallet-spark', () => {
     const EXPECTED_FEE = 0
 
     const { fee: estimatedFee } = await account0.quoteSendTransaction(TRANSACTION)
-
     expect(estimatedFee).toBe(EXPECTED_FEE)
 
     const { fee: actualFee } = await account0.sendTransaction(TRANSACTION)
-
     expect(actualFee).toBe(estimatedFee)
   })
 

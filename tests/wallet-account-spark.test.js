@@ -24,7 +24,7 @@ const ACCOUNT = {
 
 describe('WalletAccountSpark', () => {
   let wallet,
-      account
+    account
 
   beforeEach(async () => {
     ({ wallet } = await SparkWallet.initialize({
