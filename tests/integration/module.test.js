@@ -53,7 +53,11 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => {
   }
 
   const createMockWalletInstance = (index) => {
-    const keyPair = mockKeyPairs[index] || mockKeyPairs[0] // fallback to index 0
+    const keyPair = mockKeyPairs[index]
+
+    if (!keyPair) {
+      throw new Error(`Mock wallet not configured for index: ${index}`)
+    }
 
     return {
       getSparkAddress: jest.fn().mockResolvedValue(keyPair.address),
