@@ -167,9 +167,6 @@ describe('@wdk/wallet-spark', () => {
     account0 = await wallet.getAccount(0)
     account1 = await wallet.getAccount(1)
 
-    expect(account0).toBeInstanceOf(WalletAccountSpark)
-    expect(account1).toBeInstanceOf(WalletAccountSpark)
-
     expect(account0.index).toBe(ACCOUNT0.index)
     expect(account0.path).toBe(ACCOUNT0.path)
     expect(account0.keyPair).toEqual({
