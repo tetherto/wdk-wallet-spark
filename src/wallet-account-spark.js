@@ -15,7 +15,7 @@
 
 import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk'
 
-import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-key-generator.js'
+import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
@@ -308,8 +308,6 @@ export default class WalletAccountSpark {
       const offset = i * (limit + skip)
 
       let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
-
-      console.log(batch)
 
       if (batch.length === 0) {
         break
