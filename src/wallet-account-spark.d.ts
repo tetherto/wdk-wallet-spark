@@ -13,7 +13,7 @@ export default class WalletAccountSpark implements IWalletAccount {
      */
     get index(): number;
     /**
-     * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
+     * The derivation path of this account (see [BIP-86](https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki)).
      *
      * @type {string}
      */
