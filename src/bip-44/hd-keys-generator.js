@@ -19,7 +19,7 @@ import { HDKey } from '@scure/bip32'
 
 export const BIP_44_LBTC_DERIVATION_PATH_PREFIX = "m/44'/998'"
 
-export default class Bip44HDKeyGenerator {
+export default class Bip44HDKeysGenerator {
   constructor (index = 0) {
     this._index = index
   }
@@ -28,7 +28,7 @@ export default class Bip44HDKeyGenerator {
     return this._index
   }
 
-  async deriveHDKeysFromSeed (seed, accountNumber) {
+  async deriveKeysFromSeed (seed, accountNumber) {
     const hdkey = HDKey.fromMasterSeed(seed)
 
     if (!hdkey.privateKey || !hdkey.publicKey) {
@@ -64,27 +64,21 @@ export default class Bip44HDKeyGenerator {
     }
 
     return {
-      masterKey: {
-        hdKey: hdkey,
-        privateKey: hdkey.privateKey,
-        publicKey: hdkey.publicKey
-      },
+      masterPublicKey: hdkey.publicKey,
       identityKey: {
-        hdKey: identityKey,
         privateKey: identityKey.privateKey,
         publicKey: identityKey.publicKey
       },
-      signingKey: {
+      signingHDKey: {
         hdKey: signingKey,
         privateKey: signingKey.privateKey,
         publicKey: signingKey.publicKey
       },
       depositKey: {
-        hdKey: depositKey,
         privateKey: depositKey.privateKey,
         publicKey: depositKey.publicKey
       },
-      staticDepositKey: {
+      staticDepositHDKey: {
         hdKey: staticDepositKey,
         privateKey: staticDepositKey.privateKey,
         publicKey: staticDepositKey.publicKey

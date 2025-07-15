@@ -112,25 +112,26 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('sendTransaction', () => {
-    const TRANSACTION = {
+    const DUMMY_TRANSACTION = {
       to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
       value: 100
     }
 
-    const DUMMY_ID = 'dummy-id'
+    const DUMMY_WALLET_TRANSFER = {
+      id: 'dummy-wallet-transfer-1'
+    }
 
     test('should successfully send a transaction', async () => {
-      sparkWallet.transfer = jest.fn(({ receiverSparkAddress, amountSats }) =>
-        receiverSparkAddress === TRANSACTION.to &&
-        amountSats === TRANSACTION.value &&
-        {
-          id: DUMMY_ID
-        }
-      )
+      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
 
-      const { hash, fee } = await account.sendTransaction(TRANSACTION)
+      const { hash, fee } = await account.sendTransaction(DUMMY_TRANSACTION)
 
-      expect(hash).toBe(DUMMY_ID)
+      expect(sparkWallet.transfer).toHaveBeenCalledWith({
+        receiverSparkAddress: DUMMY_TRANSACTION.to,
+        amountSats: DUMMY_TRANSACTION.value
+      })
+
+      expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
 
       expect(fee).toBe(0)
     })
@@ -191,18 +192,18 @@ describe('WalletAccountSpark', () => {
         totalValue: 1_000
       }
 
-      wallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
+      sparkWallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
 
       const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
       expect(receipt).toEqual(DUMMY_TRANSACTION_RECEIPT)
     })
 
     test('should return null if the transaction has not been included in a block yet', async () => {
-      wallet.getTransfer = jest.fn().mockResolvedValue(undefined)
+      sparkWallet.getTransfer = jest.fn().mockResolvedValue(undefined)
       
       const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
       expect(receipt).toBe(null)
     })
   })

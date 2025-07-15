@@ -17,27 +17,25 @@ import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 
 import { sodium_memzero } from 'sodium-universal'
 
-import Bip44HDKeyGenerator from './hd-key-generator.js'
+import Bip44HDKeysGenerator from './hd-keys-generator.js'
 
 export default class Bip44SparkSigner extends DefaultSparkSigner {
   constructor (index) {
-    const hdKeyGenerator = new Bip44HDKeyGenerator(index)
+    const sparkKeysGenerator = new Bip44HDKeysGenerator(index)
 
-    super({ hdKeyGenerator })
+    super({ sparkKeysGenerator })
   }
 
   get index () {
-    return this.hdKeyGenerator.index
+    return this.keysGenerator.index
   }
 
   dispose () {
-    sodium_memzero(this.masterKey.privateKey)
     sodium_memzero(this.identityKey.privateKey)
     sodium_memzero(this.signingKey.privateKey)
     sodium_memzero(this.depositKey.privateKey)
     sodium_memzero(this.staticDepositKey.privateKey)
 
-    this.masterKey = undefined
     this.identityKey = undefined
     this.signingKey = undefined
     this.depositKey = undefined
