@@ -17,7 +17,7 @@ import { SparkWallet } from '@buildonspark/spark-sdk'
 
 import { DefaultSparkSigner, TaprootOutputKeysGenerator } from '@buildonspark/spark-sdk/signer'
 
-export class TaprootSparkSigner extends DefaultSparkSigner {
+export class TaprootSparkSignerWithAddressIndex extends DefaultSparkSigner {
   constructor() {
     super({ sparkKeysGenerator: new TaprootOutputKeysGenerator(true) });
   }
@@ -25,7 +25,9 @@ export class TaprootSparkSigner extends DefaultSparkSigner {
 
 export default class TaprootSparkWallet extends SparkWallet {
   constructor(options, { accountNumber }) {
-    super(options, new TaprootSparkSigner())
+    const signer = new TaprootSparkSignerWithAddressIndex()
+
+    super(options, signer)
 
     this.accountNumber = accountNumber
   }
