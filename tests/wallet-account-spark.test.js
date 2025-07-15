@@ -181,6 +181,31 @@ describe('WalletAccountSpark', () => {
         .rejects.toThrow('Method not supported on the spark blockchain.')
     })
   })
+  
+  describe('getTransactionReceipt', () => {
+    const DUMMY_TRANSACTION_HASH = 'dummy-transfer-id'
+
+    test('should return the correct transaction receipt', async () => {
+      const DUMMY_TRANSACTION_RECEIPT = {
+        id: DUMMY_TRANSACTION_HASH,
+        totalValue: 1_000
+      }
+
+      wallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
+
+      const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
+      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(receipt).toEqual(DUMMY_TRANSACTION_RECEIPT)
+    })
+
+    test('should return null if the transaction has not been included in a block yet', async () => {
+      wallet.getTransfer = jest.fn().mockResolvedValue(undefined)
+      
+      const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
+      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(receipt).toBe(null)
+    })
+  })
 
   describe('getSingleUseDepositAddress', () => {
     test('should return a valid single use deposit address', async () => {

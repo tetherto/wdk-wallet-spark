@@ -23,11 +23,10 @@
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
-/** @typedef {import('./src/wallet-manager-spark.js').SparkWalletConfig} SparkWalletConfig */
-
+/** @typedef {import('./src/wallet-account-spark.js').SparkWalletConfig} SparkWalletConfig */
 /** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./src/wallet-account-spark.js').SparkTransactionReceipt} SparkTransactionReceipt */
 
 export { default } from './src/wallet-manager-spark.js'
 
