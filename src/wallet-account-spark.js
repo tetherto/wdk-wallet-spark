@@ -289,7 +289,7 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Returns the bitcoin transfers history of the account.
+   * Returns the bitcoin transfer history of the account.
    *
    * @param {Object} [options] - The options.
    * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
@@ -305,9 +305,11 @@ export default class WalletAccountSpark {
     let i = 0
 
     while (true) {
-      const offset = skip + (i * limit)
+      const offset = i * (limit + skip)
 
-      let { transfers: batch } = await this._wallet.getTransfers(limit, offset)
+      let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
+
+      console.log(batch)
 
       if (batch.length === 0) {
         break
@@ -319,14 +321,14 @@ export default class WalletAccountSpark {
 
       transfers.push(...batch)
 
-      if (transfers.length >= limit) {
+      if (transfers.length >= limit + skip) {
         break
       }
 
       i++
     }
 
-    const result = transfers.slice(skip, limit)
+    const result = transfers.slice(skip, limit + skip)
 
     return result
   }
