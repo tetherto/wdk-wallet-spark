@@ -15,8 +15,6 @@
 
 import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
 
-import { DefaultSparkSigner, TaprootOutputKeysGenerator } from '@buildonspark/spark-sdk/signer'
-
 import { sodium_memzero } from 'sodium-universal'
 
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
@@ -37,12 +35,6 @@ import { sodium_memzero } from 'sodium-universal'
  * @property {string} to - The transaction's recipient.
  * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
-
-export class TaprootSparkSigner extends DefaultSparkSigner {
-  constructor() {
-    super({ sparkKeysGenerator: new TaprootOutputKeysGenerator(true) });
-  }
-}
 
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark {
@@ -314,8 +306,6 @@ export default class WalletAccountSpark {
       const offset = i * (limit + skip)
 
       let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
-
-      console.log(batch)
 
       if (batch.length === 0) {
         break

@@ -15,9 +15,9 @@
 
 import AbstractWalletManager from '@wdk/wallet'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
+import WalletAccountSpark from './wallet-account-spark.js'
 
-import WalletAccountSpark, { TaprootSparkSigner } from './wallet-account-spark.js'
+import TaprootSparkWallet from './taproot-spark-wallet.js'
 
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
@@ -27,25 +27,6 @@ import WalletAccountSpark, { TaprootSparkSigner } from './wallet-account-spark.j
  */
 
 const DEFAULT_NETWORK = 'MAINNET'
-
-export class TaprootSparkWallet extends SparkWallet {
-  constructor (options, { accountNumber }) {
-    super(options, new TaprootSparkSigner())
-
-    this.accountNumber = accountNumber
-  }
-
-  static async initialize({ mnemonicOrSeed, accountNumber, options }) {
-    const wallet = new TaprootSparkWallet(options, { accountNumber })
-
-    const initResponse = await wallet.initWallet(mnemonicOrSeed, accountNumber)
-
-    return {
-      wallet,
-      ...initResponse
-    }
-  }
-}
 
 export default class WalletManagerSpark extends AbstractWalletManager {
   /**

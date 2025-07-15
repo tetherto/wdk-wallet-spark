@@ -25,9 +25,9 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => ({
   getLatestDepositTxId: getLatestDepositTxIdMock
 }))
 
-const { TaprootSparkWallet } = await import('../src/wallet-manager-spark.js')
+const { WalletAccountSpark } = await import('../index.js')
 
-const { default: WalletAccountSpark } = await import('../src/wallet-account-spark.js')
+const { default: TaprootSparkWallet } = await import('../src/taproot-spark-wallet.js')
 
 describe('WalletAccountSpark', () => {
   let sparkWallet,
@@ -110,25 +110,26 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('sendTransaction', () => {
-    const TRANSACTION = {
+    const DUMMY_TRANSACTION = {
       to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
       value: 100
     }
 
-    const DUMMY_ID = 'dummy-id'
+    const DUMMY_WALLET_TRANSFER = {
+      id: 'dummy-wallet-transfer-1'
+    }
 
     test('should successfully send a transaction', async () => {
-      sparkWallet.transfer = jest.fn(({ receiverSparkAddress, amountSats }) =>
-        receiverSparkAddress === TRANSACTION.to &&
-        amountSats === TRANSACTION.value &&
-        {
-          id: DUMMY_ID
-        }
-      )
+      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
 
-      const { hash, fee } = await account.sendTransaction(TRANSACTION)
+      const { hash, fee } = await account.sendTransaction(DUMMY_TRANSACTION)
 
-      expect(hash).toBe(DUMMY_ID)
+      expect(sparkWallet.transfer).toHaveBeenCalledWith({
+        receiverSparkAddress: DUMMY_TRANSACTION.to,
+        amountSats: DUMMY_TRANSACTION.value
+      })
+
+      expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
 
       expect(fee).toBe(0)
     })
