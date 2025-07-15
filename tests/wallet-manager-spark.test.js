@@ -23,7 +23,7 @@ describe('WalletManagerSpark', () => {
 
       expect(account).toBeInstanceOf(WalletAccountSpark)
 
-      expect(account.path).toBe("m/44'/998'/0'/0/0")
+      expect(account.path).toBe("m/86'/0'/0'/0/0")
     })
 
     test('should return the account at the given index', async () => {
@@ -31,7 +31,7 @@ describe('WalletManagerSpark', () => {
 
       expect(account).toBeInstanceOf(WalletAccountSpark)
 
-      expect(account.path).toBe("m/44'/998'/0'/0/3")
+      expect(account.path).toBe("m/86'/0'/0'/0/3")
     })
 
     test('should throw if the index is a negative number', async () => {

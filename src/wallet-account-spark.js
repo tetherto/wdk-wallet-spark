@@ -13,9 +13,9 @@
 // limitations under the License.
 'use strict'
 
-import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk'
+import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
 
-import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-key-generator.js'
+import { sodium_memzero } from 'sodium-universal'
 
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
@@ -53,7 +53,7 @@ export default class WalletAccountSpark {
    * @type {number}
    */
   get index () {
-    return this._signer.index
+    return this._wallet.accountNumber
   }
 
   /**
@@ -62,9 +62,7 @@ export default class WalletAccountSpark {
    * @type {string}
    */
   get path () {
-    const accountNumber = Network[this._wallet.config.config.network]
-
-    return `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${accountNumber}'/0/${this.index}`
+    return `m/86'/0'/0'/0/${this.index}`
   }
 
   /**
@@ -309,8 +307,6 @@ export default class WalletAccountSpark {
 
       let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
 
-      console.log(batch)
-
       if (batch.length === 0) {
         break
       }
@@ -346,6 +342,16 @@ export default class WalletAccountSpark {
    * Disposes the wallet account, erasing its private keys from the memory.
    */
   dispose () {
-    this._signer.dispose()
+    sodium_memzero(this._signer.identityKey.privateKey)
+    sodium_memzero(this._signer.signingKey.privateKey)
+    sodium_memzero(this._signer.depositKey.privateKey)
+    sodium_memzero(this._signer.staticDepositKey.privateKey)
+
+    this._signer.identityKey = undefined
+    this._signer.signingKey = undefined
+    this._signer.depositKey = undefined
+    this._signer.staticDepositKey = undefined
+
+    this._signer.publicKeyToPrivateKeyMap.clear()
   }
 }

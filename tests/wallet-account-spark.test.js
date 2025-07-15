@@ -4,21 +4,17 @@ import * as sparkSdk from '@buildonspark/spark-sdk'
 
 import * as bip39 from 'bip39'
 
-import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
-
-const { SparkWallet } = sparkSdk
-
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 const SEED = bip39.mnemonicToSeedSync(SEED_PHRASE)
 
 const ACCOUNT = {
   index: 0,
-  path: "m/44'/998'/0'/0/0",
-  address: 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47',
+  path: "m/86'/0'/0'/0/0",
+  address: 'sp1pgss9pg7dw7jxa4yvm9hg8ym6lqmdr7l5jp4rch4m75mhrly4pyev0m7lf42w3',
   keyPair: {
-    privateKey: 'd5d117a4be53b177b4ba48fc709539e37e24e72d4a90f1d47daf309ec3e8ae7b',
-    publicKey: '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
+    privateKey: '70617178496fbdd63dc9e119825906527a017c4f1e676032c9061fd64f8e1f5c',
+    publicKey: '02851e6bbd2376a466cb741c9bd7c1b68fdfa48351e2f5dfa9bb8fe4a849963f7e'
   }
 }
 
@@ -31,14 +27,16 @@ jest.unstable_mockModule('@buildonspark/spark-sdk', () => ({
 
 const { WalletAccountSpark } = await import('../index.js')
 
+const { default: TaprootSparkWallet } = await import('../src/taproot-spark-wallet.js')
+
 describe('WalletAccountSpark', () => {
   let sparkWallet,
       account
 
   beforeAll(async () => {
-    const { wallet } = await SparkWallet.initialize({
-      signer: new Bip44SparkSigner(0),
+    const { wallet } = await TaprootSparkWallet.initialize({
       mnemonicOrSeed: SEED,
+      accountNumber: 0,
       options: {
         network: 'MAINNET'
       }
@@ -79,7 +77,7 @@ describe('WalletAccountSpark', () => {
   describe('sign', () => {
     const MESSAGE = 'Dummy message to sign.'
 
-    const EXPECTED_SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'
+    const EXPECTED_SIGNATURE = '304402203ef7aa6576679a4b10f5a5bef8518748e451b46deb235b8b6f27367f786328e1022063622ee8026117a329b23c487bed9d63dd1009c15c1158a4347afaa247d981fe'
 
     test('should return the correct signature', async () => {
       const signature = await account.sign(MESSAGE)
@@ -91,7 +89,7 @@ describe('WalletAccountSpark', () => {
   describe('verify', () => {
     const MESSAGE = 'Dummy message to sign.'
 
-    const SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'
+    const SIGNATURE = '304402203ef7aa6576679a4b10f5a5bef8518748e451b46deb235b8b6f27367f786328e1022063622ee8026117a329b23c487bed9d63dd1009c15c1158a4347afaa247d981fe'
 
     test('should return true for a valid signature', async () => {
       const result = await account.verify(MESSAGE, SIGNATURE)
@@ -112,25 +110,26 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('sendTransaction', () => {
-    const TRANSACTION = {
+    const DUMMY_TRANSACTION = {
       to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
       value: 100
     }
 
-    const DUMMY_ID = 'dummy-id'
+    const DUMMY_WALLET_TRANSFER = {
+      id: 'dummy-wallet-transfer-1'
+    }
 
     test('should successfully send a transaction', async () => {
-      sparkWallet.transfer = jest.fn(({ receiverSparkAddress, amountSats }) =>
-        receiverSparkAddress === TRANSACTION.to &&
-        amountSats === TRANSACTION.value &&
-        {
-          id: DUMMY_ID
-        }
-      )
+      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
 
-      const { hash, fee } = await account.sendTransaction(TRANSACTION)
+      const { hash, fee } = await account.sendTransaction(DUMMY_TRANSACTION)
 
-      expect(hash).toBe(DUMMY_ID)
+      expect(sparkWallet.transfer).toHaveBeenCalledWith({
+        receiverSparkAddress: DUMMY_TRANSACTION.to,
+        amountSats: DUMMY_TRANSACTION.value
+      })
+
+      expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
 
       expect(fee).toBe(0)
     })
@@ -191,18 +190,18 @@ describe('WalletAccountSpark', () => {
         totalValue: 1_000
       }
 
-      wallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
+      sparkWallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
 
       const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
       expect(receipt).toEqual(DUMMY_TRANSACTION_RECEIPT)
     })
 
     test('should return null if the transaction has not been included in a block yet', async () => {
-      wallet.getTransfer = jest.fn().mockResolvedValue(undefined)
+      sparkWallet.getTransfer = jest.fn().mockResolvedValue(undefined)
       
       const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(wallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
+      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
       expect(receipt).toBe(null)
     })
   })
