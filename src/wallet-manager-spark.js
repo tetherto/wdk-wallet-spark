@@ -17,9 +17,7 @@ import AbstractWalletManager from '@wdk/wallet'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
 
-import WalletAccountSpark from './wallet-account-spark.js'
-
-import Bip44SparkSigner from './bip-44/spark-signer.js'
+import WalletAccountSpark, { TaprootSparkSigner } from './wallet-account-spark.js'
 
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
@@ -29,6 +27,25 @@ import Bip44SparkSigner from './bip-44/spark-signer.js'
  */
 
 const DEFAULT_NETWORK = 'MAINNET'
+
+export class TaprootSparkWallet extends SparkWallet {
+  constructor (options, { accountNumber }) {
+    super(options, new TaprootSparkSigner())
+
+    this.accountNumber = accountNumber
+  }
+
+  static async initialize({ mnemonicOrSeed, accountNumber, options }) {
+    const wallet = new TaprootSparkWallet(options, { accountNumber })
+
+    const initResponse = await wallet.initWallet(mnemonicOrSeed, accountNumber)
+
+    return {
+      wallet,
+      ...initResponse
+    }
+  }
+}
 
 export default class WalletManagerSpark extends AbstractWalletManager {
   /**
@@ -45,7 +62,7 @@ export default class WalletManagerSpark extends AbstractWalletManager {
   }
 
   /**
-   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
+   * Returns the wallet account at a specific index (see [BIP-86](https://github.com/bitcoin/bips/blob/master/bip-0086.mediawiki)).
    *
    * @example
    * // Returns the account with derivation path m/44'/998'/0'/0/1
@@ -55,9 +72,9 @@ export default class WalletManagerSpark extends AbstractWalletManager {
    */
   async getAccount (index = 0) {
     if (!this._accounts[index]) {
-      const { wallet } = await SparkWallet.initialize({
-        signer: new Bip44SparkSigner(index),
+      const { wallet } = await TaprootSparkWallet.initialize({
         mnemonicOrSeed: this.seed,
+        accountNumber: index,
         options: {
           network: this._config.network || DEFAULT_NETWORK
         }
@@ -72,7 +89,7 @@ export default class WalletManagerSpark extends AbstractWalletManager {
   }
 
   /**
-   * Returns the wallet account at a specific BIP-44 derivation path.
+   * Returns the wallet account at a specific BIP-86 derivation path.
    *
    * @param {string} path - The derivation path (e.g. "0'/0/0").
    * @returns {Promise<WalletAccountSpark>} The account.
