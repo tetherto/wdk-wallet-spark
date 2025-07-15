@@ -89,7 +89,7 @@ export default class WalletAccountSpark implements IWalletAccount {
      */
     getTokenBalance(tokenAddress: string): Promise<number>;
     /**
-     * Returns a transaction’s receipt.
+     * Returns a transaction's receipt.
      *
      * @param {string} hash - The transaction’s hash.
      * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
@@ -176,7 +176,7 @@ export default class WalletAccountSpark implements IWalletAccount {
      * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
      * @param {number} [options.limit] - The number of transfers to return (default: 10).
      * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-     * @returns {Promise<SparkTransactionReceipt[]>} - The bitcoin transfers.
+     * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
      */
     getTransfers(options?: {
         direction?: "incoming" | "outgoing" | "all";

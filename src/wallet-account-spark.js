@@ -178,15 +178,15 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Returns a transaction’s receipt.
+   * Returns a transaction's receipt.
    *
-   * @param {string} hash - The transaction’s hash.
+   * @param {string} hash - The transaction's hash.
    * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
    */
   async getTransactionReceipt (hash) {
     const transfer = await this._wallet.getTransfer(hash)
 
-    return transfer || null
+    return transfer ?? null
   }
 
   /**
@@ -295,7 +295,7 @@ export default class WalletAccountSpark {
    * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
    * @param {number} [options.limit] - The number of transfers to return (default: 10).
    * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @returns {Promise<SparkTransactionReceipt[]>} - The bitcoin transfers.
+   * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
