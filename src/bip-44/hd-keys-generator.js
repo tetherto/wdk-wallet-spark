@@ -19,6 +19,7 @@ import { HDKey } from '@scure/bip32'
 
 export const BIP_44_LBTC_DERIVATION_PATH_PREFIX = "m/44'/998'"
 
+/** @internal */
 export default class Bip44HDKeysGenerator {
   constructor (index = 0) {
     this._index = index

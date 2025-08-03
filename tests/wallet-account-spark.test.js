@@ -33,7 +33,7 @@ const { WalletAccountSpark } = await import('../index.js')
 
 describe('WalletAccountSpark', () => {
   let sparkWallet,
-      account
+    account
 
   beforeAll(async () => {
     const { wallet } = await SparkWallet.initialize({
@@ -182,7 +182,7 @@ describe('WalletAccountSpark', () => {
         .rejects.toThrow('Method not supported on the spark blockchain.')
     })
   })
-  
+
   describe('getTransactionReceipt', () => {
     const DUMMY_TRANSACTION_HASH = 'dummy-transfer-id'
 
@@ -201,7 +201,7 @@ describe('WalletAccountSpark', () => {
 
     test('should return null if the transaction has not been included in a block yet', async () => {
       sparkWallet.getTransfer = jest.fn().mockResolvedValue(undefined)
-      
+
       const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
       expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
       expect(receipt).toBe(null)
@@ -254,8 +254,8 @@ describe('WalletAccountSpark', () => {
         value: 100
       }
 
-      const DUMMY_COOP_EXIT_REQUEST = { 
-        id: 'coop-exit-request-1' 
+      const DUMMY_COOP_EXIT_REQUEST = {
+        id: 'coop-exit-request-1'
       }
 
       sparkWallet.withdraw = jest.fn().mockResolvedValue(DUMMY_COOP_EXIT_REQUEST)
@@ -274,13 +274,13 @@ describe('WalletAccountSpark', () => {
 
   describe('createLightningInvoice', () => {
     test('should successfully create a lighting invoice', async () => {
-      const DUMMY_OPTIONS = { 
-        value: 1_500, 
-        memo: 'This is just a test invoice.' 
+      const DUMMY_OPTIONS = {
+        value: 1_500,
+        memo: 'This is just a test invoice.'
       }
 
-      const DUMMY_LIGHTNING_RECEIVE_REQUEST = { 
-        id: 'lightining-receive-request-1' 
+      const DUMMY_LIGHTNING_RECEIVE_REQUEST = {
+        id: 'lightining-receive-request-1'
       }
 
       sparkWallet.createLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_RECEIVE_REQUEST)
@@ -300,8 +300,8 @@ describe('WalletAccountSpark', () => {
     test('should successfully return the lightning receive request', async () => {
       const DUMMY_INVOICE_ID = 'dummy-invoice-id'
 
-      const DUMMY_LIGHTING_RECEIVE_REQUEST = { 
-        id: DUMMY_INVOICE_ID 
+      const DUMMY_LIGHTING_RECEIVE_REQUEST = {
+        id: DUMMY_INVOICE_ID
       }
 
       sparkWallet.getLightningReceiveRequest = jest.fn().mockResolvedValue(DUMMY_LIGHTING_RECEIVE_REQUEST)
@@ -314,12 +314,12 @@ describe('WalletAccountSpark', () => {
 
   describe('payLightningInvoice', () => {
     test('should successfully pay a lightning invoice', async () => {
-      const DUMMY_OPTIONS = { 
+      const DUMMY_OPTIONS = {
         invoice: 'dummy-bolt11-invoice',
-        maxFeeSats: 50 
+        maxFeeSats: 50
       }
 
-      const DUMMY_LIGHTNING_SEND_REQUEST = { 
+      const DUMMY_LIGHTNING_SEND_REQUEST = {
         id: 'lighting-send-request-1'
       }
 

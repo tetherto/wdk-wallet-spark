@@ -6,8 +6,13 @@ export default class WalletManagerSpark {
      * @param {SparkWalletConfig} [config] - The configuration object.
      */
     constructor(seed: string | Uint8Array, config?: SparkWalletConfig);
-    /** @private */
-    private _accounts;
+    /**
+     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
+     *
+     * @protected
+     * @type {{ [path: string]: WalletAccountSpark }}
+     */
+    protected _accounts;
     /**
      * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *

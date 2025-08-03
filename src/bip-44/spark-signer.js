@@ -15,10 +15,12 @@
 
 import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
 
+// eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
 
 import Bip44HDKeysGenerator from './hd-keys-generator.js'
 
+/** @internal */
 export default class Bip44SparkSigner extends DefaultSparkSigner {
   constructor (index) {
     const sparkKeysGenerator = new Bip44HDKeysGenerator(index)

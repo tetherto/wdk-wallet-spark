@@ -4,6 +4,7 @@
   "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
   "main": "index.js",
   "type": "module",
+  "types": "./types",
   "scripts": {
     "build:types": "rimraf *.d.ts **/*.d.ts; tsc",
     "lint": "standard --env jest",
