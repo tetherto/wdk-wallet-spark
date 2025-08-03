@@ -332,6 +332,15 @@ export default class WalletAccountSpark {
   }
 
   /**
+   * Returns a read-only copy of the account.
+   *
+   * @returns {Promise<never>} The read-only account.
+   */
+  async toReadOnlyAccount () {
+    throw new Error('Read-only accounts not supported for the spark blockchain.')
+  }
+
+  /**
    * Cleans up and closes the connections with the spark blockchain.
    *
    * @returns {Promise<void>}

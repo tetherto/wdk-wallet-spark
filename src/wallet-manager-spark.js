@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import AbstractWalletManager from '@wdk/wallet'
+import WalletManager from '@wdk/wallet'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
 
@@ -30,7 +30,7 @@ import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 const DEFAULT_NETWORK = 'MAINNET'
 
-export default class WalletManagerSpark extends AbstractWalletManager {
+export default class WalletManagerSpark extends WalletManager {
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
@@ -40,7 +40,12 @@ export default class WalletManagerSpark extends AbstractWalletManager {
   constructor (seed, config = {}) {
     super(seed, config)
 
-    /** @private */
+    /**
+     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
+     *
+     * @protected
+     * @type {{ [path: string]: WalletAccountSpark }}
+     */
     this._accounts = { }
   }
 

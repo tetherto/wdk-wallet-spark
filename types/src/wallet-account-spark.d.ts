@@ -184,6 +184,12 @@ export default class WalletAccountSpark implements IWalletAccount {
         skip?: number;
     }): Promise<SparkTransactionReceipt[]>;
     /**
+     * Returns a read-only copy of the account.
+     *
+     * @returns {Promise<never>} The read-only account.
+     */
+    toReadOnlyAccount(): Promise<never>;
+    /**
      * Cleans up and closes the connections with the spark blockchain.
      *
      * @returns {Promise<void>}
