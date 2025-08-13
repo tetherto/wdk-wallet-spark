@@ -15,8 +15,8 @@
   "exports": {
     ".": {
       "bare": "./bare.js",
-      "default": "./index.js",
-      "types": "./types/index.d.ts"
+      "types": "./types/index.d.ts",
+      "default": "./index.js"
     },
     "./package": {
       "default": "./package.json"
