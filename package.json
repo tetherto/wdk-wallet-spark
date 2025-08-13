@@ -18,9 +18,7 @@
       "types": "./types/index.d.ts",
       "default": "./index.js"
     },
-    "./package": {
-      "default": "./package.json"
-    }
+    "./package": "./package.json"
   },
   "dependencies": {
     "@buildonspark/spark-sdk": "0.1.45",
