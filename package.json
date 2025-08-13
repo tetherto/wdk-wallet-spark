@@ -12,10 +12,21 @@
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
+  "exports": {
+    ".": {
+      "bare": "./bare.js",
+      "default": "./index.js",
+      "types": "./types/index.d.ts"
+    },
+    "./package": {
+      "default": "./package.json"
+    }
+  },
   "dependencies": {
     "@buildonspark/spark-sdk": "0.1.45",
     "@scure/bip32": "1.7.0",
     "@wdk/wallet": "https://github.com/tetherto/wdk-wallet.git#develop",
+    "bare-wdk-runtime": "2.0.0",
     "bip39": "3.1.0",
     "sodium-universal": "5.0.1"
   },
