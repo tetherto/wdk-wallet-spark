@@ -127,48 +127,9 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('quoteSendTransaction', () => {
-    const TRANSACTION = {
-      to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
-      value: 100
-    }
-
-    test('should successfully quote a transaction', async () => {
-      const { fee } = await account.quoteSendTransaction(TRANSACTION)
-
-      expect(fee).toBe(0)
-    })
-  })
-
   describe('transfer', () => {
     test('should throw an unsupported operation error', async () => {
       await expect(account.transfer({}))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
-
-  describe('quoteTransfer', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.quoteTransfer({}))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
-
-  describe('getBalance', () => {
-    test('should return the correct balance of the account', async () => {
-      sparkWallet.getBalance = jest.fn(() => ({
-        balance: 12_345n
-      }))
-
-      const balance = await account.getBalance()
-
-      expect(balance).toBe(12_345)
-    })
-  })
-
-  describe('getTokenBalance', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.getTokenBalance('token-address'))
         .rejects.toThrow('Method not supported on the spark blockchain.')
     })
   })
@@ -345,72 +306,6 @@ describe('WalletAccountSpark', () => {
       })
 
       expect(feeEstimate).toBe(DUMMY_FEE_ESTIMATE)
-    })
-  })
-
-  describe('getTransfers', () => {
-    const DUMMY_TRANSFERS = [
-      { id: 'dummy-transfer-1', transferDirection: 'INCOMING', totalValue: 1_000 },
-      { id: 'dummy-transfer-2', transferDirection: 'OUTGOING', totalValue: 2_000 },
-      { id: 'dummy-transfer-3', transferDirection: 'INCOMING', totalValue: 3_000 },
-      { id: 'dummy-transfer-4', transferDirection: 'OUTGOING', totalValue: 4_000 },
-      { id: 'dummy-transfer-5', transferDirection: 'INCOMING', totalValue: 5_000 }
-    ]
-
-    test('should return an empty transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: [] })
-
-      const transfers = await account.getTransfers()
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
-      expect(transfers).toEqual([])
-    })
-
-    test('should return the full transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS })
-        .mockResolvedValue({ transfers: [] })
-
-      const transfers = await account.getTransfers()
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
-      expect(transfers).toEqual(DUMMY_TRANSFERS)
-    })
-
-    test('should return the incoming transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS })
-        .mockResolvedValue({ transfers: [] })
-
-      const transfers = await account.getTransfers({ direction: 'incoming' })
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
-      expect(transfers).toEqual([DUMMY_TRANSFERS[0], DUMMY_TRANSFERS[2], DUMMY_TRANSFERS[4]])
-    })
-
-    test('should return the outgoing transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS })
-        .mockResolvedValue({ transfers: [] })
-
-      const transfers = await account.getTransfers({ direction: 'outgoing' })
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
-      expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[3]])
-    })
-
-    test('should correctly paginate the transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS })
-        .mockResolvedValue({ transfers: [] })
-
-      const transfers = await account.getTransfers({ limit: 2, skip: 1 })
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(3, 0)
-      expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[2]])
-    })
-
-    test('should correctly filter and paginate the transfer history', async () => {
-      sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS.slice(0, 3) })
-        .mockResolvedValueOnce({ transfers: DUMMY_TRANSFERS.slice(3) })
-        .mockResolvedValue({ transfers: [] })
-
-      const transfers = await account.getTransfers({ limit: 2, skip: 1, direction: 'incoming' })
-
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(3, 0)
-      expect(sparkWallet.getTransfers).toHaveBeenCalledWith(3, 3)
-      expect(transfers).toEqual([DUMMY_TRANSFERS[2], DUMMY_TRANSFERS[4]])
     })
   })
 

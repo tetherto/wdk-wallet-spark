@@ -1,4 +1,4 @@
-export default class WalletManagerSpark {
+export default class WalletManagerSpark extends WalletManager {
     /**
      * Creates a new wallet manager for the Spark blockchain.
      *
@@ -12,7 +12,9 @@ export default class WalletManagerSpark {
      * @protected
      * @type {{ [path: string]: WalletAccountSpark }}
      */
-    protected _accounts;
+    protected _accounts: {
+        [path: string]: WalletAccountSpark;
+    };
     /**
      * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
@@ -30,22 +32,8 @@ export default class WalletManagerSpark {
      * @returns {Promise<WalletAccountSpark>} The account.
      */
     getAccountByPath(path: string): Promise<WalletAccountSpark>;
-    /**
-     * Returns the current fee rates.
-     *
-     * @returns {Promise<FeeRates>} The fee rates.
-     */
-    getFeeRates(): Promise<FeeRates>;
-    /**
-     * Disposes all the wallet accounts, erasing their private keys from the memory.
-     */
-    dispose(): void;
 }
 export type FeeRates = import("@wdk/wallet").FeeRates;
-export type SparkWalletConfig = {
-    /**
-     * - The network (default: "MAINNET").
-     */
-    network?: "MAINNET" | "REGTEST" | "TESTNET";
-};
+export type SparkWalletConfig = import("./wallet-account-readonly-spark.js").SparkWalletConfig;
+import WalletManager from '@wdk/wallet';
 import WalletAccountSpark from './wallet-account-spark.js';

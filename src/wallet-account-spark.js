@@ -11,9 +11,12 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 'use strict'
 
 import { getNetwork } from './utils.js'
+
+import WalletAccountReadOnlySpark from './wallet-account-readonly-spark.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
@@ -27,32 +30,39 @@ const Network = await getNetwork()
 /** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
 
+/** @typedef {import('./wallet-account-readonly-spark.js').SparkWalletConfig} SparkWalletConfig */
+/** @typedef {import('./wallet-account-readonly-spark.js').SparkTransaction} SparkTransaction */
+
+/** @typedef {import('@buildonspark/spark-sdk').SparkWallet} SparkWallet */
+/** @typedef {import('@buildonspark/spark-sdk/signer').SparkSigner} SparkSigner */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransactionReceipt */
-
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
 
 /** @implements {IWalletAccount} */
-export default class WalletAccountSpark {
+export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * @package
    * @param {SparkWallet} wallet
+   * @param {SparkWalletConfig} [config]
    * */
-  constructor (wallet) {
+  constructor (wallet, config) {
+    super(wallet, config)
     /**
      * @private
      * @type {SparkWallet}
      * */
     this._wallet = wallet
 
-    /** @private */
+    /** @private
+     * @type {SparkWalletConfig}
+     */
+    this._config = config
+
+    /** @private
+     * @type {SparkSigner}
+     */
     this._signer = wallet.config.signer
 
     /** @private */
@@ -137,17 +147,6 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Quotes the costs of a send transaction operation.
-   *
-   * @see {sendTransaction}
-   * @param {SparkTransaction} tx - The transaction.
-   * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
-   */
-  async quoteSendTransaction ({ to, value }) {
-    return { fee: 0 }
-  }
-
-  /**
    * Transfers a token to another address.
    *
    * @param {TransferOptions} options - The transfer's options.
@@ -155,50 +154,6 @@ export default class WalletAccountSpark {
    */
   async transfer (options) {
     throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Quotes the costs of a transfer operation.
-   *
-   * @see {transfer}
-   * @param {TransferOptions} options - The transfer's options.
-   * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
-   */
-  async quoteTransfer (options) {
-    throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Returns the account's bitcoin balance.
-   *
-   * @returns {Promise<number>} The bitcoin balance (in satoshis).
-   */
-  async getBalance () {
-    const { balance } = await this._wallet.getBalance()
-
-    return Number(balance)
-  }
-
-  /**
-   * Returns the account balance for a specific token.
-   *
-   * @param {string} tokenAddress - The smart contract address of the token.
-   * @returns {Promise<number>} The token balance.
-   */
-  async getTokenBalance (tokenAddress) {
-    throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Returns a transaction's receipt.
-   *
-   * @param {string} hash - The transaction's hash.
-   * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
-   */
-  async getTransactionReceipt (hash) {
-    const transfer = await this._wallet.getTransfer(hash)
-
-    return transfer ?? null
   }
 
   /**
@@ -312,55 +267,12 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Returns the bitcoin transfer history of the account.
-   *
-   * @param {Object} [options] - The options.
-   * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
-   * @param {number} [options.limit] - The number of transfers to return (default: 10).
-   * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
-   */
-  async getTransfers (options = {}) {
-    const { direction = 'all', limit = 10, skip = 0 } = options
-
-    const transfers = []
-
-    let i = 0
-
-    while (true) {
-      const offset = i * (limit + skip)
-
-      let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
-
-      if (batch.length === 0) {
-        break
-      }
-
-      if (direction !== 'all') {
-        batch = batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
-      }
-
-      transfers.push(...batch)
-
-      if (transfers.length >= limit + skip) {
-        break
-      }
-
-      i++
-    }
-
-    const result = transfers.slice(skip, limit + skip)
-
-    return result
-  }
-
-  /**
    * Returns a read-only copy of the account.
    *
    * @returns {Promise<never>} The read-only account.
    */
   async toReadOnlyAccount () {
-    throw new Error('Read-only accounts not supported for the spark blockchain.')
+    return new WalletAccountReadOnlySpark(await this.getAddress(), this._wallet.config)
   }
 
   /**

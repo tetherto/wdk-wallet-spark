@@ -24,10 +24,12 @@
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 
-/** @typedef {import('./src/wallet-account-spark.js').SparkWalletConfig} SparkWalletConfig */
-/** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */
-/** @typedef {import('./src/wallet-account-spark.js').SparkTransactionReceipt} SparkTransactionReceipt */
+/** @typedef {import('./src/wallet-account-readonly-spark.js').SparkWalletConfig} SparkWalletConfig */
+/** @typedef {import('./src/wallet-account-readonly-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./src/wallet-account-readonly-spark.js').SparkTransactionReceipt} SparkTransactionReceipt */
 
 export { default } from './src/wallet-manager-spark.js'
+
+export { default as WalletAccountReadOnlySpark } from './src/wallet-account-readonly-spark.js'
 
 export { default as WalletAccountSpark } from './src/wallet-account-spark.js'

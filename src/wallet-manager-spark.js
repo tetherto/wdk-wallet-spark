@@ -22,10 +22,7 @@ const SparkWallet = await getSparkWallet()
 
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {'MAINNET' | 'REGTEST' | 'TESTNET'} [network] - The network (default: "MAINNET").
- */
+/** @typedef {import('./wallet-account-readonly-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 const DEFAULT_NETWORK = 'MAINNET'
 
