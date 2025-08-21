@@ -43,6 +43,6 @@ export default class Bip44SparkSigner extends DefaultSparkSigner {
     this.depositKey = undefined
     this.staticDepositKey = undefined
 
-    this.publicKeyToPrivateKeyMap.clear()
+    // this.publicKeyToPrivateKeyMap.clear()
   }
 }
