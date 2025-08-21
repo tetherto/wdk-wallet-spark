@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk'
+import { Network, SparkWallet } from '@buildonspark/spark-sdk'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
@@ -38,9 +38,15 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark {
-  /** @package */
+  /**
+   * @package
+   * @param {SparkWallet} wallet
+   * */
   constructor (wallet) {
-    /** @private */
+    /** 
+     * @private
+     * @type {SparkWallet}
+     * */
     this._wallet = wallet
 
     /** @private */
@@ -216,7 +222,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
   async getLatestDepositTxId (depositAddress) {
-    return await getLatestDepositTxId(depositAddress)
+    return await this._wallet.getUtxosForDepositAddress(depositAddress)
   }
 
   /**
