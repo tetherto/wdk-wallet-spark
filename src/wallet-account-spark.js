@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { Network, SparkWallet } from '@buildonspark/spark-sdk'
+import { Network, SparkWallet } from '@buildonspark/bare' with { imports: '../imports.json'}
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 

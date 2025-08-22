@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { DefaultSparkSigner } from '@buildonspark/spark-sdk'
+import { DefaultSparkSigner } from '@buildonspark/bare' with { imports: '../imports.json'}
 
 // eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
