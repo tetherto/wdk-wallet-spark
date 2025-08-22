@@ -15,7 +15,7 @@
 
 import WalletManager from '@wdk/wallet'
 
-import { SparkWallet } from '@buildonspark/bare' with { imports: '../imports.json'}
+import { SparkWallet } from '@buildonspark/spark-sdk'
 
 import WalletAccountSpark from './wallet-account-spark.js'
 

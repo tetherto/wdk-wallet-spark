@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { ValidationError } from '@buildonspark/bare' with { imports: '../imports.json'}
+import { ValidationError } from '@buildonspark/spark-sdk'
 
 import { HDKey } from '@scure/bip32'
 

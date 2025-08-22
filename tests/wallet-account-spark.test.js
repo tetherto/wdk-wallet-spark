@@ -1,12 +1,11 @@
 import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import * as sparkSdk from '@buildonspark/spark-sdk'
+import { WalletAccountSpark } from '../index.js'
+import { SparkWallet } from '@buildonspark/spark-sdk'
 
 import * as bip39 from 'bip39'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
-
-const { SparkWallet } = sparkSdk
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
@@ -22,14 +21,6 @@ const ACCOUNT = {
   }
 }
 
-const getLatestDepositTxIdMock = jest.fn()
-
-jest.unstable_mockModule('@buildonspark/spark-sdk', () => ({
-  ...sparkSdk,
-  getLatestDepositTxId: getLatestDepositTxIdMock
-}))
-
-const { WalletAccountSpark } = await import('../index.js')
 
 describe('WalletAccountSpark', () => {
   let sparkWallet,
@@ -239,10 +230,10 @@ describe('WalletAccountSpark', () => {
   describe('getLatestDepositTxId', () => {
     test('should return the latest deposit transaction id', async () => {
       const DUMMY_LATEST_DEPOSIT_TX_ID = 'dummy-latest-tx-id'
-      getLatestDepositTxIdMock.mockResolvedValue(DUMMY_LATEST_DEPOSIT_TX_ID)
-
+      sparkWallet.getUtxosForDepositAddress = jest.fn().mockResolvedValue([{ txid: DUMMY_LATEST_DEPOSIT_TX_ID }])
+    
       const txId = await account.getLatestDepositTxId()
-      expect(getLatestDepositTxIdMock).toHaveBeenCalled()
+      expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalled()
       expect(txId).toBe(DUMMY_LATEST_DEPOSIT_TX_ID)
     })
   })

@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { Network, SparkWallet } from '@buildonspark/bare' with { imports: '../imports.json'}
+import { Network, SparkWallet } from '@buildonspark/spark-sdk'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
@@ -222,7 +222,13 @@ export default class WalletAccountSpark {
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
   async getLatestDepositTxId (depositAddress) {
-    return await this._wallet.getUtxosForDepositAddress(depositAddress)
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress)
+
+    if (utxos.length === 0) {
+      return null
+    }
+
+    return utxos[0].txid
   }
 
   /**
