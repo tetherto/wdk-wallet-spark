@@ -71,7 +71,7 @@ export default class WalletAccountSpark {
   /**
    * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
-   * @returns {string} The derivation path.
+   * @type {string}
    */
   get path () {
     const accountNumber = Network[this._wallet.config.config.network]
