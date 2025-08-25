@@ -51,6 +51,9 @@ export default class WalletAccountSpark {
 
     /** @private */
     this._signer = wallet.config.signer
+
+    /** @private */
+    this._disposed = false;
   }
 
   /**
@@ -240,9 +243,13 @@ export default class WalletAccountSpark {
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
+    const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
+      amountSats: value,
+      withdrawalAddress: to
+    });
     return await this._wallet.withdraw({
       onchainAddress: to,
-      amountSats: value,
+      feeQuote: exitFeeQuote,
       exitSpeed: 'MEDIUM'
     })
   }
@@ -364,7 +371,24 @@ export default class WalletAccountSpark {
   /**
    * Disposes the wallet account, erasing its private keys from the memory.
    */
-  dispose () {
-    this._signer.dispose()
+  async dispose () {
+    if (this._disposed) return;     // idempotent
+    this._disposed = true;
+
+    // close network resources
+    try { await this.cleanupConnections(); } catch {}
+
+    // zeroize key material if possible
+    try {
+      const id = this._signer?.identityKey;
+      if (id?.privateKey instanceof Uint8Array) id.privateKey.fill(0);
+      else if (typeof id?.privateKey === 'string') id.privateKey = '';
+      if (id?.publicKey instanceof Uint8Array) id.publicKey.fill(0);
+      else if (typeof id?.publicKey === 'string') id.publicKey = '';
+    } catch {}
+
+    // drop references
+    this._wallet = undefined;
+    this._signer = undefined;
   }
 }
