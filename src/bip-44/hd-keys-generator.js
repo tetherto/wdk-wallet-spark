@@ -13,9 +13,10 @@
 // limitations under the License.
 'use strict'
 
-import { ValidationError } from '@buildonspark/spark-sdk'
-
+import { getValidationError } from '../utils.js'
 import { HDKey } from '@scure/bip32'
+
+const ValidationError = await getValidationError()
 
 export const BIP_44_LBTC_DERIVATION_PATH_PREFIX = "m/44'/998'"
 

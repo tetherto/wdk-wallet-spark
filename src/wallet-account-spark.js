@@ -13,10 +13,13 @@
 // limitations under the License.
 'use strict'
 
-import { Network, SparkWallet } from '@buildonspark/spark-sdk'
+import { getNetwork } from './utils.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
+const Network = await getNetwork()
+
+/** @typedef {import('./utils.js').SparkWallet} SparkWallet */
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
 /** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
@@ -43,7 +46,7 @@ export default class WalletAccountSpark {
    * @param {SparkWallet} wallet
    * */
   constructor (wallet) {
-    /** 
+    /**
      * @private
      * @type {SparkWallet}
      * */
@@ -53,7 +56,7 @@ export default class WalletAccountSpark {
     this._signer = wallet.config.signer
 
     /** @private */
-    this._disposed = false;
+    this._disposed = false
   }
 
   /**
@@ -68,7 +71,7 @@ export default class WalletAccountSpark {
   /**
    * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
-   * @type {string}
+   * @returns {string} The derivation path.
    */
   get path () {
     const accountNumber = Network[this._wallet.config.config.network]
@@ -246,7 +249,7 @@ export default class WalletAccountSpark {
     const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
       amountSats: value,
       withdrawalAddress: to
-    });
+    })
     return await this._wallet.withdraw({
       onchainAddress: to,
       feeQuote: exitFeeQuote,
@@ -373,23 +376,17 @@ export default class WalletAccountSpark {
    * Disposes the wallet account, erasing its private keys from the memory.
    */
   async dispose () {
-    if (this._disposed) return;     // idempotent
-    this._disposed = true;
+    if (this._disposed) return // idempotent
+    this._disposed = true
 
     // close network resources
-    try { await this.cleanupConnections(); } catch {}
+    try { await this.cleanupConnections() } catch {}
 
     // zeroize key material if possible
-    try {
-      const id = this._signer?.identityKey;
-      if (id?.privateKey instanceof Uint8Array) id.privateKey.fill(0);
-      else if (typeof id?.privateKey === 'string') id.privateKey = '';
-      if (id?.publicKey instanceof Uint8Array) id.publicKey.fill(0);
-      else if (typeof id?.publicKey === 'string') id.publicKey = '';
-    } catch {}
+    this._signer.dispose()
 
     // drop references
-    this._wallet = undefined;
-    this._signer = undefined;
+    this._wallet = undefined
+    this._signer = undefined
   }
 }
