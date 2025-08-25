@@ -250,6 +250,7 @@ export default class WalletAccountSpark {
     return await this._wallet.withdraw({
       onchainAddress: to,
       feeQuote: exitFeeQuote,
+      amountSats: value,
       exitSpeed: 'MEDIUM'
     })
   }
