@@ -14,12 +14,11 @@
 'use strict'
 
 import WalletManager from '@wdk/wallet'
-
-import { SparkWallet } from '@buildonspark/bare' with { imports: '../imports.json'}
-
+import { getSparkWallet } from './utils.js'
 import WalletAccountSpark from './wallet-account-spark.js'
-
 import Bip44SparkSigner from './bip-44/spark-signer.js'
+
+const SparkWallet = await getSparkWallet()
 
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
@@ -98,11 +97,13 @@ export default class WalletManagerSpark extends WalletManager {
   /**
    * Disposes all the wallet accounts, erasing their private keys from the memory.
    */
-  dispose () {
-    for (const account of Object.values(this._accounts)) {
-      account.dispose()
-    }
+  async dispose () {
+    const accounts = Object.values(this._accounts)
+    // break references early so GC can collect even if a dispose throws
+    this._accounts = {}
 
-    this._accounts = { }
+    await Promise.all(
+      accounts.map(acc => acc?.dispose?.().catch(() => {})) // safe if some already disposed
+    )
   }
 }

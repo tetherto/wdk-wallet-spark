@@ -13,18 +13,20 @@
 // limitations under the License.
 'use strict'
 
-import { DefaultSparkSigner } from '@buildonspark/bare' with { imports: '../imports.json'}
+import { getDefaultSparkSigner } from '../utils.js'
 
 // eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
 
 import Bip44HDKeysGenerator from './hd-keys-generator.js'
 
+// Wait for DefaultSparkSigner to be available
+const DefaultSparkSigner = await getDefaultSparkSigner()
+
 /** @internal */
 export default class Bip44SparkSigner extends DefaultSparkSigner {
   constructor (index) {
     const sparkKeysGenerator = new Bip44HDKeysGenerator(index)
-
     super({ sparkKeysGenerator })
   }
 

@@ -13,10 +13,13 @@
 // limitations under the License.
 'use strict'
 
-import { Network, SparkWallet } from '@buildonspark/bare' with { imports: '../imports.json'}
+import { getNetwork } from './utils.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
+const Network = await getNetwork()
+
+/** @typedef {import('./utils.js').SparkWallet} SparkWallet */
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
 /** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
@@ -43,7 +46,7 @@ export default class WalletAccountSpark {
    * @param {SparkWallet} wallet
    * */
   constructor (wallet) {
-    /** 
+    /**
      * @private
      * @type {SparkWallet}
      * */
@@ -51,6 +54,9 @@ export default class WalletAccountSpark {
 
     /** @private */
     this._signer = wallet.config.signer
+
+    /** @private */
+    this._disposed = false
   }
 
   /**
@@ -222,7 +228,13 @@ export default class WalletAccountSpark {
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
   async getLatestDepositTxId (depositAddress) {
-    return await this._wallet.getUtxosForDepositAddress(depositAddress)
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress)
+
+    if (utxos.length === 0) {
+      return null
+    }
+
+    return utxos[0].txid
   }
 
   /**
@@ -234,8 +246,13 @@ export default class WalletAccountSpark {
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
+    const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
+      amountSats: value,
+      withdrawalAddress: to
+    })
     return await this._wallet.withdraw({
       onchainAddress: to,
+      feeQuote: exitFeeQuote,
       amountSats: value,
       exitSpeed: 'MEDIUM'
     })
@@ -358,7 +375,18 @@ export default class WalletAccountSpark {
   /**
    * Disposes the wallet account, erasing its private keys from the memory.
    */
-  dispose () {
+  async dispose () {
+    if (this._disposed) return // idempotent
+    this._disposed = true
+
+    // close network resources
+    try { await this.cleanupConnections() } catch {}
+
+    // zeroize key material if possible
     this._signer.dispose()
+
+    // drop references
+    this._wallet = undefined
+    this._signer = undefined
   }
 }
