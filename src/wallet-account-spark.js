@@ -234,7 +234,7 @@ export default class WalletAccountSpark {
       return null
     }
 
-    return utxos[0].txid
+    return utxos[0].txid // Deposit address can only be used once
   }
 
   /**
