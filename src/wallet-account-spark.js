@@ -380,7 +380,11 @@ export default class WalletAccountSpark {
     this._disposed = true
 
     // close network resources
-    try { await this.cleanupConnections() } catch {}
+    try {
+      await this.cleanupConnections()
+    } catch (e) {
+      console.warn('Failed to cleanup connections during dispose: ', e)
+    }
 
     // zeroize key material if possible
     this._signer.dispose()
