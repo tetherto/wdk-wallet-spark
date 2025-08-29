@@ -103,7 +103,7 @@ export default class WalletManagerSpark extends WalletManager {
     this._accounts = {}
 
     await Promise.all(
-      accounts.map(acc => acc?.dispose?.().catch((e) => {console.warn('Failed to dispose account: ', e)})) // safe if some already disposed
+      accounts.map(acc => acc?.dispose?.()) // safe if some already disposed
     )
   }
 }
