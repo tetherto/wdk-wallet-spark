@@ -22,9 +22,7 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 
 const Network = await getNetwork()
 
-/** @typedef {import('./utils.js').SparkWallet} SparkWallet */
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
-
 /** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
 /** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
@@ -34,7 +32,7 @@ const Network = await getNetwork()
 /** @typedef {import('./wallet-account-readonly-spark.js').SparkTransaction} SparkTransaction */
 
 /** @typedef {import('@buildonspark/spark-sdk').SparkWallet} SparkWallet */
-/** @typedef {import('@buildonspark/spark-sdk/signer').SparkSigner} SparkSigner */
+/** @typedef {import('@buildonspark/spark-sdk').SparkSigner} SparkSigner */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
@@ -43,16 +41,19 @@ const Network = await getNetwork()
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
+   * @private
+   * @type {SparkWallet}
+   * */
+  _wallet
+
+  /**
    * @package
    * @param {SparkWallet} wallet
    * @param {SparkWalletConfig} [config]
    * */
   constructor (wallet, config) {
     super(wallet, config)
-    /**
-     * @private
-     * @type {SparkWallet}
-     * */
+
     this._wallet = wallet
 
     /** @private
@@ -177,19 +178,17 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Checks for a confirmed deposit to the specified deposit address.
+   * Returns confirmed UTXOs for a given Spark deposit address.
    *
-   * @param {string} depositAddress - The deposit address to check.
-   * @returns {Promise<string | null>} The transaction id if found, null otherwise.
+   * @param {string} depositAddress - The deposit address to query.
+   * @param {number} limit - Maximum number of UTXOs to return (default 100).
+   * @param {number} offset - Pagination offset (default 0).
+   * @returns {Promise<string[]>} List of confirmed UTXOs.
    */
-  async getLatestDepositTxId (depositAddress) {
-    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress)
+  async getUtxosForDepositAddress (depositAddress, limit, offset) {
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, limit, offset)
 
-    if (utxos.length === 0) {
-      return null
-    }
-
-    return utxos[0].txid // Deposit address can only be used once
+    return utxos.map(({ txid }) => txid)
   }
 
   /**

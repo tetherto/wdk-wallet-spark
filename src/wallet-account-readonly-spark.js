@@ -171,13 +171,15 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Checks for a confirmed deposit to the specified deposit address.
+   * Returns confirmed UTXOs for a given Spark deposit address.
    *
-   * @param {string} depositAddress - The deposit address to check.
-   * @returns {Promise<string | null>} The transaction id if found, null otherwise.
+   * @param {string} depositAddress - The deposit address to query.
+   * @param {number} limit - Maximum number of UTXOs to return (default 100).
+   * @param {number} offset - Pagination offset (default 0).
+   * @returns {Promise<string[]>} List of confirmed UTXOs.
    */
-  async getLatestDepositTxId (depositAddress) {
-    throw new Error('Get latest deposit tx id is not supported in read-only account')
+  async getUtxosForDepositAddress (depositAddress, limit, offset) {
+    throw new Error('Get utxos for deposit address is not supported in read-only account')
   }
 
   /**
@@ -235,10 +237,6 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
       }
 
       transfers.push(...batch)
-
-      if (batch.length < limit + skip) {
-        break
-      }
     }
 
     return transfers.slice(skip, limit + skip)
