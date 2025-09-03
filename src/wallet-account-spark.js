@@ -52,7 +52,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {SparkWalletConfig} [config]
    * */
   constructor (wallet, config) {
-    super(wallet, config)
+    super(wallet.sparkAddress, config)
 
     this._wallet = wallet
 

@@ -94,16 +94,12 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<number>} The bitcoin balance (in satoshis).
    */
   async getBalance () {
-    if (!this._config?.sparkScanApiKey) {
-      throw new Error('Please provide a SparkScan API key in the config to retrieve the balance.')
-    }
-
     try {
       const { balance } = await addressSummaryV1AddressAddressGet(this._address, {
         network: this._config.network
       }, {
         headers: {
-          Authorization: `Bearer ${this._config.sparkScanApiKey}`
+          Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
         }
       })
 
@@ -153,16 +149,12 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
    */
   async getTransactionReceipt (hash) {
-    if (!this._config.sparkScanApiKey) {
-      throw new Error('Please provide a SparkScan API key in the config to retrieve the transaction receipt.')
-    }
-
     try {
       return await getTransactionDetailsByIdV1TxTxidGet(hash, {
         network: this._config.network
       }, {
         headers: {
-          Authorization: `Bearer ${this._config.sparkScanApiKey}`
+          Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
         }
       })
     } catch (error) {
@@ -202,10 +194,6 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
    */
   async getTransfers (options = {}) {
-    if (!this._config?.sparkScanApiKey) {
-      throw new Error('Please provide a SparkScan API key in the config to retrieve the transfers.')
-    }
-
     const { direction = 'all', limit = 10, skip = 0 } = options
 
     const transfers = []
@@ -219,7 +207,7 @@ class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
         network: this._config.network
       }, {
         headers: {
-          Authorization: `Bearer ${this._config.sparkScanApiKey}`
+          Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
         }
       })
 

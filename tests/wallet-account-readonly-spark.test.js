@@ -124,14 +124,6 @@ describe('WalletAccountReadOnlySpark', () => {
 
       expect(balance).toBe(ACCOUNT.balance)
     })
-
-    test('should throw an error when getting balance without API key', async () => {
-      const { WalletAccountReadOnlySpark } = await import('../index.js')
-
-      const accountWithoutKey = new WalletAccountReadOnlySpark(ACCOUNT.address, { network: 'REGTEST' })
-
-      await expect(accountWithoutKey.getBalance()).rejects.toThrow('Please provide a SparkScan API key in the config to retrieve the balance.')
-    })
   })
 
   describe('getTokenBalance', () => {
@@ -163,14 +155,6 @@ describe('WalletAccountReadOnlySpark', () => {
       expect(receipt.status).toEqual(TRANSACTION_RECEIPT.status)
       expect(receipt.amountSats).toEqual(TRANSACTION_RECEIPT.amountSats)
     })
-
-    test('should throw an error when getting transaction receipt without API key', async () => {
-      const { WalletAccountReadOnlySpark } = await import('../index.js')
-
-      const accountWithoutKey = new WalletAccountReadOnlySpark(ACCOUNT.address, { network: 'REGTEST' })
-
-      await expect(accountWithoutKey.getTransactionReceipt('test-tx-id')).rejects.toThrow('Please provide a SparkScan API key in the config to retrieve the transaction receipt.')
-    })
   })
 
   describe('utxosForDepositAddress', () => {
@@ -186,14 +170,6 @@ describe('WalletAccountReadOnlySpark', () => {
   })
 
   describe('getTransfers', () => {
-    test('should throw an error when getting transfers without API key', async () => {
-      const { WalletAccountReadOnlySpark } = await import('../index.js')
-
-      const accountWithoutKey = new WalletAccountReadOnlySpark(ACCOUNT.address, { network: 'REGTEST' })
-
-      await expect(accountWithoutKey.getTransfers()).rejects.toThrow('Please provide a SparkScan API key in the config to retrieve the transfers.')
-    })
-
     test('should return an empty transfer history', async () => {
       getLatestTransactionsMock.mockResolvedValueOnce([])
 
