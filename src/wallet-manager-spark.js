@@ -15,9 +15,9 @@
 
 import WalletManager from '@wdk/wallet'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
-
 import WalletAccountSpark from './wallet-account-spark.js'
+
+import { SparkWallet } from './libs/spark-sdk.js'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 

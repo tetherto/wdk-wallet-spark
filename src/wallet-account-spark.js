@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { getLatestDepositTxId, Network } from '@buildonspark/spark-sdk'
+import { Network } from './libs/spark-sdk.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
@@ -216,7 +216,9 @@ export default class WalletAccountSpark {
    * @returns {Promise<string | null>} The transaction id if found, null otherwise.
    */
   async getLatestDepositTxId (depositAddress) {
-    return await getLatestDepositTxId(depositAddress)
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, 1)
+
+    return utxos.length >= 0 ? utxos[0].txid : null
   }
 
   /**
@@ -228,9 +230,15 @@ export default class WalletAccountSpark {
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
+    const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
+      withdrawalAddress: to,
+      amountSats: value
+    })
+    
     return await this._wallet.withdraw({
       onchainAddress: to,
       amountSats: value,
+      feeQuote: exitFeeQuote,
       exitSpeed: 'MEDIUM'
     })
   }

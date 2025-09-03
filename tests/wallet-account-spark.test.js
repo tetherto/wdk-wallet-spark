@@ -1,12 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import * as sparkSdk from '@buildonspark/spark-sdk'
+import { SparkWallet } from '@buildonspark/spark-sdk'
 
 import * as bip39 from 'bip39'
 
-import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
+import { WalletAccountSpark } from '../index.js'
 
-const { SparkWallet } = sparkSdk
+import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
@@ -21,15 +21,6 @@ const ACCOUNT = {
     publicKey: '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
   }
 }
-
-const getLatestDepositTxIdMock = jest.fn()
-
-jest.unstable_mockModule('@buildonspark/spark-sdk', () => ({
-  ...sparkSdk,
-  getLatestDepositTxId: getLatestDepositTxIdMock
-}))
-
-const { WalletAccountSpark } = await import('../index.js')
 
 describe('WalletAccountSpark', () => {
   let sparkWallet,
@@ -239,10 +230,11 @@ describe('WalletAccountSpark', () => {
   describe('getLatestDepositTxId', () => {
     test('should return the latest deposit transaction id', async () => {
       const DUMMY_LATEST_DEPOSIT_TX_ID = 'dummy-latest-tx-id'
-      getLatestDepositTxIdMock.mockResolvedValue(DUMMY_LATEST_DEPOSIT_TX_ID)
+
+      sparkWallet.getUtxosForDepositAddress = jest.fn().mockResolvedValue([{ txid: DUMMY_LATEST_DEPOSIT_TX_ID, vout: 0 }])
 
       const txId = await account.getLatestDepositTxId()
-      expect(getLatestDepositTxIdMock).toHaveBeenCalled()
+      expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalled()
       expect(txId).toBe(DUMMY_LATEST_DEPOSIT_TX_ID)
     })
   })
@@ -250,21 +242,33 @@ describe('WalletAccountSpark', () => {
   describe('withdraw', () => {
     test('should successfully initialize a withdrawal', async () => {
       const DUMMY_OPTIONS = {
-        to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
+        to: 'tb1qx3fju0uclmp0xmqzhxjcydeal6eky95srd2laj',
         value: 100
+      }
+
+      const DUMMY_COOP_EXIT_FEE_QUOTE = {
+        id: 'coop-exit-fee-quote-1'
       }
 
       const DUMMY_COOP_EXIT_REQUEST = {
         id: 'coop-exit-request-1'
       }
 
+      sparkWallet.getWithdrawalFeeQuote = jest.fn().mockResolvedValue(DUMMY_COOP_EXIT_FEE_QUOTE)
+
       sparkWallet.withdraw = jest.fn().mockResolvedValue(DUMMY_COOP_EXIT_REQUEST)
 
       const coopExitRequest = await account.withdraw(DUMMY_OPTIONS)
 
+      expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+        withdrawalAddress: DUMMY_OPTIONS.to,
+        amountSats: DUMMY_OPTIONS.value
+      })
+
       expect(sparkWallet.withdraw).toHaveBeenCalledWith({
         onchainAddress: DUMMY_OPTIONS.to,
         amountSats: DUMMY_OPTIONS.value,
+        feeQuote: DUMMY_COOP_EXIT_FEE_QUOTE,
         exitSpeed: 'MEDIUM'
       })
 

@@ -13,12 +13,12 @@
 // limitations under the License.
 'use strict'
 
-import { DefaultSparkSigner } from '@buildonspark/spark-sdk/signer'
-
 // eslint-disable-next-line camelcase
 import { sodium_memzero } from 'sodium-universal'
 
 import Bip44HDKeysGenerator from './hd-keys-generator.js'
+
+import { DefaultSparkSigner } from '../libs/spark-sdk.js'
 
 /** @internal */
 export default class Bip44SparkSigner extends DefaultSparkSigner {
@@ -42,7 +42,5 @@ export default class Bip44SparkSigner extends DefaultSparkSigner {
     this.signingKey = undefined
     this.depositKey = undefined
     this.staticDepositKey = undefined
-
-    this.publicKeyToPrivateKeyMap.clear()
   }
 }
