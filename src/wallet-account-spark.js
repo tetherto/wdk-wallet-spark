@@ -13,9 +13,19 @@
 // limitations under the License.
 'use strict'
 
-import { Network } from './libs/spark-sdk.js'
+import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js'
+
+import { SparkWallet, Network } from './libs/spark-sdk.js'
+
+import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
+
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
+/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
 /** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
@@ -24,27 +34,44 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
 
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
-/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransactionReceipt */
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
+const DEFAULT_NETWORK = 'MAINNET'
 
 /** @implements {IWalletAccount} */
-export default class WalletAccountSpark {
+export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /** @package */
-  constructor (wallet) {
+  constructor (wallet, config = {}) {
+    super(undefined, config)
+
     /** @private */
     this._wallet = wallet
 
     /** @private */
     this._signer = wallet.config.signer
+  }
+
+  /**
+   * Creates a new spark wallet account.
+   *
+   * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {number} index - The index of the account.
+   * @param {SparkWalletConfig} [config] - The configuration object.
+   * @returns {Promise<WalletAccountSpark>} The wallet account.
+   */
+  static async at (seed, index, config = {}) {
+    const { wallet } = await SparkWallet.initialize({
+      signer: new Bip44SparkSigner(index),
+      mnemonicOrSeed: seed,
+      options: {
+        network: config.network || DEFAULT_NETWORK
+      }
+    })
+
+    const account = new WalletAccountSpark(wallet, config)
+
+    return account
   }
 
   /**
@@ -79,11 +106,6 @@ export default class WalletAccountSpark {
     }
   }
 
-  /**
-   * Returns the account's address.
-   *
-   * @returns {Promise<string>} The account's address.
-   */
   async getAddress () {
     return await this._wallet.getSparkAddress()
   }
@@ -125,17 +147,6 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Quotes the costs of a send transaction operation.
-   *
-   * @see {sendTransaction}
-   * @param {SparkTransaction} tx - The transaction.
-   * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
-   */
-  async quoteSendTransaction ({ to, value }) {
-    return { fee: 0 }
-  }
-
-  /**
    * Transfers a token to another address.
    *
    * @param {TransferOptions} options - The transfer's options.
@@ -143,50 +154,6 @@ export default class WalletAccountSpark {
    */
   async transfer (options) {
     throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Quotes the costs of a transfer operation.
-   *
-   * @see {transfer}
-   * @param {TransferOptions} options - The transfer's options.
-   * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
-   */
-  async quoteTransfer (options) {
-    throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Returns the account's bitcoin balance.
-   *
-   * @returns {Promise<number>} The bitcoin balance (in satoshis).
-   */
-  async getBalance () {
-    const { balance } = await this._wallet.getBalance()
-
-    return Number(balance)
-  }
-
-  /**
-   * Returns the account balance for a specific token.
-   *
-   * @param {string} tokenAddress - The smart contract address of the token.
-   * @returns {Promise<number>} The token balance.
-   */
-  async getTokenBalance (tokenAddress) {
-    throw new Error('Method not supported on the spark blockchain.')
-  }
-
-  /**
-   * Returns a transaction's receipt.
-   *
-   * @param {string} hash - The transaction's hash.
-   * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
-   */
-  async getTransactionReceipt (hash) {
-    const transfer = await this._wallet.getTransfer(hash)
-
-    return transfer ?? null
   }
 
   /**
@@ -210,15 +177,17 @@ export default class WalletAccountSpark {
   }
 
   /**
-   * Checks for a confirmed deposit to the specified deposit address.
+   * Returns confirmed utxos for a given spark deposit address.
    *
-   * @param {string} depositAddress - The deposit address to check.
-   * @returns {Promise<string | null>} The transaction id if found, null otherwise.
+   * @param {string} depositAddress - The deposit address to query.
+   * @param {number} [limit] - Maximum number of utxos to return (default 100).
+   * @param {number} [offset] - Pagination offset (default 0).
+   * @returns {Promise<string[]>} List of confirmed utxos.
    */
-  async getLatestDepositTxId (depositAddress) {
-    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, 1)
+  async getUtxosForDepositAddress (depositAddress, limit = 100, offset = 0) {
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, limit, offset)
 
-    return utxos.length >= 0 ? utxos[0].txid : null
+    return utxos.map(({ txid }) => txid)
   }
 
   /**
@@ -342,10 +311,14 @@ export default class WalletAccountSpark {
   /**
    * Returns a read-only copy of the account.
    *
-   * @returns {Promise<never>} The read-only account.
+   * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
    */
   async toReadOnlyAccount () {
-    throw new Error('Read-only accounts not supported for the spark blockchain.')
+    const address = await this.getAddress()
+
+    const sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
+
+    return sparkReadOnlyAccount
   }
 
   /**

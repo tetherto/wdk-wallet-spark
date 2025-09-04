@@ -1,7 +1,16 @@
 /** @implements {IWalletAccount} */
-export default class WalletAccountSpark implements IWalletAccount {
+export default class WalletAccountSpark extends WalletAccountReadOnlySpark implements IWalletAccount {
+    /**
+     * Creates a new spark wallet account.
+     *
+     * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+     * @param {number} index - The index of the account.
+     * @param {SparkWalletConfig} [config] - The configuration object.
+     * @returns {Promise<WalletAccountSpark>} The wallet account.
+     */
+    static at(seed: string | Uint8Array, index: number, config?: SparkWalletConfig): Promise<WalletAccountSpark>;
     /** @package */
-    constructor(wallet: any);
+    constructor(wallet, config);
     /** @private */
     private _wallet;
     /** @private */
@@ -25,12 +34,6 @@ export default class WalletAccountSpark implements IWalletAccount {
      */
     get keyPair(): KeyPair;
     /**
-     * Returns the account's address.
-     *
-     * @returns {Promise<string>} The account's address.
-     */
-    getAddress(): Promise<string>;
-    /**
      * Signs a message.
      *
      * @param {string} message - The message to sign.
@@ -51,15 +54,7 @@ export default class WalletAccountSpark implements IWalletAccount {
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
-    /**
-     * Quotes the costs of a send transaction operation.
-     *
-     * @see {sendTransaction}
-     * @param {SparkTransaction} tx - The transaction.
-     * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
-     */
-    quoteSendTransaction({ to, value }: SparkTransaction): Promise<Omit<TransactionResult, "hash">>;
+    sendTransaction(tx: SparkTransaction): Promise<TransactionResult>;
     /**
      * Transfers a token to another address.
      *
@@ -67,34 +62,6 @@ export default class WalletAccountSpark implements IWalletAccount {
      * @returns {Promise<TransferResult>} The transfer's result.
      */
     transfer(options: TransferOptions): Promise<TransferResult>;
-    /**
-     * Quotes the costs of a transfer operation.
-     *
-     * @see {transfer}
-     * @param {TransferOptions} options - The transfer's options.
-     * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
-     */
-    quoteTransfer(options: TransferOptions): Promise<Omit<TransferResult, "hash">>;
-    /**
-     * Returns the account's bitcoin balance.
-     *
-     * @returns {Promise<number>} The bitcoin balance (in satoshis).
-     */
-    getBalance(): Promise<number>;
-    /**
-     * Returns the account balance for a specific token.
-     *
-     * @param {string} tokenAddress - The smart contract address of the token.
-     * @returns {Promise<number>} The token balance.
-     */
-    getTokenBalance(tokenAddress: string): Promise<number>;
-    /**
-     * Returns a transaction's receipt.
-     *
-     * @param {string} hash - The transaction’s hash.
-     * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
-     */
-    getTransactionReceipt(hash: string): Promise<SparkTransactionReceipt | null>;
     /**
      * Generates a single-use deposit address for bitcoin deposits from layer 1.
      * Once you deposit funds to this address, it cannot be used again.
@@ -110,12 +77,14 @@ export default class WalletAccountSpark implements IWalletAccount {
      */
     claimDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
-     * Checks for a confirmed deposit to the specified deposit address.
+     * Returns confirmed utxos for a given spark deposit address.
      *
-     * @param {string} depositAddress - The deposit address to check.
-     * @returns {Promise<string | null>} The transaction id if found, null otherwise.
+     * @param {string} depositAddress - The deposit address to query.
+     * @param {number} [limit] - Maximum number of utxos to return (default 100).
+     * @param {number} [offset] - Pagination offset (default 0).
+     * @returns {Promise<string[]>} List of confirmed utxos.
      */
-    getLatestDepositTxId(depositAddress: string): Promise<string | null>;
+    getUtxosForDepositAddress(depositAddress: string, limit?: number, offset?: number): Promise<string[]>;
     /**
      * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
      *
@@ -170,25 +139,25 @@ export default class WalletAccountSpark implements IWalletAccount {
         invoice: string;
     }): Promise<number>;
     /**
-     * Returns the bitcoin transfers history of the account.
+     * Returns the bitcoin transfer history of the account.
      *
      * @param {Object} [options] - The options.
      * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
      * @param {number} [options.limit] - The number of transfers to return (default: 10).
      * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-     * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
+     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
      */
     getTransfers(options?: {
         direction?: "incoming" | "outgoing" | "all";
         limit?: number;
         skip?: number;
-    }): Promise<SparkTransactionReceipt[]>;
+    }): Promise<SparkTransfer[]>;
     /**
      * Returns a read-only copy of the account.
      *
-     * @returns {Promise<never>} The read-only account.
+     * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
      */
-    toReadOnlyAccount(): Promise<never>;
+    toReadOnlyAccount(): Promise<WalletAccountReadOnlySpark>;
     /**
      * Cleans up and closes the connections with the spark blockchain.
      *
@@ -200,23 +169,16 @@ export default class WalletAccountSpark implements IWalletAccount {
      */
     dispose(): void;
 }
+export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
+export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
+export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
+export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
+export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
 export type IWalletAccount = import("@wdk/wallet").IWalletAccount;
 export type KeyPair = import("@wdk/wallet").KeyPair;
 export type TransactionResult = import("@wdk/wallet").TransactionResult;
 export type TransferOptions = import("@wdk/wallet").TransferOptions;
 export type TransferResult = import("@wdk/wallet").TransferResult;
-export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
-export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
-export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
-export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
-export type SparkTransactionReceipt = import("@buildonspark/spark-sdk/types").WalletTransfer;
-export type SparkTransaction = {
-    /**
-     * - The transaction's recipient.
-     */
-    to: string;
-    /**
-     * - The amount of bitcoins to send to the recipient (in satoshis).
-     */
-    value: number;
-};
+export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
+export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
+import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js';

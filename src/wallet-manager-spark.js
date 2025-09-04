@@ -17,18 +17,9 @@ import WalletManager from '@wdk/wallet'
 
 import WalletAccountSpark from './wallet-account-spark.js'
 
-import { SparkWallet } from './libs/spark-sdk.js'
-
-import Bip44SparkSigner from './bip-44/spark-signer.js'
-
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {'MAINNET' | 'REGTEST' | 'TESTNET'} [network] - The network (default: "MAINNET").
- */
-
-const DEFAULT_NETWORK = 'MAINNET'
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 export default class WalletManagerSpark extends WalletManager {
   /**
@@ -60,15 +51,7 @@ export default class WalletManagerSpark extends WalletManager {
    */
   async getAccount (index = 0) {
     if (!this._accounts[index]) {
-      const { wallet } = await SparkWallet.initialize({
-        signer: new Bip44SparkSigner(index),
-        mnemonicOrSeed: this.seed,
-        options: {
-          network: this._config.network || DEFAULT_NETWORK
-        }
-      })
-
-      const account = new WalletAccountSpark(wallet)
+      const account = await WalletAccountSpark.at(this.seed, index, this._config)
 
       this._accounts[index] = account
     }
@@ -89,7 +72,7 @@ export default class WalletManagerSpark extends WalletManager {
   /**
    * Returns the current fee rates.
    *
-   * @returns {Promise<FeeRates>} The fee rates.
+   * @returns {Promise<FeeRates>} The fee rates (in satoshis).
    */
   async getFeeRates () {
     return { normal: 0, fast: 0 }

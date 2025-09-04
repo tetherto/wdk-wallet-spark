@@ -1,4 +1,4 @@
-export default class WalletManagerSpark {
+export default class WalletManagerSpark extends WalletManager {
     /**
      * Creates a new wallet manager for the Spark blockchain.
      *
@@ -33,7 +33,7 @@ export default class WalletManagerSpark {
     /**
      * Returns the current fee rates.
      *
-     * @returns {Promise<FeeRates>} The fee rates.
+     * @returns {Promise<FeeRates>} The fee rates (in satoshis).
      */
     getFeeRates(): Promise<FeeRates>;
     /**
@@ -42,10 +42,6 @@ export default class WalletManagerSpark {
     dispose(): void;
 }
 export type FeeRates = import("@wdk/wallet").FeeRates;
-export type SparkWalletConfig = {
-    /**
-     * - The network (default: "MAINNET").
-     */
-    network?: "MAINNET" | "REGTEST" | "TESTNET";
-};
+export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
+import WalletManager from '@wdk/wallet';
 import WalletAccountSpark from './wallet-account-spark.js';

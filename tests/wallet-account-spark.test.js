@@ -24,7 +24,7 @@ const ACCOUNT = {
 
 describe('WalletAccountSpark', () => {
   let sparkWallet,
-    account
+      account
 
   beforeAll(async () => {
     const { wallet } = await SparkWallet.initialize({
@@ -43,7 +43,9 @@ describe('WalletAccountSpark', () => {
   }, 10_000)
 
   beforeEach(() => {
-    account = new WalletAccountSpark(sparkWallet)
+    account = new WalletAccountSpark(sparkWallet, {
+      network: 'MAINNET'
+    })
   })
 
   describe('constructor', () => {
@@ -56,14 +58,6 @@ describe('WalletAccountSpark', () => {
         privateKey: new Uint8Array(Buffer.from(ACCOUNT.keyPair.privateKey, 'hex')),
         publicKey: new Uint8Array(Buffer.from(ACCOUNT.keyPair.publicKey, 'hex'))
       })
-    })
-  })
-
-  describe('getAddress', () => {
-    test('should return the correct address', async () => {
-      const address = await account.getAddress()
-
-      expect(address).toBe(ACCOUNT.address)
     })
   })
 
@@ -128,74 +122,10 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('quoteSendTransaction', () => {
-    const TRANSACTION = {
-      to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
-      value: 100
-    }
-
-    test('should successfully quote a transaction', async () => {
-      const { fee } = await account.quoteSendTransaction(TRANSACTION)
-
-      expect(fee).toBe(0)
-    })
-  })
-
   describe('transfer', () => {
     test('should throw an unsupported operation error', async () => {
       await expect(account.transfer({}))
         .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
-
-  describe('quoteTransfer', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.quoteTransfer({}))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
-
-  describe('getBalance', () => {
-    test('should return the correct balance of the account', async () => {
-      sparkWallet.getBalance = jest.fn(() => ({
-        balance: 12_345n
-      }))
-
-      const balance = await account.getBalance()
-
-      expect(balance).toBe(12_345)
-    })
-  })
-
-  describe('getTokenBalance', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.getTokenBalance('token-address'))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
-
-  describe('getTransactionReceipt', () => {
-    const DUMMY_TRANSACTION_HASH = 'dummy-transfer-id'
-
-    test('should return the correct transaction receipt', async () => {
-      const DUMMY_TRANSACTION_RECEIPT = {
-        id: DUMMY_TRANSACTION_HASH,
-        totalValue: 1_000
-      }
-
-      sparkWallet.getTransfer = jest.fn().mockResolvedValue(DUMMY_TRANSACTION_RECEIPT)
-
-      const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
-      expect(receipt).toEqual(DUMMY_TRANSACTION_RECEIPT)
-    })
-
-    test('should return null if the transaction has not been included in a block yet', async () => {
-      sparkWallet.getTransfer = jest.fn().mockResolvedValue(undefined)
-
-      const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
-      expect(sparkWallet.getTransfer).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH)
-      expect(receipt).toBe(null)
     })
   })
 
@@ -227,15 +157,20 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getLatestDepositTxId', () => {
-    test('should return the latest deposit transaction id', async () => {
-      const DUMMY_LATEST_DEPOSIT_TX_ID = 'dummy-latest-tx-id'
+  describe('getUtxosForDepositAddress', () => {
+    test('should return the list of confirmed utxos', async () => {
+      const DUMMY_DEPOSIT_ADDRESS = 'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
 
-      sparkWallet.getUtxosForDepositAddress = jest.fn().mockResolvedValue([{ txid: DUMMY_LATEST_DEPOSIT_TX_ID, vout: 0 }])
+      const DUMMY_LIST_OF_CONFIRMED_UTXOS = [
+        { txid: 'utxo-txid-1', vout: 0 },
+        { txid: 'utxo-txid-2', vout: 1 }
+      ]
 
-      const txId = await account.getLatestDepositTxId()
-      expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalled()
-      expect(txId).toBe(DUMMY_LATEST_DEPOSIT_TX_ID)
+      sparkWallet.getUtxosForDepositAddress = jest.fn().mockResolvedValue(DUMMY_LIST_OF_CONFIRMED_UTXOS)
+
+      const utxos = await account.getUtxosForDepositAddress(DUMMY_DEPOSIT_ADDRESS)
+      expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalledWith(DUMMY_DEPOSIT_ADDRESS, 100, 0)
+      expect(utxos).toEqual([ 'utxo-txid-1', 'utxo-txid-2' ])
     })
   })
 

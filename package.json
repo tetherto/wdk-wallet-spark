@@ -1,6 +1,6 @@
 {
   "name": "@wdk/wallet-spark",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
   "main": "index.js",
   "type": "module",
@@ -16,7 +16,8 @@
     "@buildonspark/bare": "0.0.7",
     "@buildonspark/spark-sdk": "0.2.12",
     "@scure/bip32": "1.7.0",
-    "@wdk/wallet": "https://github.com/tetherto/wdk-wallet.git#develop",
+    "@sparkscan/api-node-sdk-client": "0.1.8",
+    "@wdk/wallet": "https://github.com/davi0kprogramsthings/wdk-wallet.git#develop",
     "bare-wdk-runtime": "2.0.1",
     "bip39": "3.1.0",
     "sodium-universal": "5.0.1"
