@@ -118,7 +118,7 @@ describe('WalletAccountSpark', () => {
 
       expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
 
-      expect(fee).toBe(0)
+      expect(fee).toBe(0n)
     })
   })
 

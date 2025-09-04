@@ -43,7 +43,7 @@ describe('WalletAccountReadOnlySpark', () => {
         }
       })
 
-      expect(balance).toBe(12_345)
+      expect(balance).toBe(12_345n)
     })
   })
 
@@ -63,7 +63,7 @@ describe('WalletAccountReadOnlySpark', () => {
     test('should successfully quote a transaction', async () => {
       const { fee } = await account.quoteSendTransaction(TRANSACTION)
 
-      expect(fee).toBe(0)
+      expect(fee).toBe(0n)
     })
   })
 

@@ -60,7 +60,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns the account's bitcoin balance.
    *
-   * @returns {Promise<number>} The bitcoin balance (in satoshis).
+   * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
    */
   async getBalance () {
     const address = await this.getAddress()
@@ -73,14 +73,14 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 
     const btcHardBalanceSats = balance.btcHardBalanceSats
 
-    return btcHardBalanceSats
+    return BigInt(btcHardBalanceSats)
   }
 
   /**
    * Returns the account balance for a specific token.
    *
    * @param {string} tokenAddress - The smart contract address of the token.
-   * @returns {Promise<number>} The token balance (in base unit).
+   * @returns {Promise<bigint>} The token balance (in base unit).
    */
   async getTokenBalance (tokenAddress) {
     throw new Error('Method not supported on the spark blockchain.')
@@ -93,7 +93,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
    */
   async quoteSendTransaction (tx) {
-    return { fee: 0 }
+    return { fee: 0n }
   }
 
   /**
@@ -119,7 +119,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
           'Authorization': this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
         }
       })
-      
+
       return receipt
     } catch (error) {
       if (error.status === 404) {

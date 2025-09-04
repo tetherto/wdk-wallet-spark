@@ -143,7 +143,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       amountSats: value
     })
 
-    return { hash: id, fee: 0 }
+    return { hash: id, fee: 0n }
   }
 
   /**
@@ -203,7 +203,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       withdrawalAddress: to,
       amountSats: value
     })
-    
+
     return await this._wallet.withdraw({
       onchainAddress: to,
       amountSats: value,

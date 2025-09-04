@@ -16,16 +16,16 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     /**
      * Returns the account's bitcoin balance.
      *
-     * @returns {Promise<number>} The bitcoin balance (in satoshis).
+     * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
      */
-    getBalance(): Promise<number>;
+    getBalance(): Promise<bigint>;
     /**
      * Returns the account balance for a specific token.
      *
      * @param {string} tokenAddress - The smart contract address of the token.
-     * @returns {Promise<number>} The token balance (in base unit).
+     * @returns {Promise<bigint>} The token balance (in base unit).
      */
-    getTokenBalance(tokenAddress: string): Promise<number>;
+    getTokenBalance(tokenAddress: string): Promise<bigint>;
     /**
      * Quotes the costs of a send transaction operation.
      *
@@ -61,7 +61,7 @@ export type SparkTransaction = {
     /**
      * - The amount of bitcoins to send to the recipient (in satoshis).
      */
-    value: number;
+    value: number | bigint;
 };
 export type SparkWalletConfig = {
     /**

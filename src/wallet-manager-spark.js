@@ -30,14 +30,6 @@ export default class WalletManagerSpark extends WalletManager {
    */
   constructor (seed, config = {}) {
     super(seed, config)
-
-    /**
-     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
-     *
-     * @protected
-     * @type {{ [path: string]: WalletAccountSpark }}
-     */
-    this._accounts = { }
   }
 
   /**
@@ -75,17 +67,6 @@ export default class WalletManagerSpark extends WalletManager {
    * @returns {Promise<FeeRates>} The fee rates (in satoshis).
    */
   async getFeeRates () {
-    return { normal: 0, fast: 0 }
-  }
-
-  /**
-   * Disposes all the wallet accounts, erasing their private keys from the memory.
-   */
-  dispose () {
-    for (const account of Object.values(this._accounts)) {
-      account.dispose()
-    }
-
-    this._accounts = { }
+    return { normal: 0n, fast: 0n }
   }
 }
