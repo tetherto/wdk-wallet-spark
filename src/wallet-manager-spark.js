@@ -15,20 +15,11 @@
 
 import WalletManager from '@wdk/wallet'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
-
 import WalletAccountSpark from './wallet-account-spark.js'
-
-import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 /** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {'MAINNET' | 'REGTEST' | 'TESTNET'} [network] - The network (default: "MAINNET").
- */
-
-const DEFAULT_NETWORK = 'MAINNET'
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 export default class WalletManagerSpark extends WalletManager {
   /**
@@ -39,14 +30,6 @@ export default class WalletManagerSpark extends WalletManager {
    */
   constructor (seed, config = {}) {
     super(seed, config)
-
-    /**
-     * A map between derivation paths and wallet accounts. It contains all the wallet accounts that have been accessed through the {@link getAccount} and {@link getAccountByPath} methods.
-     *
-     * @protected
-     * @type {{ [path: string]: WalletAccountSpark }}
-     */
-    this._accounts = { }
   }
 
   /**
@@ -60,15 +43,7 @@ export default class WalletManagerSpark extends WalletManager {
    */
   async getAccount (index = 0) {
     if (!this._accounts[index]) {
-      const { wallet } = await SparkWallet.initialize({
-        signer: new Bip44SparkSigner(index),
-        mnemonicOrSeed: this.seed,
-        options: {
-          network: this._config.network || DEFAULT_NETWORK
-        }
-      })
-
-      const account = new WalletAccountSpark(wallet)
+      const account = await WalletAccountSpark.at(this.seed, index, this._config)
 
       this._accounts[index] = account
     }
@@ -89,20 +64,9 @@ export default class WalletManagerSpark extends WalletManager {
   /**
    * Returns the current fee rates.
    *
-   * @returns {Promise<FeeRates>} The fee rates.
+   * @returns {Promise<FeeRates>} The fee rates (in satoshis).
    */
   async getFeeRates () {
-    return { normal: 0, fast: 0 }
-  }
-
-  /**
-   * Disposes all the wallet accounts, erasing their private keys from the memory.
-   */
-  dispose () {
-    for (const account of Object.values(this._accounts)) {
-      account.dispose()
-    }
-
-    this._accounts = { }
+    return { normal: 0n, fast: 0n }
   }
 }

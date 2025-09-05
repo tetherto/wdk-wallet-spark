@@ -51,9 +51,9 @@ describe('WalletManagerSpark', () => {
     test('should return the correct fee rates', async () => {
       const feeRates = await wallet.getFeeRates()
 
-      expect(feeRates.normal).toBe(0)
+      expect(feeRates.normal).toBe(0n)
 
-      expect(feeRates.fast).toBe(0)
+      expect(feeRates.fast).toBe(0n)
     })
   })
 })

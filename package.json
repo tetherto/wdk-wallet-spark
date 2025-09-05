@@ -1,7 +1,14 @@
 {
   "name": "@wdk/wallet-spark",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0-beta.2",
   "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
+  "keywords": ["wdk", "wallet", "bip-32", "spark"],
+  "author": "Tether",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tetherto/wdk-wallet-spark.git"
+  },
   "main": "index.js",
   "type": "module",
   "types": "./types",
@@ -13,10 +20,12 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "@buildonspark/spark-sdk": "0.1.45",
+    "@buildonspark/bare": "0.0.7",
+    "@buildonspark/spark-sdk": "0.2.12",
     "@scure/bip32": "1.7.0",
-    "@wdk/wallet": "https://github.com/tetherto/wdk-wallet.git#develop",
-    "bare-wdk-runtime": "2.0.0",
+    "@sparkscan/api-node-sdk-client": "0.1.8",
+    "@wdk/wallet": "https://github.com/davi0kprogramsthings/wdk-wallet.git#develop",
+    "bare-wdk-runtime": "2.0.1",
     "bip39": "3.1.0",
     "sodium-universal": "5.0.1"
   },
@@ -36,5 +45,11 @@
     "./package": {
       "default": "./package.json"
     }
+  },
+  "standard": {
+    "ignore": [
+      "bare.js",
+      "tests/**/*.js"
+    ]
   }
 }
