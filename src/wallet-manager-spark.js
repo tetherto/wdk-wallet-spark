@@ -13,88 +13,42 @@
 // limitations under the License.
 'use strict'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
-import * as bip39 from 'bip39'
+import WalletManager from '@wdk/wallet'
 
 import WalletAccountSpark from './wallet-account-spark.js'
-import WalletSparkSigner from './wallet-spark-signer.js'
 
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {string} [network] - The network type; available values: "MAINNET", "REGTEST", "TESTNET" (default: "MAINNET").
- */
+/** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
 
-export default class WalletManagerSpark {
-  #seedPhrase
-  #config
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
+export default class WalletManagerSpark extends WalletManager {
   /**
    * Creates a new wallet manager for the Spark blockchain.
    *
-   * @param {string} seedPhrase - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
    * @param {SparkWalletConfig} [config] - The configuration object.
    */
-  constructor (seedPhrase, config = {}) {
-    if (!WalletManagerSpark.isValidSeedPhrase(seedPhrase)) {
-      throw new Error('The seed phrase is invalid.')
-    }
-
-    this.#seedPhrase = seedPhrase
-
-    this.#config = {
-      network: 'MAINNET',
-      ...config
-    }
+  constructor (seed, config = {}) {
+    super(seed, config)
   }
 
   /**
-   * Returns a random [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
-   * @returns {string} The seed phrase.
-   */
-  static getRandomSeedPhrase () {
-    return bip39.generateMnemonic()
-  }
-
-  /**
-   * Checks if a seed phrase is valid.
-   *
-   * @param {string} seedPhrase - The seed phrase.
-   * @returns {boolean} True if the seed phrase is valid.
-   */
-  static isValidSeedPhrase (seedPhrase) {
-    return bip39.validateMnemonic(seedPhrase)
-  }
-
-  /**
-  * The seed phrase of the wallet.
-  *
-  * @type {string}
-  */
-  get seedPhrase () {
-    return this.#seedPhrase
-  }
-
-  /**
-   * Returns the wallet account at a specific index.
-   *
+   * @example
+   * // Returns the account with derivation path m/44'/998'/0'/0/1
+   * const account = await wallet.getAccount(1);
    * @param {number} index - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountSpark>} The account.
    */
   async getAccount (index = 0) {
-    const signer = new WalletSparkSigner(index)
+    if (!this._accounts[index]) {
+      const account = await WalletAccountSpark.at(this.seed, index, this._config)
 
-    const { wallet } = await SparkWallet.initialize({
-      signer,
-      mnemonicOrSeed: this.#seedPhrase,
-      options: {
-        network: this.#config.network
-      }
-    })
+      this._accounts[index] = account
+    }
 
-    const account = new WalletAccountSpark({ index, signer, wallet })
-
-    return account
+    return this._accounts[index]
   }
 
   /**
@@ -110,9 +64,9 @@ export default class WalletManagerSpark {
   /**
    * Returns the current fee rates.
    *
-   * @returns {Promise<{ normal: number, fast: number }>} The fee rates (in satoshis).
+   * @returns {Promise<FeeRates>} The fee rates (in satoshis).
    */
   async getFeeRates () {
-    return { normal: 0, fast: 0 }
+    return { normal: 0n, fast: 0n }
   }
 }

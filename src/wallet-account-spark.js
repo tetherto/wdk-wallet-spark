@@ -13,54 +13,65 @@
 // limitations under the License.
 'use strict'
 
-import { Buffer } from 'buffer'
+import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js'
 
-import { getLatestDepositTxId } from '@buildonspark/spark-sdk'
+import { SparkWallet, Network } from './libs/spark-sdk.js'
 
-import { schnorr } from '@noble/curves/secp256k1'
-import { bytesToHex, hexToBytes } from '@noble/curves/abstract/utils'
+import Bip44SparkSigner from './bip-44/spark-signer.js'
 
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf
- */
+import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest
- */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
+/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest
- */
+/** @typedef {import('@wdk/wallet').IWalletAccount} IWalletAccount */
 
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest
- */
+/** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
+/** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
+/** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
+/** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
 
-/**
- * @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer
- */
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
-/**
- * @typedef {Object} KeyPair
- * @property {string} publicKey - The public key.
- * @property {string} privateKey - The private key.
- */
+const DEFAULT_NETWORK = 'MAINNET'
 
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
+/** @implements {IWalletAccount} */
+export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
+  /** @package */
+  constructor (wallet, config = {}) {
+    super(undefined, config)
 
-export default class WalletAccountSpark {
-  #index
-  #wallet
-  #signer
+    /** @private */
+    this._wallet = wallet
 
-  constructor ({ index, signer, wallet }) {
-    this.#index = index
-    this.#signer = signer
-    this.#wallet = wallet
+    /** @private */
+    this._signer = wallet.config.signer
+  }
+
+  /**
+   * Creates a new spark wallet account.
+   *
+   * @param {string | Uint8Array} seed - The wallet's [BIP-39](https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki) seed phrase.
+   * @param {number} index - The index of the account.
+   * @param {SparkWalletConfig} [config] - The configuration object.
+   * @returns {Promise<WalletAccountSpark>} The wallet account.
+   */
+  static async at (seed, index, config = {}) {
+    const { wallet } = await SparkWallet.initialize({
+      signer: new Bip44SparkSigner(index),
+      mnemonicOrSeed: seed,
+      options: {
+        network: config.network || DEFAULT_NETWORK
+      }
+    })
+
+    const account = new WalletAccountSpark(wallet, config)
+
+    return account
   }
 
   /**
@@ -69,16 +80,18 @@ export default class WalletAccountSpark {
    * @type {number}
    */
   get index () {
-    return this.#index
+    return this._signer.index
   }
 
   /**
-   * The derivation path of this account.
+   * The derivation path of this account (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
    *
    * @type {string}
    */
   get path () {
-    return this.#signer.path
+    const accountNumber = Network[this._wallet.config.config.network]
+
+    return `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${accountNumber}'/0/${this.index}`
   }
 
   /**
@@ -88,18 +101,13 @@ export default class WalletAccountSpark {
    */
   get keyPair () {
     return {
-      publicKey: bytesToHex(this.#signer.identityKey.publicKey),
-      privateKey: bytesToHex(this.#signer.identityKey.privateKey)
+      publicKey: this._signer.identityKey.publicKey,
+      privateKey: this._signer.identityKey.privateKey
     }
   }
 
-  /**
-   * Returns the account's address.
-   *
-   * @returns {Promise<string>} The account's address.
-   */
   async getAddress () {
-    return await this.#wallet.getSparkAddress()
+    return await this._wallet.getSparkAddress()
   }
 
   /**
@@ -109,12 +117,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The message's signature.
    */
   async sign (message) {
-    const msg = Buffer.from(message),
-          privateKey = this.#signer.identityKey.privateKey
-
-    const signature = schnorr.sign(msg, privateKey)
-
-    return bytesToHex(signature)
+    return await this._wallet.signMessageWithIdentityKey(message)
   }
 
   /**
@@ -125,57 +128,32 @@ export default class WalletAccountSpark {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const sig = hexToBytes(signature),
-          msg = Buffer.from(message),
-          publicKey = this.#signer.identityKey.publicKey.slice(1)
-    
-    return schnorr.verify(sig, msg, publicKey)
-  }
-
-  /**
-   * Quotes a transaction.
-   *
-   * @param {SparkTransaction} tx - The transaction to quote.
-   * @returns {Promise<number>} The transaction's fee (in satoshis).
-   */
-  async quoteTransaction ({ to, value }) {
-    return 0
+    return await this._wallet.validateMessageWithIdentityKey(message, signature)
   }
 
   /**
    * Sends a transaction.
    *
-   * @param {SparkTransaction} tx - The transaction to send.
-   * @returns {Promise<string>} The transaction's hash.
+   * @param {SparkTransaction} tx - The transaction.
+   * @returns {Promise<TransactionResult>} The transaction's result.
    */
   async sendTransaction ({ to, value }) {
-    const transfer = await this.#wallet.transfer({
+    const { id } = await this._wallet.transfer({
       receiverSparkAddress: to,
       amountSats: value
     })
 
-    return transfer.id
+    return { hash: id, fee: 0n }
   }
 
   /**
-   * Returns the account's native token balance.
+   * Transfers a token to another address.
    *
-   * @returns {Promise<number>} The native token balance.
+   * @param {TransferOptions} options - The transfer's options.
+   * @returns {Promise<TransferResult>} The transfer's result.
    */
-  async getBalance () {
-    const { balance } = await this.#wallet.getBalance()
-
-    return Number(balance)
-  }
-
-  /**
-   * Returns the account balance for a specific token.
-   *
-   * @param {string} tokenAddress - The smart contract address of the token.
-   * @returns {Promise<number>} The token balance.
-   */
-  async getTokenBalance (tokenAddress) {
-    throw new Error('Not supported by the spark blockchain.')
+  async transfer (options) {
+    throw new Error('Method not supported on the spark blockchain.')
   }
 
   /**
@@ -185,7 +163,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<string>} The single-use deposit address.
    */
   async getSingleUseDepositAddress () {
-    return await this.#wallet.getSingleUseDepositAddress()
+    return await this._wallet.getSingleUseDepositAddress()
   }
 
   /**
@@ -195,31 +173,41 @@ export default class WalletAccountSpark {
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
   async claimDeposit (txId) {
-    return await this.#wallet.claimDeposit(txId)
+    return await this._wallet.claimDeposit(txId)
   }
 
   /**
-   * Checks for a confirmed deposit to the specified deposit address.
+   * Returns confirmed utxos for a given spark deposit address.
    *
-   * @param {string} depositAddress - The deposit address to check.
-   * @returns {Promise<string | null>} The transaction id if found, null otherwise.
+   * @param {string} depositAddress - The deposit address to query.
+   * @param {number} [limit] - Maximum number of utxos to return (default 100).
+   * @param {number} [offset] - Pagination offset (default 0).
+   * @returns {Promise<string[]>} List of confirmed utxos.
    */
-  async getLatestDepositTxId (depositAddress) {
-    return await getLatestDepositTxId(depositAddress)
+  async getUtxosForDepositAddress (depositAddress, limit = 100, offset = 0) {
+    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, limit, offset)
+
+    return utxos.map(({ txid }) => txid)
   }
 
   /**
    * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
-   * @property {Object} options - The withdrawal's options.
-   * @property {string} options.to - The Bitcoin address where the funds should be sent.
-   * @property {number} options.value - The amount in satoshis to withdraw.
+   * @param {Object} options - The withdrawal's options.
+   * @param {string} options.to - The Bitcoin address where the funds should be sent.
+   * @param {number} options.value - The amount in satoshis to withdraw.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
-    return await this.#wallet.withdraw({
+    const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
+      withdrawalAddress: to,
+      amountSats: value
+    })
+
+    return await this._wallet.withdraw({
       onchainAddress: to,
       amountSats: value,
+      feeQuote: exitFeeQuote,
       exitSpeed: 'MEDIUM'
     })
   }
@@ -233,7 +221,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<LightningReceiveRequest>} BOLT11 encoded invoice.
    */
   async createLightningInvoice ({ value, memo }) {
-    return await this.#wallet.createLightningInvoice({
+    return await this._wallet.createLightningInvoice({
       amountSats: value,
       memo
     })
@@ -246,7 +234,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<LightningReceiveRequest | null>} The Lightning receive request.
    */
   async getLightningReceiveRequest (invoiceId) {
-    return await this.#wallet.getLightningReceiveRequest(invoiceId)
+    return await this._wallet.getLightningReceiveRequest(invoiceId)
   }
 
   /**
@@ -258,7 +246,7 @@ export default class WalletAccountSpark {
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    */
   async payLightningInvoice ({ invoice, maxFeeSats }) {
-    return await this.#wallet.payLightningInvoice({
+    return await this._wallet.payLightningInvoice({
       invoice,
       maxFeeSats
     })
@@ -272,19 +260,19 @@ export default class WalletAccountSpark {
    * @returns {Promise<number>} Fee estimate for sending Lightning payments.
    */
   async getLightningSendFeeEstimate ({ invoice }) {
-    return await this.#wallet.getLightningSendFeeEstimate({
+    return await this._wallet.getLightningSendFeeEstimate({
       encodedInvoice: invoice
     })
   }
 
   /**
-   * Returns the bitcoin transfers history of the account.
+   * Returns the bitcoin transfer history of the account.
    *
    * @param {Object} [options] - The options.
    * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
    * @param {number} [options.limit] - The number of transfers to return (default: 10).
    * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+   * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
@@ -294,9 +282,9 @@ export default class WalletAccountSpark {
     let i = 0
 
     while (true) {
-      const offset = skip + (i * limit)
+      const offset = i * (limit + skip)
 
-      let { transfers: batch } = await this.#wallet.getTransfers(limit, offset)
+      let { transfers: batch } = await this._wallet.getTransfers(limit + skip, offset)
 
       if (batch.length === 0) {
         break
@@ -308,15 +296,44 @@ export default class WalletAccountSpark {
 
       transfers.push(...batch)
 
-      if (transfers.length >= limit) {
+      if (transfers.length >= limit + skip) {
         break
       }
 
       i++
     }
 
-    const result = transfers.slice(skip, limit)
+    const result = transfers.slice(skip, limit + skip)
 
     return result
+  }
+
+  /**
+   * Returns a read-only copy of the account.
+   *
+   * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
+   */
+  async toReadOnlyAccount () {
+    const address = await this.getAddress()
+
+    const sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
+
+    return sparkReadOnlyAccount
+  }
+
+  /**
+   * Cleans up and closes the connections with the spark blockchain.
+   *
+   * @returns {Promise<void>}
+   */
+  async cleanupConnections () {
+    await this._wallet.cleanupConnections()
+  }
+
+  /**
+   * Disposes the wallet account, erasing its private keys from the memory.
+   */
+  dispose () {
+    this._signer.dispose()
   }
 }

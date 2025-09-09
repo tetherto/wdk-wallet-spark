@@ -13,16 +13,26 @@
 // limitations under the License.
 'use strict'
 
-/** @typedef {import('./src/wallet-manager-spark.js').SparkWalletConfig} SparkWalletConfig */
+/** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
+/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
-/** @typedef {import('./src/wallet-account-spark.js').default} WalletAccountSpark */
-/** @typedef {import('./src/wallet-account-spark.js').KeyPair} KeyPair */
-/** @typedef {import('./src/wallet-account-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
-/** @typedef {import('./src/wallet-account-spark.js').WalletLeaf} WalletLeaf */
-/** @typedef {import('./src/wallet-account-spark.js').CoopExitRequest} CoopExitRequest */
-/** @typedef {import('./src/wallet-account-spark.js').LightningReceiveRequest} LightningReceiveRequest */
-/** @typedef {import('./src/wallet-account-spark.js').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('./src/wallet-account-spark.js').SparkTransfer} SparkTransfer */
+/** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
+/** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
+/** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
+/** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
+/** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
+
+/** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
+/** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 export { default } from './src/wallet-manager-spark.js'
+
+export { default as WalletAccountReadOnlySpark } from './src/wallet-account-read-only-spark.js'
+
+export { default as WalletAccountSpark } from './src/wallet-account-spark.js'
