@@ -22,11 +22,11 @@
 
 /** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
-/** @typedef {import('@wdk/wallet').FeeRates} FeeRates */
-/** @typedef {import('@wdk/wallet').KeyPair} KeyPair */
-/** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
-/** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
-/** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
+/** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
+/** @typedef {import('@tetherto/wdk-wallet').KeyPair} KeyPair */
+/** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
+/** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
+/** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
