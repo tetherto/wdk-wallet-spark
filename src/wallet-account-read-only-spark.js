@@ -67,7 +67,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 
     const { balance } = await addressSummaryV1AddressAddressGet(address, { network: this._config.network }, {
       headers: {
-        'Authorization': this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
+        Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
       }
     })
 
@@ -116,7 +116,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     try {
       const receipt = await getTransactionDetailsByIdV1TxTxidGet(hash, { network: this._config.network }, {
         headers: {
-          'Authorization': this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
+          Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
         }
       })
 
