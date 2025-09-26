@@ -1,4 +1,4 @@
-# @wdk/wallet-spark
+# @tetherto/wdk-wallet-spark
 
 **Note**: This package is currently in beta. Please test thoroughly in development environments before using in production.
 
@@ -19,17 +19,17 @@ For detailed documentation about the complete WDK ecosystem, visit [docs.wallet.
 
 ## ⬇️ Installation
 
-To install the `@wdk/wallet-spark` package, follow these instructions:
+To install the `@tetherto/wdk-wallet-spark` package, follow these instructions:
 
 You can install it using npm:
 
 ```bash
-npm install @wdk/wallet-spark
+npm install @tetherto/wdk-wallet-spark
 ```
 
 ## 🚀 Quick Start
 
-### Importing from `@wdk/wallet-spark`
+### Importing from `@tetherto/wdk-wallet-spark`
 
 1. WalletManagerSpark: Main class for managing wallets
 2. WalletAccountSpark: Use this for full access accounts
@@ -37,7 +37,7 @@ npm install @wdk/wallet-spark
 ### Creating a New Wallet
 
 ```javascript
-import WalletManagerSpark from '@wdk/wallet-spark'
+import WalletManagerSpark from '@tetherto/wdk-wallet-spark'
 
 // Use a BIP-39 seed phrase (replace with your own secure phrase)
 const seedPhrase = 'test only example nut use this real life secret phrase must random'
@@ -60,7 +60,7 @@ console.log('Account address:', address)
 ### Managing Multiple Accounts
 
 ```javascript
-import WalletManagerSpark from '@wdk/wallet-spark'
+import WalletManagerSpark from '@tetherto/wdk-wallet-spark'
 
 // Assume wallet is already created
 // Get the first account (index 0)
@@ -87,7 +87,7 @@ console.log('Account 2 address:', address2)
 ### Checking Balances
 
 ```javascript
-import WalletManagerSpark from '@wdk/wallet-spark'
+import WalletManagerSpark from '@tetherto/wdk-wallet-spark'
 
 // Assume wallet and account are already created
 // Get native token balance (in satoshis)
@@ -178,13 +178,13 @@ wallet.dispose()
 
 | Class | Description | Methods |
 |-------|-------------|---------|
-| [WalletManagerSpark](#walletmanagerspark) | Main class for managing Spark wallets. Extends `WalletManager` from `@wdk/wallet`. | [Constructor](#constructor), [Methods](#methods) |
+| [WalletManagerSpark](#walletmanagerspark) | Main class for managing Spark wallets. Extends `WalletManager` from `@tetherto/wdk-wallet`. | [Constructor](#constructor), [Methods](#methods) |
 | [WalletAccountSpark](#walletaccountspark) | Individual Spark wallet account implementation. Implements `IWalletAccount`. | [Constructor](#constructor-1), [Methods](#methods-1), [Properties](#properties) |
 
 ### WalletManagerSpark
 
 The main class for managing Spark wallets.  
-Extends `WalletManager` from `@wdk/wallet`.
+Extends `WalletManager` from `@tetherto/wdk-wallet`.
 
 #### Constructor
 
@@ -278,7 +278,7 @@ wallet.dispose()
 
 ### WalletAccountSpark
 
-Represents an individual Spark wallet account. Implements `IWalletAccount` from `@wdk/wallet`.
+Represents an individual Spark wallet account. Implements `IWalletAccount` from `@tetherto/wdk-wallet`.
 
 **Note**: WalletAccountSpark instances are created internally by `WalletManagerSpark.getAccount()` and are not intended to be constructed directly.
 
@@ -679,7 +679,7 @@ This package works with the Spark blockchain through the `@buildonspark/spark-sd
 Networks are configured using the `network` parameter in the wallet configuration:
 
 ```javascript
-import WalletManagerSpark from '@wdk/wallet-spark'
+import WalletManagerSpark from '@tetherto/wdk-wallet-spark'
 
 // Mainnet (default)
 const mainnetWallet = new WalletManagerSpark(seedPhrase, {

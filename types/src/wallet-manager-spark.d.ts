@@ -30,7 +30,7 @@ export default class WalletManagerSpark extends WalletManager {
      */
     getFeeRates(): Promise<FeeRates>;
 }
-export type FeeRates = import("@wdk/wallet").FeeRates;
+export type FeeRates = import("@tetherto/wdk-wallet").FeeRates;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
-import WalletManager from '@wdk/wallet';
+import WalletManager from '@tetherto/wdk-wallet';
 import WalletAccountSpark from './wallet-account-spark.js';

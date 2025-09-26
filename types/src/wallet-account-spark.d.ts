@@ -174,11 +174,11 @@ export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRe
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
 export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
 export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
-export type IWalletAccount = import("@wdk/wallet").IWalletAccount;
-export type KeyPair = import("@wdk/wallet").KeyPair;
-export type TransactionResult = import("@wdk/wallet").TransactionResult;
-export type TransferOptions = import("@wdk/wallet").TransferOptions;
-export type TransferResult = import("@wdk/wallet").TransferResult;
+export type IWalletAccount = import("@tetherto/wdk-wallet").IWalletAccount;
+export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
+export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
+export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
+export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js';

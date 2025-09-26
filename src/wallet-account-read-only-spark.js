@@ -14,7 +14,7 @@
 
 'use strict'
 
-import { WalletAccountReadOnly } from '@wdk/wallet'
+import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
 
 import { addressSummaryV1AddressAddressGet, getTransactionDetailsByIdV1TxTxidGet } from '@sparkscan/api-node-sdk-client'
 
@@ -22,9 +22,9 @@ import { addressSummaryV1AddressAddressGet, getTransactionDetailsByIdV1TxTxidGet
 
 /** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
-/** @typedef {import('@wdk/wallet').TransactionResult} TransactionResult */
-/** @typedef {import('@wdk/wallet').TransferOptions} TransferOptions */
-/** @typedef {import('@wdk/wallet').TransferResult} TransferResult */
+/** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
+/** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
+/** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 
 /**
  * @typedef {Object} SparkTransaction
