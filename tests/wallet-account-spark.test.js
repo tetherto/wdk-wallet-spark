@@ -12,13 +12,9 @@ const { SparkWallet } = await import('../src/libs/spark-sdk.js', {
 
 const { mnemonicToSeedSync } = await import('bip39', { with: shims })
 
-const { default: Bip44SparkSigner } = await import(
-  '../src/bip-44/spark-signer.js',
-  { with: shims }
-)
+const { default: Bip44SparkSigner } = await import('../src/bip-44/spark-signer.js', { with: shims })
 
-const SEED_PHRASE =
-  'cook voyage document eight skate token alien guide drink uncle term abuse'
+const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 const SEED = mnemonicToSeedSync(SEED_PHRASE)
 
@@ -27,19 +23,12 @@ const ACCOUNT = {
   path: "m/44'/998'/0'/0/0",
   address: 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47',
   keyPair: {
-    privateKey:
-      'd5d117a4be53b177b4ba48fc709539e37e24e72d4a90f1d47daf309ec3e8ae7b',
-    publicKey:
-      '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
+    privateKey: 'd5d117a4be53b177b4ba48fc709539e37e24e72d4a90f1d47daf309ec3e8ae7b',
+    publicKey: '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
   }
 }
 
-describe('WalletAccountSpark', ({
-  describe,
-  beforeAll,
-  afterAll,
-  beforeEach
-}) => {
+describe('WalletAccountSpark', ({ describe, beforeAll, afterAll, beforeEach }) => {
   let sparkWallet, account
 
   beforeAll(async () => {
@@ -73,9 +62,7 @@ describe('WalletAccountSpark', ({
       expect(account.path).toBe(ACCOUNT.path)
 
       expect(account.keyPair).toEqual({
-        privateKey: new Uint8Array(
-          Buffer.from(ACCOUNT.keyPair.privateKey, 'hex')
-        ),
+        privateKey: new Uint8Array(Buffer.from(ACCOUNT.keyPair.privateKey, 'hex')),
         publicKey: new Uint8Array(Buffer.from(ACCOUNT.keyPair.publicKey, 'hex'))
       })
     })
@@ -154,14 +141,10 @@ describe('WalletAccountSpark', ({
   })
 
   describe('getSingleUseDepositAddress', ({ test }) => {
-    test('should return a valid single use deposit address', async ({
-      expect
-    }) => {
+    test('should return a valid single use deposit address', async ({ expect }) => {
       const DUMMY_SINGLE_USE_DEPOSIT_ADDRESS =
         'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
-      sparkWallet.getSingleUseDepositAddress = spy(
-        () => DUMMY_SINGLE_USE_DEPOSIT_ADDRESS
-      )
+      sparkWallet.getSingleUseDepositAddress = spy(() => DUMMY_SINGLE_USE_DEPOSIT_ADDRESS)
 
       const address = await account.getSingleUseDepositAddress()
       expect(sparkWallet.getSingleUseDepositAddress).toHaveBeenCalled()
@@ -173,10 +156,7 @@ describe('WalletAccountSpark', ({
     test('should successfully claim a deposit', async ({ expect }) => {
       const DUMMY_TX_ID = 'dummy-tx-id'
 
-      const DUMMY_WALLET_LEAFS = [
-        { id: 'wallet-leaf-1' },
-        { id: 'wallet-leaf-2' }
-      ]
+      const DUMMY_WALLET_LEAFS = [{ id: 'wallet-leaf-1' }, { id: 'wallet-leaf-2' }]
 
       sparkWallet.claimDeposit = spy(() => DUMMY_WALLET_LEAFS)
 
@@ -188,21 +168,16 @@ describe('WalletAccountSpark', ({
 
   describe('getUtxosForDepositAddress', ({ test }) => {
     test('should return the list of confirmed utxos', async ({ expect }) => {
-      const DUMMY_DEPOSIT_ADDRESS =
-        'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
+      const DUMMY_DEPOSIT_ADDRESS = 'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
 
       const DUMMY_LIST_OF_CONFIRMED_UTXOS = [
         { txid: 'utxo-txid-1', vout: 0 },
         { txid: 'utxo-txid-2', vout: 1 }
       ]
 
-      sparkWallet.getUtxosForDepositAddress = spy(
-        () => DUMMY_LIST_OF_CONFIRMED_UTXOS
-      )
+      sparkWallet.getUtxosForDepositAddress = spy(() => DUMMY_LIST_OF_CONFIRMED_UTXOS)
 
-      const utxos = await account.getUtxosForDepositAddress(
-        DUMMY_DEPOSIT_ADDRESS
-      )
+      const utxos = await account.getUtxosForDepositAddress(DUMMY_DEPOSIT_ADDRESS)
       expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalledWith(
         DUMMY_DEPOSIT_ADDRESS,
         100,
@@ -250,9 +225,7 @@ describe('WalletAccountSpark', ({
   })
 
   describe('createLightningInvoice', ({ test }) => {
-    test('should successfully create a lighting invoice', async ({
-      expect
-    }) => {
+    test('should successfully create a lighting invoice', async ({ expect }) => {
       const DUMMY_OPTIONS = {
         value: 1_500,
         memo: 'This is just a test invoice.'
@@ -262,13 +235,9 @@ describe('WalletAccountSpark', ({
         id: 'lightining-receive-request-1'
       }
 
-      sparkWallet.createLightningInvoice = spy(
-        () => DUMMY_LIGHTNING_RECEIVE_REQUEST
-      )
+      sparkWallet.createLightningInvoice = spy(() => DUMMY_LIGHTNING_RECEIVE_REQUEST)
 
-      const lightningReceiveRequest = await account.createLightningInvoice(
-        DUMMY_OPTIONS
-      )
+      const lightningReceiveRequest = await account.createLightningInvoice(DUMMY_OPTIONS)
 
       expect(sparkWallet.createLightningInvoice).toHaveBeenCalledWith({
         amountSats: DUMMY_OPTIONS.value,
@@ -280,25 +249,17 @@ describe('WalletAccountSpark', ({
   })
 
   describe('getLightningReceiveRequest', ({ test }) => {
-    test('should successfully return the lightning receive request', async ({
-      expect
-    }) => {
+    test('should successfully return the lightning receive request', async ({ expect }) => {
       const DUMMY_INVOICE_ID = 'dummy-invoice-id'
 
       const DUMMY_LIGHTING_RECEIVE_REQUEST = {
         id: DUMMY_INVOICE_ID
       }
 
-      sparkWallet.getLightningReceiveRequest = spy(
-        () => DUMMY_LIGHTING_RECEIVE_REQUEST
-      )
+      sparkWallet.getLightningReceiveRequest = spy(() => DUMMY_LIGHTING_RECEIVE_REQUEST)
 
-      const lightningReceiveRequest = await account.getLightningReceiveRequest(
-        DUMMY_INVOICE_ID
-      )
-      expect(sparkWallet.getLightningReceiveRequest).toHaveBeenCalledWith(
-        DUMMY_INVOICE_ID
-      )
+      const lightningReceiveRequest = await account.getLightningReceiveRequest(DUMMY_INVOICE_ID)
+      expect(sparkWallet.getLightningReceiveRequest).toHaveBeenCalledWith(DUMMY_INVOICE_ID)
       expect(lightningReceiveRequest).toEqual(DUMMY_LIGHTING_RECEIVE_REQUEST)
     })
   })
@@ -316,9 +277,7 @@ describe('WalletAccountSpark', ({
 
       sparkWallet.payLightningInvoice = spy(() => DUMMY_LIGHTNING_SEND_REQUEST)
 
-      const lightningSendRequest = await account.payLightningInvoice(
-        DUMMY_OPTIONS
-      )
+      const lightningSendRequest = await account.payLightningInvoice(DUMMY_OPTIONS)
 
       expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith({
         invoice: DUMMY_OPTIONS.invoice,
@@ -339,9 +298,7 @@ describe('WalletAccountSpark', ({
 
       sparkWallet.getLightningSendFeeEstimate = spy(() => DUMMY_FEE_ESTIMATE)
 
-      const feeEstimate = await account.getLightningSendFeeEstimate(
-        DUMMY_OPTIONS
-      )
+      const feeEstimate = await account.getLightningSendFeeEstimate(DUMMY_OPTIONS)
 
       expect(sparkWallet.getLightningSendFeeEstimate).toHaveBeenCalledWith({
         encodedInvoice: DUMMY_OPTIONS.invoice
@@ -409,11 +366,7 @@ describe('WalletAccountSpark', ({
 
       const transfers = await account.getTransfers({ direction: 'incoming' })
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
-      expect(transfers).toEqual([
-        DUMMY_TRANSFERS[0],
-        DUMMY_TRANSFERS[2],
-        DUMMY_TRANSFERS[4]
-      ])
+      expect(transfers).toEqual([DUMMY_TRANSFERS[0], DUMMY_TRANSFERS[2], DUMMY_TRANSFERS[4]])
     })
 
     test('should return the outgoing transfer history', async ({ expect }) => {
@@ -428,9 +381,7 @@ describe('WalletAccountSpark', ({
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[3]])
     })
 
-    test('should correctly paginate the transfer history', async ({
-      expect
-    }) => {
+    test('should correctly paginate the transfer history', async ({ expect }) => {
       sparkWallet.getTransfers = spy((limit, offset) => {
         const i = offset / limit
         if (i === 0) return { transfers: DUMMY_TRANSFERS }
@@ -442,9 +393,7 @@ describe('WalletAccountSpark', ({
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[2]])
     })
 
-    test('should correctly filter and paginate the transfer history', async ({
-      expect
-    }) => {
+    test('should correctly filter and paginate the transfer history', async ({ expect }) => {
       sparkWallet.getTransfers = spy((limit, offset) => {
         const i = offset / limit
         if (i === 0) return { transfers: DUMMY_TRANSFERS.slice(0, 3) }
@@ -465,9 +414,7 @@ describe('WalletAccountSpark', ({
   })
 
   describe('cleanupConnections', ({ test }) => {
-    test('should close and clean up connections with the blockchain', async ({
-      expect
-    }) => {
+    test('should close and clean up connections with the blockchain', async ({ expect }) => {
       sparkWallet.cleanupConnections = spy(() => {})
 
       await account.cleanupConnections()

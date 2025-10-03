@@ -2,8 +2,7 @@ import { describe } from 'noba'
 import { spy } from 'noba/spy'
 import { deepMock } from 'noba/mock'
 
-const ADDRESS =
-  'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
+const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
 const DUMMY_SPARK_SCAN_API_KEY = 'dummy-spark-scan-api-key'
 
@@ -29,15 +28,10 @@ const getTransactionDetailsByIdV1TxTxidGetMock = spy(async (txHash) => {
 describe('WalletAccountReadOnlySpark', async ({ describe, beforeEach }) => {
   let account
 
-  const deepImport = await deepMock(
-    '@sparkscan/api-node-sdk-client',
-    import.meta.url,
-    {
-      addressSummaryV1AddressAddressGet: addressSummaryV1AddressAddressGetMock,
-      getTransactionDetailsByIdV1TxTxidGet:
-        getTransactionDetailsByIdV1TxTxidGetMock
-    }
-  )
+  const deepImport = await deepMock('@sparkscan/api-node-sdk-client', import.meta.url, {
+    addressSummaryV1AddressAddressGet: addressSummaryV1AddressAddressGetMock,
+    getTransactionDetailsByIdV1TxTxidGet: getTransactionDetailsByIdV1TxTxidGetMock
+  })
 
   const { WalletAccountReadOnlySpark } = await deepImport(
     import.meta.resolve('@tetherto/wdk-wallet-spark')
@@ -51,9 +45,7 @@ describe('WalletAccountReadOnlySpark', async ({ describe, beforeEach }) => {
   })
 
   describe('getBalance', ({ test }) => {
-    test('should return the correct balance of the account', async ({
-      expect
-    }) => {
+    test('should return the correct balance of the account', async ({ expect }) => {
       const balance = await account.getBalance()
 
       expect(addressSummaryV1AddressAddressGetMock.calls).toContainEqual([
@@ -99,12 +91,8 @@ describe('WalletAccountReadOnlySpark', async ({ describe, beforeEach }) => {
   })
 
   describe('getTransactionReceipt', ({ test }) => {
-    test('should return the correct transaction receipt', async ({
-      expect
-    }) => {
-      const receipt = await account.getTransactionReceipt(
-        DUMMY_TRANSACTION_HASH
-      )
+    test('should return the correct transaction receipt', async ({ expect }) => {
+      const receipt = await account.getTransactionReceipt(DUMMY_TRANSACTION_HASH)
       expect(getTransactionDetailsByIdV1TxTxidGetMock.calls).toContainEqual([
         DUMMY_TRANSACTION_HASH,
         { network: 'MAINNET' },
@@ -122,9 +110,7 @@ describe('WalletAccountReadOnlySpark', async ({ describe, beforeEach }) => {
     }) => {
       const INVALID_TRANSACTION_HASH = 'invalid-transfer-id'
 
-      const receipt = await account.getTransactionReceipt(
-        INVALID_TRANSACTION_HASH
-      )
+      const receipt = await account.getTransactionReceipt(INVALID_TRANSACTION_HASH)
 
       expect(getTransactionDetailsByIdV1TxTxidGetMock.calls).toContainEqual([
         INVALID_TRANSACTION_HASH,

@@ -1,11 +1,8 @@
 import { describe } from 'noba'
 
-import WalletManagerSpark, {
-  WalletAccountSpark
-} from '@tetherto/wdk-wallet-spark'
+import WalletManagerSpark, { WalletAccountSpark } from '@tetherto/wdk-wallet-spark'
 
-const SEED_PHRASE =
-  'cook voyage document eight skate token alien guide drink uncle term abuse'
+const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
   let wallet
@@ -21,9 +18,7 @@ describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
   })
 
   describe('getAccount', ({ test }) => {
-    test('should return the account at index 0 by default', async ({
-      expect
-    }) => {
+    test('should return the account at index 0 by default', async ({ expect }) => {
       const account = await wallet.getAccount()
 
       expect(account).toBeInstanceOf(WalletAccountSpark)
@@ -39,9 +34,7 @@ describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
       expect(account.path).toBe("m/44'/998'/0'/0/3")
     })
 
-    test('should throw if the index is a negative number', async ({
-      expect
-    }) => {
+    test('should throw if the index is a negative number', async ({ expect }) => {
       await expect(async () => {
         await wallet.getAccount(-1)
       }).rejects('invalid child index: -1')
