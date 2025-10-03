@@ -1,7 +1,7 @@
 import { describe } from 'noba'
 
 import WalletManagerSpark, {
-  WalletAccountSpark,
+  WalletAccountSpark
 } from '@tetherto/wdk-wallet-spark'
 
 const SEED_PHRASE =
@@ -12,7 +12,7 @@ describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
 
   beforeEach(async () => {
     wallet = new WalletManagerSpark(SEED_PHRASE, {
-      network: 'MAINNET',
+      network: 'MAINNET'
     })
   })
 
@@ -22,7 +22,7 @@ describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
 
   describe('getAccount', ({ test }) => {
     test('should return the account at index 0 by default', async ({
-      expect,
+      expect
     }) => {
       const account = await wallet.getAccount()
 
@@ -40,7 +40,7 @@ describe('WalletManagerSpark', ({ describe, beforeEach, afterEach }) => {
     })
 
     test('should throw if the index is a negative number', async ({
-      expect,
+      expect
     }) => {
       await expect(async () => {
         await wallet.getAccount(-1)
