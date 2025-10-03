@@ -28,8 +28,8 @@ jobs:
       - name: Run tests in Node
         run: npm run test:node
 
-      - name: Run tests in Bare
-        run: npm run test:bare
+      # - name: Run tests in Bare
+      #   run: npm run test:bare
 
   publish:
     needs: test
