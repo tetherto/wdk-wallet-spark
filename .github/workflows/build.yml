@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
       - uses: actions/checkout@v3
       - name: Set up Node 22.19.0
         uses: actions/setup-node@v4
@@ -18,14 +18,17 @@ jobs:
           node-version: '22.19.0'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
-      
+
       - name: Install dependencies
         run: npm clean-install
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
+
       - name: Lint code with standard
         run: npm run lint
-      
-      - name: Run tests
-        run: npm test
+
+      - name: Run tests in Node
+        run: npm run test:node
+
+      - name: Run tests in Bare
+        run: npm run test:bare
