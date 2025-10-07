@@ -13,10 +13,20 @@
 // limitations under the License.
 'use strict'
 
+let SparkWallet, Network, ValidationError, DefaultSparkSigner
+
 if (globalThis.Bare) {
-  var { SparkWallet, Network, ValidationError, BareSparkSigner: DefaultSparkSigner } = await import('@buildonspark/bare')
+  const imports = await import('@buildonspark/bare')
+  SparkWallet = imports.SparkWallet
+  Network = imports.Network
+  ValidationError = imports.ValidationError
+  DefaultSparkSigner = imports.BareSparkSigner
 } else {
-  var { SparkWallet, Network, ValidationError, DefaultSparkSigner } = await import('@buildonspark/spark-sdk')
+  const imports = await import('@buildonspark/spark-sdk')
+  SparkWallet = imports.SparkWallet
+  Network = imports.Network
+  ValidationError = imports.ValidationError
+  DefaultSparkSigner = imports.DefaultSparkSigner
 }
 
 export { SparkWallet, Network, ValidationError, DefaultSparkSigner }

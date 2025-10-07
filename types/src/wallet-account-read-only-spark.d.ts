@@ -50,9 +50,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 }
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkTransactionReceipt = import("@sparkscan/api-node-sdk-client").TxV1Response;
-export type TransactionResult = import("@wdk/wallet").TransactionResult;
-export type TransferOptions = import("@wdk/wallet").TransferOptions;
-export type TransferResult = import("@wdk/wallet").TransferResult;
+export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
+export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
+export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = {
     /**
      * - The transaction's recipient.
@@ -73,4 +73,4 @@ export type SparkWalletConfig = {
      */
     sparkScanApiKey?: string;
 };
-import { WalletAccountReadOnly } from '@wdk/wallet';
+import { WalletAccountReadOnly } from '@tetherto/wdk-wallet';
