@@ -39,10 +39,9 @@ describe('WalletAccountReadOnlySpark', () => {
 
       expect(addressSummaryV1AddressAddressGetMock).toHaveBeenCalledWith(ADDRESS, { network: 'MAINNET' }, {
         headers: {
-          'Authorization': `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
+          Authorization: `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
         }
       })
-
       expect(balance).toBe(12_345n)
     })
   })
@@ -89,7 +88,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
       expect(getTransactionDetailsByIdV1TxTxidGetMock).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH, { network: 'MAINNET' }, {
         headers: {
-          'Authorization': `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
+          Authorization: `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
         }
       })
 
@@ -103,7 +102,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
       expect(getTransactionDetailsByIdV1TxTxidGetMock).toHaveBeenCalledWith(DUMMY_TRANSACTION_HASH, { network: 'MAINNET' }, {
         headers: {
-          'Authorization': `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
+          Authorization: `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
         }
       })
 
