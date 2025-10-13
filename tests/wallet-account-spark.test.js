@@ -4,7 +4,7 @@ import { spy } from 'noba/spy'
 import { WalletAccountSpark } from '@tetherto/wdk-wallet-spark'
 
 const isBare = 'Bare' in global
-const shims = isBare ? { imports: 'bare-wdk-runtime/package' } : {}
+const shims = isBare ? { imports: 'bare-node-runtime/imports' } : {}
 
 const { SparkWallet } = await import('../src/libs/spark-sdk.js', {
   with: shims
