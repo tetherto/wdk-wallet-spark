@@ -60,7 +60,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
+    sendTransaction(tx: SparkTransaction): Promise<TransactionResult>;
     /**
      * Transfers a token to another address.
      *
