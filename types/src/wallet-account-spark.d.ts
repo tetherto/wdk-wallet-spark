@@ -10,7 +10,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     static at(seed: string | Uint8Array, index: number, config?: SparkWalletConfig): Promise<WalletAccountSpark>;
     /** @package */
-    constructor(wallet, config);
+    constructor(wallet: any, config?: {});
     /** @private */
     private _wallet;
     /** @private */
@@ -33,6 +33,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @type {KeyPair}
      */
     get keyPair(): KeyPair;
+    getAddress(): Promise<any>;
     /**
      * Signs a message.
      *
@@ -54,7 +55,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction(tx: SparkTransaction): Promise<TransactionResult>;
+    sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
      * Transfers a token to another address.
      *
@@ -70,12 +71,26 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getSingleUseDepositAddress(): Promise<string>;
     /**
+     * Get static deposit address for bitcoin deposits from layer 1.
+     * This address can be reused.
+     *
+     * @returns {Promise<string>} The static deposit address.
+     */
+    getStaticDepositAddress(): Promise<string>;
+    /**
      * Claims a deposit to the wallet.
   
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
      */
     claimDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
+    /**
+     * Claims a static deposit to the wallet.
+  
+     * @param {string} txId - The transaction id of the deposit.
+     * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+     */
+    claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
      * Returns confirmed utxos for a given spark deposit address.
      *
@@ -145,13 +160,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
      * @param {number} [options.limit] - The number of transfers to return (default: 10).
      * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
+     * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
      */
     getTransfers(options?: {
         direction?: "incoming" | "outgoing" | "all";
         limit?: number;
         skip?: number;
-    }): Promise<SparkTransfer[]>;
+    }): Promise<SparkTransactionReceipt[]>;
     /**
      * Returns a read-only copy of the account.
      *
