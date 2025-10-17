@@ -110,7 +110,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /**
    * Returns the account's address.
-   * 
+   *
    * @returns {Promise<string>} The account's address.
    */
   async getAddress () {
@@ -200,7 +200,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
   async claimStaticDeposit (txId) {
-    const quote = await this._wallet.getClaimStaticDepositQuote(txId);
+    const quote = await this._wallet.getClaimStaticDepositQuote(txId)
 
     return await this._wallet.claimStaticDeposit({
       transactionId: txId,
