@@ -33,7 +33,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @type {KeyPair}
      */
     get keyPair(): KeyPair;
-    getAddress(): Promise<any>;
+    /**
+     * Returns the account's address.
+     * 
+     * @returns {Promise<string>} The account's address.
+     */
+    getAddress(): Promise<string>;
     /**
      * Signs a message.
      *

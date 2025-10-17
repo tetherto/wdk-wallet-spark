@@ -1,5 +1,3 @@
-/** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
-/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 export default class WalletManagerSpark extends WalletManager {
     /**
      * Creates a new wallet manager for the Spark blockchain.
@@ -25,7 +23,14 @@ export default class WalletManagerSpark extends WalletManager {
      * @returns {Promise<WalletAccountSpark>} The account.
      */
     getAccountByPath(path: string): Promise<WalletAccountSpark>;
+    /**
+     * Returns the current fee rates.
+     *
+     * @returns {Promise<FeeRates>} The fee rates (in satoshis).
+     */
+    getFeeRates(): Promise<FeeRates>;
 }
 export type FeeRates = import("@tetherto/wdk-wallet").FeeRates;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 import WalletManager from '@tetherto/wdk-wallet';
+import WalletAccountSpark from './wallet-account-spark.js';

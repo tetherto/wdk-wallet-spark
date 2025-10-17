@@ -1,18 +1,3 @@
-/** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
-/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
-/** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
-/** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
-/** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {NetworkType} [network] - The network (default: "MAINNET").
- * @property {string} [sparkScanApiKey] - The spark scan api-key.
- */
 export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     /**
      * Creates a new spark read-only wallet account.
@@ -29,12 +14,32 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      */
     protected _config: SparkWalletConfig;
     /**
+     * Returns the account's bitcoin balance.
+     *
+     * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+     */
+    getBalance(): Promise<bigint>;
+    /**
+     * Returns the account balance for a specific token.
+     *
+     * @param {string} tokenAddress - The smart contract address of the token.
+     * @returns {Promise<bigint>} The token balance (in base unit).
+     */
+    getTokenBalance(tokenAddress: string): Promise<bigint>;
+    /**
      * Quotes the costs of a send transaction operation.
      *
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
      */
     quoteSendTransaction(tx: SparkTransaction): Promise<Omit<TransactionResult, "hash">>;
+    /**
+     * Quotes the costs of a transfer operation.
+     *
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
+     */
+    quoteTransfer(options: TransferOptions): Promise<Omit<TransferResult, "hash">>;
     /**
      * Returns a transaction's receipt.
      *
