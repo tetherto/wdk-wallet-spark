@@ -10,7 +10,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     static at(seed: string | Uint8Array, index: number, config?: SparkWalletConfig): Promise<WalletAccountSpark>;
     /** @package */
-    constructor(wallet: any, config?: {});
+    constructor(wallet, config);
     /** @private */
     private _wallet;
     /** @private */
