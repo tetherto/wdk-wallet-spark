@@ -129,6 +129,47 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getStaticDepositAddress', () => {
+    test('should successfully return the static deposit address', async () => {
+      const DUMMY_STATIC_DEPOSIT_ADDRESS = 'dummy-deposit-address-id'
+
+      sparkWallet.getStaticDepositAddress = jest.fn().mockResolvedValue(DUMMY_STATIC_DEPOSIT_ADDRESS)
+
+      const staticDepositAddress = await account.getStaticDepositAddress()
+      expect(sparkWallet.getStaticDepositAddress).toHaveBeenCalled()
+      expect(staticDepositAddress).toEqual(DUMMY_STATIC_DEPOSIT_ADDRESS)
+    })
+  })
+
+  describe('claimStaticDeposit', () => {
+    test('should successfully claim a static deposit', async () => {
+      const DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE = {
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000
+      }
+
+      const DUMMY_WALLET_LEAFS = [
+        { id: 'wallet-leaf-1' }
+      ]
+
+      sparkWallet.getClaimStaticDepositQuote= jest.fn().mockResolvedValue(DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
+
+      sparkWallet.claimStaticDeposit= jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
+
+      const result = await account.claimStaticDeposit('dummy-transaction-id')
+
+      expect(sparkWallet.getClaimStaticDepositQuote).toHaveBeenCalledWith('dummy-transaction-id')
+
+      expect(sparkWallet.claimStaticDeposit).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        creditAmountSats: 1_000,
+        sspSignature: 'dummy-signature'
+      })
+
+      expect(result).toEqual(DUMMY_WALLET_LEAFS)
+    })
+  })
+
   describe('getSingleUseDepositAddress', () => {
     test('should return a valid single use deposit address', async () => {
       const DUMMY_SINGLE_USE_DEPOSIT_ADDRESS = 'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
