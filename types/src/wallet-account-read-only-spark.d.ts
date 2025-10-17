@@ -61,7 +61,7 @@ export type SparkTransaction = {
     /**
      * - The amount of bitcoins to send to the recipient (in satoshis).
      */
-    value: number | bigInt;
+    value: number | bigint;
 };
 export type SparkWalletConfig = {
     /**
