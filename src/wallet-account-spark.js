@@ -27,6 +27,8 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
+/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
+
 /** @typedef {import('@tetherto/wdk-wallet').IWalletAccount} IWalletAccount */
 
 /** @typedef {import('@tetherto/wdk-wallet').KeyPair} KeyPair */
@@ -106,6 +108,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     }
   }
 
+  /**
+   * Returns the account's address.
+   *
+   * @returns {Promise<string>} The account's address.
+   */
   async getAddress () {
     return await this._wallet.getSparkAddress()
   }
@@ -167,6 +174,16 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Get static deposit address for bitcoin deposits from layer 1.
+   * This address can be reused.
+   *
+   * @returns {Promise<string>} The static deposit address.
+   */
+  async getStaticDepositAddress () {
+    return await this._wallet.getStaticDepositAddress()
+  }
+
+  /**
    * Claims a deposit to the wallet.
 
    * @param {string} txId - The transaction id of the deposit.
@@ -174,6 +191,22 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async claimDeposit (txId) {
     return await this._wallet.claimDeposit(txId)
+  }
+
+  /**
+   * Claims a static deposit to the wallet.
+
+   * @param {string} txId - The transaction id of the deposit.
+   * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+   */
+  async claimStaticDeposit (txId) {
+    const quote = await this._wallet.getClaimStaticDepositQuote(txId)
+
+    return await this._wallet.claimStaticDeposit({
+      transactionId: txId,
+      creditAmountSats: quote.creditAmountSats,
+      sspSignature: quote.signature
+    })
   }
 
   /**

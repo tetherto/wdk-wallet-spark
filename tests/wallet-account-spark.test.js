@@ -100,9 +100,11 @@ describe('WalletAccountSpark', ({ describe, beforeAll, afterAll, beforeEach }) =
     })
 
     test('should throw on a malformed signature', async ({ expect }) => {
+      // Bare: Input string must contain hex characters in even length
+      // Node: hex string expected, got unpadded hex of length 15
       await expect(async () => {
         await account.verify(MESSAGE, 'A bad signature')
-      }).rejects('hex string expected')
+      }).rejects(/(hex string expected|string must contain hex characters in even length)/)
     })
   })
 
@@ -137,6 +139,45 @@ describe('WalletAccountSpark', ({ describe, beforeAll, afterAll, beforeEach }) =
       await expect(async () => {
         await account.transfer({})
       }).rejects('Method not supported on the spark blockchain.')
+    })
+  })
+
+  describe('getStaticDepositAddress', ({ test }) => {
+    test('should successfully return the static deposit address', async ({ expect }) => {
+      const DUMMY_STATIC_DEPOSIT_ADDRESS = 'dummy-deposit-address-id'
+
+      sparkWallet.getStaticDepositAddress = spy(() => DUMMY_STATIC_DEPOSIT_ADDRESS)
+
+      const staticDepositAddress = await account.getStaticDepositAddress()
+      expect(sparkWallet.getStaticDepositAddress).toHaveBeenCalled()
+      expect(staticDepositAddress).toEqual(DUMMY_STATIC_DEPOSIT_ADDRESS)
+    })
+  })
+
+  describe('claimStaticDeposit', () => {
+    test('should successfully claim a static deposit', async ({ expect }) => {
+      const DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE = {
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000
+      }
+
+      const DUMMY_WALLET_LEAFS = [{ id: 'wallet-leaf-1' }]
+
+      sparkWallet.getClaimStaticDepositQuote = spy(() => DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
+
+      sparkWallet.claimStaticDeposit = spy(() => DUMMY_WALLET_LEAFS)
+
+      const result = await account.claimStaticDeposit('dummy-transaction-id')
+
+      expect(sparkWallet.getClaimStaticDepositQuote).toHaveBeenCalledWith('dummy-transaction-id')
+
+      expect(sparkWallet.claimStaticDeposit).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        creditAmountSats: 1_000,
+        sspSignature: 'dummy-signature'
+      })
+
+      expect(result).toEqual(DUMMY_WALLET_LEAFS)
     })
   })
 
