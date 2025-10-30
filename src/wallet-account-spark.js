@@ -360,6 +360,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * Disposes the wallet account, erasing its private keys from the memory.
    */
   dispose () {
-    // this._signer.dispose()
+    this.cleanupConnections().catch(console.error)
+
+    this._signer.dispose()
   }
 }
