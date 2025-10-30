@@ -27,6 +27,8 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 
+/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
+
 /** @typedef {import('@tetherto/wdk-wallet').IWalletAccount} IWalletAccount */
 
 /** @typedef {import('@tetherto/wdk-wallet').KeyPair} KeyPair */
@@ -106,6 +108,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     }
   }
 
+  /**
+   * Returns the account's address.
+   *
+   * @returns {Promise<string>} The account's address.
+   */
   async getAddress () {
     return await this._wallet.getSparkAddress()
   }
@@ -193,7 +200,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
   async claimStaticDeposit (txId) {
-    const quote = await this._wallet.getClaimStaticDepositQuote(txId);
+    const quote = await this._wallet.getClaimStaticDepositQuote(txId)
 
     return await this._wallet.claimStaticDeposit({
       transactionId: txId,
