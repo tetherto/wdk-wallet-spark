@@ -16,7 +16,7 @@
 let SparkWallet, Network, ValidationError, DefaultSparkSigner
 
 if (globalThis.Bare) {
-  const imports = await import('@buildonspark/bare')
+  const imports = await import('@buildonspark/spark-sdk/bare')
   SparkWallet = imports.SparkWallet
   Network = imports.Network
   ValidationError = imports.ValidationError
