@@ -25,8 +25,7 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "@buildonspark/bare": "0.0.25",
-    "@buildonspark/spark-sdk": "0.4.4",
+    "@buildonspark/spark-sdk": "0.5.1",
     "@scure/bip32": "1.7.0",
     "@sparkscan/api-node-sdk-client": "0.1.8",
     "@tetherto/wdk-wallet": "^1.0.0-beta.1",

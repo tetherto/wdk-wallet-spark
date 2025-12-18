@@ -15,18 +15,11 @@
 
 let SparkWallet, Network, ValidationError, DefaultSparkSigner
 
-if (globalThis.Bare) {
-  const imports = await import('@buildonspark/spark-sdk/bare')
-  SparkWallet = imports.SparkWallet
-  Network = imports.Network
-  ValidationError = imports.ValidationError
-  DefaultSparkSigner = imports.BareSparkSigner
-} else {
-  const imports = await import('@buildonspark/spark-sdk')
-  SparkWallet = imports.SparkWallet
-  Network = imports.Network
-  ValidationError = imports.ValidationError
-  DefaultSparkSigner = imports.DefaultSparkSigner
-}
+const imports = await import(globalThis.Bare ? '@buildonspark/spark-sdk/bare' : '@buildonspark/spark-sdk')
+
+DefaultSparkSigner = imports.DefaultSparkSigner
+SparkWallet = imports.SparkWallet
+Network = imports.Network
+ValidationError = imports.ValidationError
 
 export { SparkWallet, Network, ValidationError, DefaultSparkSigner }
