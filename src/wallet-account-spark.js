@@ -39,11 +39,46 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
+/**
+ * @typedef {Object} WithdrawOptions
+ * @property {string} to - The Bitcoin address where the funds should be sent.
+ * @property {number} value - The amount in satoshis to withdraw.
+ */
+
+/**
+ * @typedef {Object} CreateLightningInvoiceOptions
+ * @property {number} value - The amount in satoshis.
+ * @property {string} [memo] - An optional description for the invoice.
+ */
+
+/**
+ * @typedef {Object} PayLightningInvoiceOptions
+ * @property {string} invoice - The BOLT11-encoded Lightning invoice to pay.
+ * @property {number} maxFeeSats - The maximum fee in satoshis to pay.
+ */
+
+/**
+ * @typedef {Object} GetLightningSendFeeEstimateOptions
+ * @property {string} invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+ */
+
+/**
+ * @typedef {Object} GetTransfersOptions
+ * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
+ * @property {number} [limit] - The number of transfers to return (default: 10).
+ * @property {number} [skip] - The number of transfers to skip (default: 0).
+ */
+
 const DEFAULT_NETWORK = 'MAINNET'
 
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
-  /** @package */
+  /**
+   * Creates a new WalletAccountSpark instance.
+   *
+   * @param {SparkWallet} wallet - The underlying Spark wallet instance.
+   * @param {SparkWalletConfig} [config] - The configuration object.
+   */
   constructor (wallet, config = {}) {
     super(undefined, config)
 
@@ -174,7 +209,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Get static deposit address for bitcoin deposits from layer 1.
+   * Gets static deposit address for bitcoin deposits from layer 1.
    * This address can be reused.
    *
    * @returns {Promise<string>} The static deposit address.
@@ -185,7 +220,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /**
    * Claims a deposit to the wallet.
-
+   *
    * @param {string} txId - The transaction id of the deposit.
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
@@ -195,7 +230,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /**
    * Claims a static deposit to the wallet.
-
+   *
    * @param {string} txId - The transaction id of the deposit.
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
    */
@@ -226,9 +261,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
-   * @param {Object} options - The withdrawal's options.
-   * @param {string} options.to - The Bitcoin address where the funds should be sent.
-   * @param {number} options.value - The amount in satoshis to withdraw.
+   * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
@@ -248,9 +281,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Creates a Lightning invoice for receiving payments.
    *
-   * @param {Object} options - The invoice options.
-   * @param {number} options.value - The amount in satoshis.
-   * @param {string} [options.memo] - An optional description for the invoice.
+   * @param {CreateLightningInvoiceOptions} options - The invoice options.
    * @returns {Promise<LightningReceiveRequest>} BOLT11 encoded invoice.
    */
   async createLightningInvoice ({ value, memo }) {
@@ -261,7 +292,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Get a Lightning receive request by id.
+   * Gets a Lightning receive request by id.
    *
    * @param {string} invoiceId - The id of the Lightning receive request.
    * @returns {Promise<LightningReceiveRequest | null>} The Lightning receive request.
@@ -273,9 +304,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Pays a Lightning invoice.
    *
-   * @param {Object} options - The payment options.
-   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to pay.
-   * @param {number} options.maxFeeSats - The maximum fee in satoshis to pay.
+   * @param {PayLightningInvoiceOptions} options - The payment options.
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    */
   async payLightningInvoice ({ invoice, maxFeeSats }) {
@@ -288,8 +317,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Gets fee estimate for sending Lightning payments.
    *
-   * @param {Object} options - The fee estimation options.
-   * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+   * @param {GetLightningSendFeeEstimateOptions} options - The fee estimation options.
    * @returns {Promise<number>} Fee estimate for sending Lightning payments.
    */
   async getLightningSendFeeEstimate ({ invoice }) {
@@ -301,11 +329,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Returns the bitcoin transfer history of the account.
    *
-   * @param {Object} [options] - The options.
-   * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
-   * @param {number} [options.limit] - The number of transfers to return (default: 10).
-   * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-   * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
+   * @param {GetTransfersOptions} [options] - The options.
+   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
@@ -365,6 +390,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /**
    * Disposes the wallet account, erasing its private keys from the memory.
+   *
+   * @returns {void}
    */
   dispose () {
     this.cleanupConnections().catch(console.error)

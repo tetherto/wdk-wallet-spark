@@ -31,6 +31,12 @@
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
+/** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
+/** @typedef {import('./src/wallet-account-spark.js').CreateLightningInvoiceOptions} CreateLightningInvoiceOptions */
+/** @typedef {import('./src/wallet-account-spark.js').PayLightningInvoiceOptions} PayLightningInvoiceOptions */
+/** @typedef {import('./src/wallet-account-spark.js').GetLightningSendFeeEstimateOptions} GetLightningSendFeeEstimateOptions */
+/** @typedef {import('./src/wallet-account-spark.js').GetTransfersOptions} GetTransfersOptions */
+
 export { default } from './src/wallet-manager-spark.js'
 
 export { default as WalletAccountReadOnlySpark } from './src/wallet-account-read-only-spark.js'
