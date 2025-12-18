@@ -189,13 +189,19 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Transfers a token to another address.
-   *
-   * @param {TransferOptions} options - The transfer's options.
-   * @returns {Promise<TransferResult>} The transfer's result.
-   */
+ * Transfers a token to another address.
+ *
+ * @param {TransferOptions} options - The transfer's options.
+ * @returns {Promise<TransferResult>} The transfer's result.
+ */
   async transfer (options) {
-    throw new Error('Method not supported on the spark blockchain.')
+    const txId = await this._wallet.transferTokens({
+      tokenIdentifier: options.tokenAddress,
+      tokenAmount: BigInt(options.value),
+      receiverSparkAddress: options.to
+    })
+
+    return { hash: txId, fee: 0n }
   }
 
   /**
