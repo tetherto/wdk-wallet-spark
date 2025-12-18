@@ -9,8 +9,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<WalletAccountSpark>} The wallet account.
      */
     static at(seed: string | Uint8Array, index: number, config?: SparkWalletConfig): Promise<WalletAccountSpark>;
-    /** @package */
-    constructor(wallet, config);
+    /**
+     * Creates a new WalletAccountSpark instance.
+     *
+     * @param {SparkWallet} wallet - The underlying Spark wallet instance.
+     * @param {SparkWalletConfig} [config] - The configuration object.
+     */
+    constructor(wallet: any, config?: SparkWalletConfig);
     /** @private */
     private _wallet;
     /** @private */
@@ -34,12 +39,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     get keyPair(): KeyPair;
     /**
-     * Returns the account's address.
-     * 
-     * @returns {Promise<string>} The account's address.
-     */
-    getAddress(): Promise<string>;
-    /**
      * Signs a message.
      *
      * @param {string} message - The message to sign.
@@ -60,7 +59,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
      */
-    sendTransaction(tx: SparkTransaction): Promise<TransactionResult>;
+    sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
      * Transfers a token to another address.
      *
@@ -76,7 +75,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getSingleUseDepositAddress(): Promise<string>;
     /**
-     * Get static deposit address for bitcoin deposits from layer 1.
+     * Gets static deposit address for bitcoin deposits from layer 1.
      * This address can be reused.
      *
      * @returns {Promise<string>} The static deposit address.
@@ -84,53 +83,34 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     getStaticDepositAddress(): Promise<string>;
     /**
      * Claims a deposit to the wallet.
-  
+     *
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
      */
     claimDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
      * Claims a static deposit to the wallet.
-  
+     *
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
      */
     claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
-     * Returns confirmed utxos for a given spark deposit address.
-     *
-     * @param {string} depositAddress - The deposit address to query.
-     * @param {number} [limit] - Maximum number of utxos to return (default 100).
-     * @param {number} [offset] - Pagination offset (default 0).
-     * @returns {Promise<string[]>} List of confirmed utxos.
-     */
-    getUtxosForDepositAddress(depositAddress: string, limit?: number, offset?: number): Promise<string[]>;
-    /**
      * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
      *
-     * @param {Object} options - The withdrawal's options.
-     * @param {string} options.to - The Bitcoin address where the funds should be sent.
-     * @param {number} options.value - The amount in satoshis to withdraw.
+     * @param {WithdrawOptions} options - The withdrawal's options.
      * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
      */
-    withdraw({ to, value }: {
-        to: string;
-        value: number;
-    }): Promise<CoopExitRequest | null | undefined>;
+    withdraw({ to, value }: WithdrawOptions): Promise<CoopExitRequest | null | undefined>;
     /**
      * Creates a Lightning invoice for receiving payments.
      *
-     * @param {Object} options - The invoice options.
-     * @param {number} options.value - The amount in satoshis.
-     * @param {string} [options.memo] - An optional description for the invoice.
+     * @param {CreateLightningInvoiceOptions} options - The invoice options.
      * @returns {Promise<LightningReceiveRequest>} BOLT11 encoded invoice.
      */
-    createLightningInvoice({ value, memo }: {
-        value: number;
-        memo?: string;
-    }): Promise<LightningReceiveRequest>;
+    createLightningInvoice({ value, memo }: CreateLightningInvoiceOptions): Promise<LightningReceiveRequest>;
     /**
-     * Get a Lightning receive request by id.
+     * Gets a Lightning receive request by id.
      *
      * @param {string} invoiceId - The id of the Lightning receive request.
      * @returns {Promise<LightningReceiveRequest | null>} The Lightning receive request.
@@ -139,39 +119,24 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Pays a Lightning invoice.
      *
-     * @param {Object} options - The payment options.
-     * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to pay.
-     * @param {number} options.maxFeeSats - The maximum fee in satoshis to pay.
+     * @param {PayLightningInvoiceOptions} options - The payment options.
      * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
      */
-    payLightningInvoice({ invoice, maxFeeSats }: {
-        invoice: string;
-        maxFeeSats: number;
-    }): Promise<LightningSendRequest>;
+    payLightningInvoice({ invoice, maxFeeSats }: PayLightningInvoiceOptions): Promise<LightningSendRequest>;
     /**
      * Gets fee estimate for sending Lightning payments.
      *
-     * @param {Object} options - The fee estimation options.
-     * @param {string} options.invoice - The BOLT11-encoded Lightning invoice to estimate fees for.
+     * @param {GetLightningSendFeeEstimateOptions} options - The fee estimation options.
      * @returns {Promise<number>} Fee estimate for sending Lightning payments.
      */
-    getLightningSendFeeEstimate({ invoice }: {
-        invoice: string;
-    }): Promise<number>;
+    getLightningSendFeeEstimate({ invoice }: GetLightningSendFeeEstimateOptions): Promise<number>;
     /**
      * Returns the bitcoin transfer history of the account.
      *
-     * @param {Object} [options] - The options.
-     * @param {"incoming" | "outgoing" | "all"} [options.direction] - If set, only returns transfers with the given direction (default: "all").
-     * @param {number} [options.limit] - The number of transfers to return (default: 10).
-     * @param {number} [options.skip] - The number of transfers to skip (default: 0).
-     * @returns {Promise<SparkTransactionReceipt[]>} The bitcoin transfers.
+     * @param {GetTransfersOptions} [options] - The options.
+     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
      */
-    getTransfers(options?: {
-        direction?: "incoming" | "outgoing" | "all";
-        limit?: number;
-        skip?: number;
-    }): Promise<SparkTransactionReceipt[]>;
+    getTransfers(options?: GetTransfersOptions): Promise<SparkTransfer[]>;
     /**
      * Returns a read-only copy of the account.
      *
@@ -186,6 +151,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     cleanupConnections(): Promise<void>;
     /**
      * Disposes the wallet account, erasing its private keys from the memory.
+     *
+     * @returns {void}
      */
     dispose(): void;
 }
@@ -194,6 +161,7 @@ export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRe
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
 export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
 export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
+export type SparkTransactionReceipt = import("@sparkscan/api-node-sdk-client").TxV1Response;
 export type IWalletAccount = import("@tetherto/wdk-wallet").IWalletAccount;
 export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
@@ -201,4 +169,54 @@ export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
+export type WithdrawOptions = {
+    /**
+     * - The Bitcoin address where the funds should be sent.
+     */
+    to: string;
+    /**
+     * - The amount in satoshis to withdraw.
+     */
+    value: number;
+};
+export type CreateLightningInvoiceOptions = {
+    /**
+     * - The amount in satoshis.
+     */
+    value: number;
+    /**
+     * - An optional description for the invoice.
+     */
+    memo?: string;
+};
+export type PayLightningInvoiceOptions = {
+    /**
+     * - The BOLT11-encoded Lightning invoice to pay.
+     */
+    invoice: string;
+    /**
+     * - The maximum fee in satoshis to pay.
+     */
+    maxFeeSats: number;
+};
+export type GetLightningSendFeeEstimateOptions = {
+    /**
+     * - The BOLT11-encoded Lightning invoice to estimate fees for.
+     */
+    invoice: string;
+};
+export type GetTransfersOptions = {
+    /**
+     * - If set, only returns transfers with the given direction (default: "all").
+     */
+    direction?: "incoming" | "outgoing" | "all";
+    /**
+     * - The number of transfers to return (default: 10).
+     */
+    limit?: number;
+    /**
+     * - The number of transfers to skip (default: 0).
+     */
+    skip?: number;
+};
 import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js';

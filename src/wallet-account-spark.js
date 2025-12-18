@@ -245,20 +245,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Returns confirmed utxos for a given spark deposit address.
-   *
-   * @param {string} depositAddress - The deposit address to query.
-   * @param {number} [limit] - Maximum number of utxos to return (default 100).
-   * @param {number} [offset] - Pagination offset (default 0).
-   * @returns {Promise<string[]>} List of confirmed utxos.
-   */
-  async getUtxosForDepositAddress (depositAddress, limit = 100, offset = 0) {
-    const utxos = await this._wallet.getUtxosForDepositAddress(depositAddress, limit, offset)
-
-    return utxos.map(({ txid }) => txid)
-  }
-
-  /**
    * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
