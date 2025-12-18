@@ -14,8 +14,11 @@
 'use strict'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
+/** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
+/** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitFeeQuote} CoopExitFeeQuote */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
@@ -32,10 +35,11 @@
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
-/** @typedef {import('./src/wallet-account-spark.js').CreateLightningInvoiceOptions} CreateLightningInvoiceOptions */
+/** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').PayLightningInvoiceOptions} PayLightningInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').GetLightningSendFeeEstimateOptions} GetLightningSendFeeEstimateOptions */
 /** @typedef {import('./src/wallet-account-spark.js').GetTransfersOptions} GetTransfersOptions */
+/** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
 
 export { default } from './src/wallet-manager-spark.js'
 

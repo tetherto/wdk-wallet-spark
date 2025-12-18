@@ -26,6 +26,9 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
+/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitFeeQuote} CoopExitFeeQuote */
+/** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
+/** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
 
 /** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
@@ -39,16 +42,12 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
-/**
- * @typedef {Object} WithdrawOptions
- * @property {string} to - The Bitcoin address where the funds should be sent.
- * @property {number} value - The amount in satoshis to withdraw.
- */
+/** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
 /**
- * @typedef {Object} CreateLightningInvoiceOptions
- * @property {number} value - The amount in satoshis.
- * @property {string} [memo] - An optional description for the invoice.
+ * @typedef {Object} QuoteWithdrawOptions
+ * @property {string} to - The Bitcoin address where the funds should be sent.
+ * @property {number} value - The amount in satoshis to withdraw.
  */
 
 /**
@@ -67,6 +66,13 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
  * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
  * @property {number} [limit] - The number of transfers to return (default: 10).
  * @property {number} [skip] - The number of transfers to skip (default: 0).
+ */
+
+/**
+ * @typedef {Object} RefundStaticDepositOptions
+ * @property {string} depositTxId - The transaction ID of the original deposit.
+ * @property {string} destinationAddress - The Bitcoin address to send the refund to.
+ * @property {number} feeSats - The fee to pay for the refund transaction (minimum 300 sats).
  */
 
 const DEFAULT_NETWORK = 'MAINNET'
@@ -225,6 +231,15 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Gets all unused single-use deposit addresses.
+   *
+   * @returns {Promise<string[]>} List of unused deposit addresses.
+   */
+  async getUnusedDepositAddresses () {
+    return await this._wallet.getUnusedDepositAddresses()
+  }
+
+  /**
    * Claims a deposit to the wallet.
    *
    * @param {string} txId - The transaction id of the deposit.
@@ -251,13 +266,37 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+     * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
+     * The minimum fee is 300 satoshis.
+     *
+     * @param {RefundStaticDepositOptions} options - The refund options.
+     * @returns {Promise<string>} The refund transaction as a hex string that needs to be broadcast.
+     */
+  async refundStaticDeposit ({ depositTxId, destinationAddress, feeSats }) {
+    return await this._wallet.refundStaticDeposit(depositTxId, destinationAddress, feeSats)
+  }
+
+  /**
+   * Gets a fee quote for withdrawing funds from Spark to an on-chain Bitcoin address.
+   *
+   * @param {QuoteWithdrawOptions} options - The withdrawal's options.
+   * @returns {Promise<CoopExitFeeQuote>} The withdrawal fee quote.
+   */
+  async quoteWithdraw ({ to, value }) {
+    return await this._wallet.getWithdrawalFeeQuote({
+      withdrawalAddress: to,
+      amountSats: value
+    })
+  }
+
+  /**
    * Initiates a withdrawal to move funds from the Spark network to an on-chain Bitcoin address.
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw ({ to, value }) {
-    const exitFeeQuote = await this._wallet.getWithdrawalFeeQuote({
+    const exitFeeQuote = await this.quoteWithdraw({
       withdrawalAddress: to,
       amountSats: value
     })
@@ -273,14 +312,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Creates a Lightning invoice for receiving payments.
    *
-   * @param {CreateLightningInvoiceOptions} options - The invoice options.
+   * @param {CreateLightningInvoiceParams} options - The invoice options.
    * @returns {Promise<LightningReceiveRequest>} BOLT11 encoded invoice.
    */
-  async createLightningInvoice ({ value, memo }) {
-    return await this._wallet.createLightningInvoice({
-      amountSats: value,
-      memo
-    })
+  async createLightningInvoice (options) {
+    return await this._wallet.createLightningInvoice(options)
   }
 
   /**
@@ -291,6 +327,16 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async getLightningReceiveRequest (invoiceId) {
     return await this._wallet.getLightningReceiveRequest(invoiceId)
+  }
+
+  /**
+   * Gets a Lightning send request by id.
+   *
+   * @param {string} requestId - The id of the Lightning send request.
+   * @returns {Promise<LightningSendRequest | null>} The Lightning send request.
+   */
+  async getLightningSendRequest (requestId) {
+    return await this._wallet.getLightningSendRequest(requestId)
   }
 
   /**
