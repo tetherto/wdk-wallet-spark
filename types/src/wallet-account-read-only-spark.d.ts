@@ -6,13 +6,14 @@
 /**
  * @typedef {Object} SparkTransaction
  * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
+ * @property {number | bigint} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 /**
  * @typedef {Object} SparkWalletConfig
  * @property {NetworkType} [network] - The network (default: "MAINNET").
  * @property {string} [sparkScanApiKey] - The spark scan api-key.
  */
+export const DEFAULT_NETWORK: "MAINNET";
 export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     /**
      * Creates a new spark read-only wallet account.
@@ -29,12 +30,12 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      */
     protected _config: SparkWalletConfig;
     /**
-     * Quotes the costs of a send transaction operation.
+     * Returns the API request options for SparkScan.
      *
-     * @param {SparkTransaction} tx - The transaction.
-     * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
+     * @private
+     * @returns {{ headers: { Authorization?: string } }}
      */
-    quoteSendTransaction(tx: SparkTransaction): Promise<Omit<TransactionResult, "hash">>;
+    private get _apiOptions();
     /**
      * Returns a transaction's receipt.
      *
@@ -56,7 +57,7 @@ export type SparkTransaction = {
     /**
      * - The amount of bitcoins to send to the recipient (in satoshis).
      */
-    value: number;
+    value: number | bigint;
 };
 export type SparkWalletConfig = {
     /**

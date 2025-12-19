@@ -5,7 +5,6 @@ export default class Bip44HDKeysGenerator {
     _index: number;
     get index(): number;
     deriveKeysFromSeed(seed: any, accountNumber: any): Promise<{
-        masterPublicKey: Uint8Array<ArrayBufferLike>;
         identityKey: {
             privateKey: Uint8Array<ArrayBufferLike>;
             publicKey: Uint8Array<ArrayBufferLike>;
@@ -20,6 +19,11 @@ export default class Bip44HDKeysGenerator {
             publicKey: Uint8Array<ArrayBufferLike>;
         };
         staticDepositHDKey: {
+            hdKey: HDKey;
+            privateKey: Uint8Array<ArrayBufferLike>;
+            publicKey: Uint8Array<ArrayBufferLike>;
+        };
+        HTLCPreimageHDKey: {
             hdKey: HDKey;
             privateKey: Uint8Array<ArrayBufferLike>;
             publicKey: Uint8Array<ArrayBufferLike>;
