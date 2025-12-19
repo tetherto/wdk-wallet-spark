@@ -18,7 +18,7 @@ import { sodium_memzero } from 'sodium-universal'
 
 import Bip44HDKeysGenerator from './hd-keys-generator.js'
 
-import { DefaultSparkSigner } from '../libs/spark-sdk.js'
+import { DefaultSparkSigner } from '#libs/spark-sdk'
 
 /** @internal */
 export default class Bip44SparkSigner extends DefaultSparkSigner {

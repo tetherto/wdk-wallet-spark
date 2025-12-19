@@ -15,7 +15,7 @@
 
 import WalletAccountReadOnlySpark from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network } from './libs/spark-sdk.js'
+import { SparkWallet, Network } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
@@ -104,13 +104,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<WalletAccountSpark>} The wallet account.
    */
   static async at (seed, index, config = {}) {
-    const { wallet } = await SparkWallet.initialize({
+    const options = {
       signer: new Bip44SparkSigner(index),
       mnemonicOrSeed: seed,
       options: {
         network: config.network || DEFAULT_NETWORK
       }
-    })
+    }
+    const { wallet } = await SparkWallet.initialize(options)
 
     const account = new WalletAccountSpark(wallet, config)
 

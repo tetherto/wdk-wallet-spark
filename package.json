@@ -51,6 +51,12 @@
       "default": "./package.json"
     }
   },
+  "imports": {
+    "#libs/spark-sdk": {
+      "bare": "./src/libs/spark-sdk-bare.js",
+      "default": "./src/libs/spark-sdk-node.js"
+    }
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"

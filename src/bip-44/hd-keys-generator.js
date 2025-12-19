@@ -15,7 +15,7 @@
 
 import { HDKey } from '@scure/bip32'
 
-import { ValidationError } from '../libs/spark-sdk.js'
+import { ValidationError } from '#libs/spark-sdk'
 
 export const BIP_44_LBTC_DERIVATION_PATH_PREFIX = "m/44'/998'"
 
@@ -45,16 +45,19 @@ export default class Bip44HDKeysGenerator {
     const signingKey = hdkey.derive(`${root}/0'`)
     const depositKey = hdkey.derive(`${root}/1'`)
     const staticDepositKey = hdkey.derive(`${root}/2'`)
+    const htlcPreimageKey = hdkey.derive(`${root}/3'`)
 
     if (
       !identityKey.privateKey ||
-      !depositKey.privateKey ||
-      !signingKey.privateKey ||
       !identityKey.publicKey ||
-      !depositKey.publicKey ||
+      !signingKey.privateKey ||
       !signingKey.publicKey ||
+      !depositKey.privateKey ||
+      !depositKey.publicKey ||
       !staticDepositKey.privateKey ||
-      !staticDepositKey.publicKey
+      !staticDepositKey.publicKey ||
+      !htlcPreimageKey.privateKey ||
+      !htlcPreimageKey.publicKey
     ) {
       throw new ValidationError(
         'Failed to derive all required keys from seed',
@@ -65,7 +68,6 @@ export default class Bip44HDKeysGenerator {
     }
 
     return {
-      masterPublicKey: hdkey.publicKey,
       identityKey: {
         privateKey: identityKey.privateKey,
         publicKey: identityKey.publicKey
@@ -83,6 +85,11 @@ export default class Bip44HDKeysGenerator {
         hdKey: staticDepositKey,
         privateKey: staticDepositKey.privateKey,
         publicKey: staticDepositKey.publicKey
+      },
+      HTLCPreimageHDKey: {
+        hdKey: htlcPreimageKey,
+        privateKey: htlcPreimageKey.privateKey,
+        publicKey: htlcPreimageKey.publicKey
       }
     }
   }
