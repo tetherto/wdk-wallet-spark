@@ -16,12 +16,17 @@
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 /** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
 /** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
+/** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */
+/** @typedef {import('@buildonspark/spark-sdk').SparkAddressFormat} SparkAddressFormat */
+/** @typedef {import('@buildonspark/spark-sdk').FulfillSparkInvoiceResponse} FulfillSparkInvoiceResponse */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitFeeQuote} CoopExitFeeQuote */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
+/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendFeeEstimateInput} LightningSendFeeEstimateInput */
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').QuerySparkInvoicesResponse} QuerySparkInvoicesResponse */
 
 /** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
@@ -36,10 +41,11 @@
 
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
-/** @typedef {import('./src/wallet-account-spark.js').PayLightningInvoiceOptions} PayLightningInvoiceOptions */
-/** @typedef {import('./src/wallet-account-spark.js').GetLightningSendFeeEstimateOptions} GetLightningSendFeeEstimateOptions */
 /** @typedef {import('./src/wallet-account-spark.js').GetTransfersOptions} GetTransfersOptions */
 /** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
+/** @typedef {import('./src/wallet-account-spark.js').CreateSatsInvoiceOptions} CreateSatsInvoiceOptions */
+/** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */
+/** @typedef {import('./src/wallet-account-spark.js').SparkInvoice} SparkInvoice */
 
 export { default } from './src/wallet-manager-spark.js'
 

@@ -41,31 +41,21 @@ export default class Bip44HDKeysGenerator {
 
     const root = `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${accountNumber}'/0/${this.index}`
 
-    const identityKey = hdkey.derive(root)
-    const signingKey = hdkey.derive(`${root}/0'`)
-    const depositKey = hdkey.derive(`${root}/1'`)
-    const staticDepositKey = hdkey.derive(`${root}/2'`)
-    const htlcPreimageKey = hdkey.derive(`${root}/3'`)
-
-    if (
-      !identityKey.privateKey ||
-      !identityKey.publicKey ||
-      !signingKey.privateKey ||
-      !signingKey.publicKey ||
-      !depositKey.privateKey ||
-      !depositKey.publicKey ||
-      !staticDepositKey.privateKey ||
-      !staticDepositKey.publicKey ||
-      !htlcPreimageKey.privateKey ||
-      !htlcPreimageKey.publicKey
-    ) {
-      throw new ValidationError(
-        'Failed to derive all required keys from seed',
-        {
+    const deriveAndValidate = (path) => {
+      const key = hdkey.derive(path)
+      if (!key.privateKey || !key.publicKey) {
+        throw new ValidationError('Failed to derive all required keys from seed', {
           field: 'derivedKeys'
-        }
-      )
+        })
+      }
+      return key
     }
+
+    const identityKey = deriveAndValidate(root)
+    const signingKey = deriveAndValidate(`${root}/0'`)
+    const depositKey = deriveAndValidate(`${root}/1'`)
+    const staticDepositKey = deriveAndValidate(`${root}/2'`)
+    const htlcPreimageKey = deriveAndValidate(`${root}/3'`)
 
     return {
       identityKey: {
