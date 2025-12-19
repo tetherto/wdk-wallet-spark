@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
+import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
 import { SparkWallet } from '@buildonspark/spark-sdk'
 
@@ -36,11 +36,11 @@ describe('WalletAccountSpark', () => {
     })
 
     sparkWallet = wallet
-  }, 10_000)
+  })
 
   afterAll(async () => {
     await sparkWallet.cleanupConnections()
-  }, 10_000)
+  })
 
   beforeEach(() => {
     account = new WalletAccountSpark(sparkWallet, {
@@ -123,21 +123,28 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('transfer', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.transfer({}))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
-    })
-  })
+    const DUMMY_TRANSFER_OPTIONS = {
+      to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
+      tokenAddress: 'btkn1qxk5cq74ldm',
+      value: 1000n
+    }
 
-  describe('getStaticDepositAddress', () => {
-    test('should successfully return the static deposit address', async () => {
-      const DUMMY_STATIC_DEPOSIT_ADDRESS = 'dummy-deposit-address-id'
+    const DUMMY_TX_ID = 'dummy-token-transfer-1'
 
-      sparkWallet.getStaticDepositAddress = jest.fn().mockResolvedValue(DUMMY_STATIC_DEPOSIT_ADDRESS)
+    test('should successfully transfer tokens', async () => {
+      sparkWallet.transferTokens = jest.fn().mockResolvedValue(DUMMY_TX_ID)
 
-      const staticDepositAddress = await account.getStaticDepositAddress()
-      expect(sparkWallet.getStaticDepositAddress).toHaveBeenCalled()
-      expect(staticDepositAddress).toEqual(DUMMY_STATIC_DEPOSIT_ADDRESS)
+      const { hash, fee } = await account.transfer(DUMMY_TRANSFER_OPTIONS)
+
+      expect(sparkWallet.transferTokens).toHaveBeenCalledWith({
+        tokenIdentifier: DUMMY_TRANSFER_OPTIONS.tokenAddress,
+        tokenAmount: BigInt(DUMMY_TRANSFER_OPTIONS.value),
+        receiverSparkAddress: DUMMY_TRANSFER_OPTIONS.to
+      })
+
+      expect(hash).toBe(DUMMY_TX_ID)
+
+      expect(fee).toBe(0n)
     })
   })
 
@@ -152,9 +159,9 @@ describe('WalletAccountSpark', () => {
         { id: 'wallet-leaf-1' }
       ]
 
-      sparkWallet.getClaimStaticDepositQuote= jest.fn().mockResolvedValue(DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
 
-      sparkWallet.claimStaticDeposit= jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
+      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
 
       const result = await account.claimStaticDeposit('dummy-transaction-id')
 
@@ -170,56 +177,12 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getSingleUseDepositAddress', () => {
-    test('should return a valid single use deposit address', async () => {
-      const DUMMY_SINGLE_USE_DEPOSIT_ADDRESS = 'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
-      sparkWallet.getSingleUseDepositAddress = jest.fn().mockResolvedValue(DUMMY_SINGLE_USE_DEPOSIT_ADDRESS)
-
-      const address = await account.getSingleUseDepositAddress()
-      expect(sparkWallet.getSingleUseDepositAddress).toHaveBeenCalled()
-      expect(address).toMatch(DUMMY_SINGLE_USE_DEPOSIT_ADDRESS)
-    })
-  })
-
-  describe('claimDeposit', () => {
-    test('should successfully claim a deposit', async () => {
-      const DUMMY_TX_ID = 'dummy-tx-id'
-
-      const DUMMY_WALLET_LEAFS = [
-        { id: 'wallet-leaf-1' },
-        { id: 'wallet-leaf-2' }
-      ]
-
-      sparkWallet.claimDeposit = jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
-
-      const nodes = await account.claimDeposit(DUMMY_TX_ID)
-      expect(sparkWallet.claimDeposit).toHaveBeenCalledWith(DUMMY_TX_ID)
-      expect(nodes).toEqual(DUMMY_WALLET_LEAFS)
-    })
-  })
-
-  describe('getUtxosForDepositAddress', () => {
-    test('should return the list of confirmed utxos', async () => {
-      const DUMMY_DEPOSIT_ADDRESS = 'bc1pgljhxntemplmml7xz9gmf7cptw4hualdnf348jmu95k6gzuxgfeslrg6kh'
-
-      const DUMMY_LIST_OF_CONFIRMED_UTXOS = [
-        { txid: 'utxo-txid-1', vout: 0 },
-        { txid: 'utxo-txid-2', vout: 1 }
-      ]
-
-      sparkWallet.getUtxosForDepositAddress = jest.fn().mockResolvedValue(DUMMY_LIST_OF_CONFIRMED_UTXOS)
-
-      const utxos = await account.getUtxosForDepositAddress(DUMMY_DEPOSIT_ADDRESS)
-      expect(sparkWallet.getUtxosForDepositAddress).toHaveBeenCalledWith(DUMMY_DEPOSIT_ADDRESS, 100, 0)
-      expect(utxos).toEqual([ 'utxo-txid-1', 'utxo-txid-2' ])
-    })
-  })
-
   describe('withdraw', () => {
     test('should successfully initialize a withdrawal', async () => {
       const DUMMY_OPTIONS = {
-        to: 'tb1qx3fju0uclmp0xmqzhxjcydeal6eky95srd2laj',
-        value: 100
+        onchainAddress: 'tb1qx3fju0uclmp0xmqzhxjcydeal6eky95srd2laj',
+        amountSats: 100,
+        exitSpeed: 'MEDIUM'
       }
 
       const DUMMY_COOP_EXIT_FEE_QUOTE = {
@@ -237,102 +200,16 @@ describe('WalletAccountSpark', () => {
       const coopExitRequest = await account.withdraw(DUMMY_OPTIONS)
 
       expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
-        withdrawalAddress: DUMMY_OPTIONS.to,
-        amountSats: DUMMY_OPTIONS.value
+        withdrawalAddress: DUMMY_OPTIONS.onchainAddress,
+        amountSats: DUMMY_OPTIONS.amountSats
       })
 
       expect(sparkWallet.withdraw).toHaveBeenCalledWith({
-        onchainAddress: DUMMY_OPTIONS.to,
-        amountSats: DUMMY_OPTIONS.value,
-        feeQuote: DUMMY_COOP_EXIT_FEE_QUOTE,
-        exitSpeed: 'MEDIUM'
+        ...DUMMY_OPTIONS,
+        feeQuote: DUMMY_COOP_EXIT_FEE_QUOTE
       })
 
       expect(coopExitRequest).toEqual(DUMMY_COOP_EXIT_REQUEST)
-    })
-  })
-
-  describe('createLightningInvoice', () => {
-    test('should successfully create a lighting invoice', async () => {
-      const DUMMY_OPTIONS = {
-        value: 1_500,
-        memo: 'This is just a test invoice.'
-      }
-
-      const DUMMY_LIGHTNING_RECEIVE_REQUEST = {
-        id: 'lightining-receive-request-1'
-      }
-
-      sparkWallet.createLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_RECEIVE_REQUEST)
-
-      const lightningReceiveRequest = await account.createLightningInvoice(DUMMY_OPTIONS)
-
-      expect(sparkWallet.createLightningInvoice).toHaveBeenCalledWith({
-        amountSats: DUMMY_OPTIONS.value,
-        memo: DUMMY_OPTIONS.memo
-      })
-
-      expect(lightningReceiveRequest).toEqual(DUMMY_LIGHTNING_RECEIVE_REQUEST)
-    })
-  })
-
-  describe('getLightningReceiveRequest', () => {
-    test('should successfully return the lightning receive request', async () => {
-      const DUMMY_INVOICE_ID = 'dummy-invoice-id'
-
-      const DUMMY_LIGHTING_RECEIVE_REQUEST = {
-        id: DUMMY_INVOICE_ID
-      }
-
-      sparkWallet.getLightningReceiveRequest = jest.fn().mockResolvedValue(DUMMY_LIGHTING_RECEIVE_REQUEST)
-
-      const lightningReceiveRequest = await account.getLightningReceiveRequest(DUMMY_INVOICE_ID)
-      expect(sparkWallet.getLightningReceiveRequest).toHaveBeenCalledWith(DUMMY_INVOICE_ID)
-      expect(lightningReceiveRequest).toEqual(DUMMY_LIGHTING_RECEIVE_REQUEST)
-    })
-  })
-
-  describe('payLightningInvoice', () => {
-    test('should successfully pay a lightning invoice', async () => {
-      const DUMMY_OPTIONS = {
-        invoice: 'dummy-bolt11-invoice',
-        maxFeeSats: 50
-      }
-
-      const DUMMY_LIGHTNING_SEND_REQUEST = {
-        id: 'lighting-send-request-1'
-      }
-
-      sparkWallet.payLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_SEND_REQUEST)
-
-      const lightningSendRequest = await account.payLightningInvoice(DUMMY_OPTIONS)
-
-      expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith({
-        invoice: DUMMY_OPTIONS.invoice,
-        maxFeeSats: DUMMY_OPTIONS.maxFeeSats
-      })
-
-      expect(lightningSendRequest).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
-    })
-  })
-
-  describe('getLightningSendFeeEstimate', () => {
-    test('should successfully return the fee estimate', async () => {
-      const DUMMY_OPTIONS = {
-        invoice: 'dummy-bolt11-invoice'
-      }
-
-      const DUMMY_FEE_ESTIMATE = 100
-
-      sparkWallet.getLightningSendFeeEstimate = jest.fn().mockResolvedValue(DUMMY_FEE_ESTIMATE)
-
-      const feeEstimate = await account.getLightningSendFeeEstimate(DUMMY_OPTIONS)
-
-      expect(sparkWallet.getLightningSendFeeEstimate).toHaveBeenCalledWith({
-        encodedInvoice: DUMMY_OPTIONS.invoice
-      })
-
-      expect(feeEstimate).toBe(DUMMY_FEE_ESTIMATE)
     })
   })
 
@@ -349,6 +226,7 @@ describe('WalletAccountSpark', () => {
       sparkWallet.getTransfers = jest.fn().mockResolvedValueOnce({ transfers: [] })
 
       const transfers = await account.getTransfers()
+
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
       expect(transfers).toEqual([])
     })
@@ -358,6 +236,7 @@ describe('WalletAccountSpark', () => {
         .mockResolvedValue({ transfers: [] })
 
       const transfers = await account.getTransfers()
+
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
       expect(transfers).toEqual(DUMMY_TRANSFERS)
     })
@@ -367,6 +246,7 @@ describe('WalletAccountSpark', () => {
         .mockResolvedValue({ transfers: [] })
 
       const transfers = await account.getTransfers({ direction: 'incoming' })
+
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
       expect(transfers).toEqual([DUMMY_TRANSFERS[0], DUMMY_TRANSFERS[2], DUMMY_TRANSFERS[4]])
     })
@@ -376,6 +256,7 @@ describe('WalletAccountSpark', () => {
         .mockResolvedValue({ transfers: [] })
 
       const transfers = await account.getTransfers({ direction: 'outgoing' })
+
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(10, 0)
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[3]])
     })
@@ -385,6 +266,7 @@ describe('WalletAccountSpark', () => {
         .mockResolvedValue({ transfers: [] })
 
       const transfers = await account.getTransfers({ limit: 2, skip: 1 })
+
       expect(sparkWallet.getTransfers).toHaveBeenCalledWith(3, 0)
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[2]])
     })

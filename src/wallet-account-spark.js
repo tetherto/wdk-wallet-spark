@@ -216,9 +216,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
  */
   async transfer (options) {
     const txId = await this._wallet.transferTokens({
-      tokenIdentifier: options.tokenAddress,
-      tokenAmount: BigInt(options.value),
-      receiverSparkAddress: options.to
+      tokenIdentifier: options.token,
+      tokenAmount: BigInt(options.amount),
+      receiverSparkAddress: options.recipient
     })
 
     return { hash: txId, fee: 0n }
