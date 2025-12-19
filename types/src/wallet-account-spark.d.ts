@@ -222,7 +222,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {LightningSendFeeEstimateInput} options - The fee estimation options.
      * @returns {Promise<bigint>} Fee estimate for sending Lightning payments.
      */
-    quoteLightningInvoice(options: LightningSendFeeEstimateInput): Promise<bigint>;
+    quotePayLightningInvoice(options: LightningSendFeeEstimateInput): Promise<bigint>;
     /**
      * Creates a Spark invoice for receiving a sats payment.
      *

@@ -364,7 +364,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {LightningSendFeeEstimateInput} options - The fee estimation options.
    * @returns {Promise<bigint>} Fee estimate for sending Lightning payments.
    */
-  async quoteLightningInvoice (options) {
+  async quotePayLightningInvoice (options) {
     const fee = await this._wallet.getLightningSendFeeEstimate(options)
     return BigInt(fee)
   }

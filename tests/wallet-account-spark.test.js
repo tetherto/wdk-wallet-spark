@@ -422,7 +422,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('quoteLightningInvoice', () => {
+  describe('quotePayLightningInvoice', () => {
     test('should return the fee estimate as bigint', async () => {
       const DUMMY_OPTIONS = {
         encodedInvoice: 'lnbc1500...'
@@ -432,7 +432,7 @@ describe('WalletAccountSpark', () => {
 
       sparkWallet.getLightningSendFeeEstimate = jest.fn().mockResolvedValue(DUMMY_FEE_ESTIMATE)
 
-      const feeEstimate = await account.quoteLightningInvoice(DUMMY_OPTIONS)
+      const feeEstimate = await account.quotePayLightningInvoice(DUMMY_OPTIONS)
 
       expect(sparkWallet.getLightningSendFeeEstimate).toHaveBeenCalledWith(DUMMY_OPTIONS)
       expect(feeEstimate).toBe(BigInt(DUMMY_FEE_ESTIMATE))
