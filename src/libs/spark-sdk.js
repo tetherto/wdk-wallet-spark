@@ -15,6 +15,8 @@
 
 let SparkWallet, Network, ValidationError, DefaultSparkSigner
 
+// Import the appropriate module based on environment
+// Use direct string literals so bundler can statically analyze both paths
 const imports = await import('@buildonspark/spark-sdk/bare')
 
 DefaultSparkSigner = imports.DefaultSparkSigner
