@@ -25,12 +25,12 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
-    "@buildonspark/bare": "0.0.22",
-    "@buildonspark/spark-sdk": "0.4.1",
+    "@buildonspark/bare": "0.0.30",
+    "@buildonspark/spark-sdk": "0.5.1",
     "@scure/bip32": "1.7.0",
     "@sparkscan/api-node-sdk-client": "0.1.8",
     "@tetherto/wdk-wallet": "^1.0.0-beta.1",
-    "bare-node-runtime": "1.1.1",
+    "bare-node-runtime": "^1.1.4",
     "bip39": "3.1.0",
     "sodium-universal": "5.0.1"
   },
@@ -51,7 +51,7 @@
       "default": "./package.json"
     }
   },
-    "publishConfig": {
+  "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
