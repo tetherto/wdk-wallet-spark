@@ -33,6 +33,7 @@ npm install @tetherto/wdk-wallet-spark
 
 1. WalletManagerSpark: Main class for managing wallets
 2. WalletAccountSpark: Use this for full access accounts
+3. WalletAccountReadOnlySpark: Use this for read-only accounts
 
 ### Creating a New Wallet
 
@@ -202,7 +203,6 @@ new WalletManagerSpark(seed, config)
 | Method | Description | Returns |
 |--------|-------------|---------|
 | `getAccount(index)` | Returns a wallet account at the specified index | `Promise<WalletAccountSpark>` |
-| `getAccountByPath(path)` | Returns a wallet account at a specific BIP-44 derivation path | `Promise<WalletAccountSpark>` |
 | `getFeeRates()` | Returns current fee rates for transactions (always zero for Spark) | `Promise<FeeRates>` |
 | `dispose()` | Disposes all wallet accounts, clearing private keys from memory | `void` |
 
@@ -224,21 +224,7 @@ console.log('Spark account address:', address)
 **Note:** Uses derivation path pattern `m/44'/998'/0'/0/{index}` where 998 is the coin type for Liquid Bitcoin.
 
 ##### `getAccountByPath(path)`
-Returns a Spark wallet account at a specific BIP-44 derivation path.
-
-**Parameters:**
-- `path` (string): The derivation path (e.g. "0'/0/0")
-
-**Returns:** `Promise<WalletAccountSpark>` - The Spark wallet account
-
-**Example:**
-```javascript
-const account = await wallet.getAccountByPath("0'/0/1")
-const address = await account.getAddress()
-console.log('Account address:', address)
-```
-
-**Note:** The path is relative to the base path `m/44'/998'/0'`
+**Not supported on Spark blockchain.** This method throws an error when called. Use `getAccount(index)` instead.
 
 ##### `getFeeRates()`
 Returns current fee rates for Spark transactions from the network.
