@@ -146,9 +146,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @type {string}
    */
   get path () {
-    const accountNumber = Network[this._wallet.config.config.network]
+    const networkId = Network[this._wallet.config.config.network]
 
-    return `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${accountNumber}'/0/${this.index}`
+    return `${BIP_44_LBTC_DERIVATION_PATH_PREFIX}/${networkId}'/0/${this.index}`
   }
 
   /**
