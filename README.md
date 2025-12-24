@@ -80,7 +80,8 @@ const address2 = await account2.getAddress()
 console.log('Account 2 address:', address2)
 
 // Note: All accounts use BIP-44 derivation paths with pattern:
-// m/44'/998'/0'/0/{index} where 998 is the coin type for Liquid Bitcoin
+// m/44'/998'/{network}'/0/{index} where 998 is the coin type for Liquid Bitcoin
+// and {network} is the network number (MAINNET=0, TESTNET=1, REGTEST=2)
 ```
 
 **Important Note**: Custom derivation paths via `getAccountByPath()` are not supported on the Spark blockchain. Only indexed accounts using the standard BIP-44 pattern are available.
@@ -221,7 +222,7 @@ const address = await account.getAddress()
 console.log('Spark account address:', address)
 ```
 
-**Note:** Uses derivation path pattern `m/44'/998'/0'/0/{index}` where 998 is the coin type for Liquid Bitcoin.
+**Note:** Uses derivation path pattern `m/44'/998'/{network}'/0/{index}` where 998 is the coin type for Liquid Bitcoin and `{network}` is the network number (MAINNET=0, TESTNET=1, REGTEST=2).
 
 ##### `getAccountByPath(path)`
 **Not supported on Spark blockchain.** This method throws an error when called. Use `getAccount(index)` instead.
@@ -281,14 +282,13 @@ Represents an individual Spark wallet account. Implements `IWalletAccount` from 
 | `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
 | `getBalance()` | Returns the native token balance in satoshis | `Promise<bigint>` |
 | `getTokenBalance(tokenAddress)` | Returns the balance for a specific token | `Promise<bigint>` |
-| `getTransactionReceipt(hash)` | Gets the transaction receipt for a given transaction hash | `Promise<{hash: string, blockNumber: number, status: string, gasUsed: number} | null>` |
+| `getTransactionReceipt(hash)` | Gets the transaction receipt for a given transaction hash | `Promise<SparkTransactionReceipt | null>` |
 | `getTransfers(options?)` | Returns the account's transfer history | `Promise<Array<{hash: string, from: string, to: string, value: bigint, timestamp: number, direction: string}>>` |
 | `getSingleUseDepositAddress()` | Generates a single-use Bitcoin deposit address | `Promise<string>` |
+| `getStaticDepositAddress()` | Gets a reusable static deposit address | `Promise<string>` |
 | `getUnusedDepositAddresses()` | Gets all unused single-use deposit addresses | `Promise<string[]>` |
-| `getUtxosForDepositAddress(depositAddress, limit?, offset?)` | Returns confirmed utxos for a deposit address | `Promise<string[]>` |
 | `claimDeposit(txId)` | Claims a Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
 | `claimStaticDeposit(txId)` | Claims a static Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
-| `getLatestDepositTxId(depositAddress)` | Checks for a confirmed Bitcoin deposit to the specified address | `Promise<string | null>` |
 | `refundStaticDeposit(options)` | Refunds a static deposit back to a Bitcoin address | `Promise<string>` |
 | `quoteWithdraw(options)` | Gets a fee quote for withdrawing funds | `Promise<CoopExitFeeQuote>` |
 | `withdraw(options)` | Withdraws funds to a Bitcoin address | `Promise<CoopExitRequest | null | undefined>` |
@@ -452,12 +452,14 @@ Gets the transaction receipt for a given transaction hash.
 **Parameters:**
 - `hash` (string): Transaction hash
 
-**Returns:** `Promise<{hash: string, blockNumber: number, status: string, gasUsed: number} | null>` - Transaction receipt details, or null if not found
+**Returns:** `Promise<SparkTransactionReceipt | null>` - Transaction receipt from the SparkScan API, or null if not found
 
 **Example:**
 ```javascript
-const receipt = await account.getTransactionReceipt('0x...')
-console.log('Transaction receipt:', receipt)
+const receipt = await account.getTransactionReceipt('txid...')
+if (receipt) {
+  console.log('Transaction receipt:', receipt)
+}
 ```
 
 ##### `getTransfers(options?)`
@@ -491,20 +493,15 @@ const depositAddress = await account.getSingleUseDepositAddress()
 console.log('Send Bitcoin to:', depositAddress)
 ```
 
-##### `getUtxosForDepositAddress(depositAddress, limit?, offset?)`
-Returns confirmed utxos for a given Spark deposit address.
+##### `getStaticDepositAddress()`
+Gets a reusable static deposit address for Bitcoin deposits from layer 1. Unlike single-use addresses, this address can be reused for multiple deposits.
 
-**Parameters:**
-- `depositAddress` (string): The deposit address to query
-- `limit` (number, optional): Maximum number of utxos to return (default: 100)
-- `offset` (number, optional): Pagination offset (default: 0)
-
-**Returns:** `Promise<string[]>` - List of confirmed utxos
+**Returns:** `Promise<string>` - Bitcoin static deposit address
 
 **Example:**
 ```javascript
-const utxos = await account.getUtxosForDepositAddress(depositAddress, 50, 0)
-console.log('Confirmed UTXOs:', utxos)
+const staticAddress = await account.getStaticDepositAddress()
+console.log('Static deposit address:', staticAddress)
 ```
 
 ##### `claimDeposit(txId)`
@@ -530,22 +527,6 @@ Gets all unused single-use deposit addresses.
 ```javascript
 const unusedAddresses = await account.getUnusedDepositAddresses()
 console.log('Unused deposit addresses:', unusedAddresses)
-```
-
-##### `getLatestDepositTxId(depositAddress)`
-Checks for a confirmed Bitcoin deposit to the specified address.
-
-**Parameters:**
-- `depositAddress` (string): Bitcoin deposit address to check
-
-**Returns:** `Promise<string | null>` - Transaction ID if found, null otherwise
-
-**Example:**
-```javascript
-const txId = await account.getLatestDepositTxId(depositAddress)
-if (txId) {
-  console.log('Found deposit:', txId)
-}
 ```
 
 ##### `claimStaticDeposit(txId)`
@@ -618,20 +599,15 @@ Withdraws funds from the Spark network to an on-chain Bitcoin address.
 
 **Example:**
 ```javascript
-// First, get a fee quote
-const feeQuote = await account.quoteWithdraw({
-  withdrawalAddress: 'bc1q...',
-  amountSats: 1000000
-})
-
-// Then withdraw with the quote
+// Withdraw funds to a Bitcoin address (fee quote is fetched internally)
 const withdrawal = await account.withdraw({
   onchainAddress: 'bc1q...',
-  amountSats: 1000000,
-  feeQuote: feeQuote
+  amountSats: 1000000
 })
 console.log('Withdrawal request:', withdrawal)
 ```
+
+**Note:** The fee quote is automatically fetched internally by the `withdraw()` method. Use `quoteWithdraw()` if you want to preview the fees before initiating a withdrawal.
 
 ##### `createLightningInvoice(options)`
 Creates a Lightning invoice for receiving payments.
