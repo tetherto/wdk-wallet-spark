@@ -33,6 +33,7 @@ npm install @tetherto/wdk-wallet-spark
 
 1. WalletManagerSpark: Main class for managing wallets
 2. WalletAccountSpark: Use this for full access accounts
+3. WalletAccountReadOnlySpark: Use this for read-only accounts
 
 ### Creating a New Wallet
 
@@ -79,7 +80,8 @@ const address2 = await account2.getAddress()
 console.log('Account 2 address:', address2)
 
 // Note: All accounts use BIP-44 derivation paths with pattern:
-// m/44'/998'/0'/0/{index} where 998 is the coin type for Liquid Bitcoin
+// m/44'/998'/{network}'/0/{index} where 998 is the coin type for Liquid Bitcoin
+// and {network} is the network number (MAINNET=0, TESTNET=1, REGTEST=2)
 ```
 
 **Important Note**: Custom derivation paths via `getAccountByPath()` are not supported on the Spark blockchain. Only indexed accounts using the standard BIP-44 pattern are available.
@@ -202,7 +204,6 @@ new WalletManagerSpark(seed, config)
 | Method | Description | Returns |
 |--------|-------------|---------|
 | `getAccount(index)` | Returns a wallet account at the specified index | `Promise<WalletAccountSpark>` |
-| `getAccountByPath(path)` | Returns a wallet account at a specific BIP-44 derivation path | `Promise<WalletAccountSpark>` |
 | `getFeeRates()` | Returns current fee rates for transactions (always zero for Spark) | `Promise<FeeRates>` |
 | `dispose()` | Disposes all wallet accounts, clearing private keys from memory | `void` |
 
@@ -221,24 +222,10 @@ const address = await account.getAddress()
 console.log('Spark account address:', address)
 ```
 
-**Note:** Uses derivation path pattern `m/44'/998'/0'/0/{index}` where 998 is the coin type for Liquid Bitcoin.
+**Note:** Uses derivation path pattern `m/44'/998'/{network}'/0/{index}` where 998 is the coin type for Liquid Bitcoin and `{network}` is the network number (MAINNET=0, TESTNET=1, REGTEST=2).
 
 ##### `getAccountByPath(path)`
-Returns a Spark wallet account at a specific BIP-44 derivation path.
-
-**Parameters:**
-- `path` (string): The derivation path (e.g. "0'/0/0")
-
-**Returns:** `Promise<WalletAccountSpark>` - The Spark wallet account
-
-**Example:**
-```javascript
-const account = await wallet.getAccountByPath("0'/0/1")
-const address = await account.getAddress()
-console.log('Account address:', address)
-```
-
-**Note:** The path is relative to the base path `m/44'/998'/0'`
+**Not supported on Spark blockchain.** This method throws an error when called. Use `getAccount(index)` instead.
 
 ##### `getFeeRates()`
 Returns current fee rates for Spark transactions from the network.
@@ -286,7 +273,7 @@ Represents an individual Spark wallet account. Implements `IWalletAccount` from 
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `getAddress()` | Returns the account's Spark address | `Promise<string>` |
+| `getAddress()` | Returns the account's Spark address | `Promise<SparkAddressFormat>` |
 | `sign(message)` | Signs a message using the account's identity key | `Promise<string>` |
 | `verify(message, signature)` | Verifies a message signature | `Promise<boolean>` |
 | `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
@@ -295,24 +282,32 @@ Represents an individual Spark wallet account. Implements `IWalletAccount` from 
 | `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
 | `getBalance()` | Returns the native token balance in satoshis | `Promise<bigint>` |
 | `getTokenBalance(tokenAddress)` | Returns the balance for a specific token | `Promise<bigint>` |
-| `getTransactionReceipt(hash)` | Gets the transaction receipt for a given transaction hash | `Promise<{hash: string, blockNumber: number, status: string, gasUsed: number} | null>` |
+| `getTransactionReceipt(hash)` | Gets the transaction receipt for a given transaction hash | `Promise<SparkTransactionReceipt | null>` |
 | `getTransfers(options?)` | Returns the account's transfer history | `Promise<Array<{hash: string, from: string, to: string, value: bigint, timestamp: number, direction: string}>>` |
 | `getSingleUseDepositAddress()` | Generates a single-use Bitcoin deposit address | `Promise<string>` |
-| `getUtxosForDepositAddress(depositAddress, limit?, offset?)` | Returns confirmed utxos for a deposit address | `Promise<string[]>` |
+| `getStaticDepositAddress()` | Gets a reusable static deposit address | `Promise<string>` |
+| `getUnusedDepositAddresses()` | Gets all unused single-use deposit addresses | `Promise<string[]>` |
 | `claimDeposit(txId)` | Claims a Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
-| `getLatestDepositTxId(depositAddress)` | Checks for a confirmed Bitcoin deposit to the specified address | `Promise<string | null>` |
-| `withdraw({to, value})` | Withdraws funds to a Bitcoin address | `Promise<{id: string, to: string, value: number, status: string, fee: number} | null | undefined>` |
-| `createLightningInvoice({value, memo?})` | Creates a Lightning invoice | `Promise<{id: string, invoice: string, status: string, value: number, memo?: string}>` |
-| `getLightningReceiveRequest(invoiceId)` | Gets Lightning receive request by id | `Promise<{id: string, invoice: string, status: string, value: number, memo?: string} | null>` |
-| `payLightningInvoice({invoice, maxFeeSats})` | Pays a Lightning invoice | `Promise<{id: string, invoice: string, status: string, fee: number}>` |
-| `getLightningSendFeeEstimate({invoice})` | Gets fee estimate for Lightning payments | `Promise<number>` |
+| `claimStaticDeposit(txId)` | Claims a static Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
+| `refundStaticDeposit(options)` | Refunds a static deposit back to a Bitcoin address | `Promise<string>` |
+| `quoteWithdraw(options)` | Gets a fee quote for withdrawing funds | `Promise<CoopExitFeeQuote>` |
+| `withdraw(options)` | Withdraws funds to a Bitcoin address | `Promise<CoopExitRequest | null | undefined>` |
+| `createLightningInvoice(options)` | Creates a Lightning invoice | `Promise<LightningReceiveRequest>` |
+| `getLightningReceiveRequest(invoiceId)` | Gets Lightning receive request by id | `Promise<LightningReceiveRequest | null>` |
+| `getLightningSendRequest(requestId)` | Gets Lightning send request by id | `Promise<LightningSendRequest | null>` |
+| `payLightningInvoice(options)` | Pays a Lightning invoice | `Promise<LightningSendRequest>` |
+| `quotePayLightningInvoice(options)` | Gets fee estimate for Lightning payments | `Promise<bigint>` |
+| `createSparkSatsInvoice(options)` | Creates a Spark invoice for receiving sats | `Promise<SparkAddressFormat>` |
+| `createSparkTokensInvoice(options)` | Creates a Spark invoice for receiving tokens | `Promise<SparkAddressFormat>` |
+| `paySparkInvoice(invoices)` | Pays one or more Spark invoices | `Promise<FulfillSparkInvoiceResponse>` |
+| `getSparkInvoices(invoices)` | Queries the status of Spark invoices | `Promise<QuerySparkInvoicesResponse>` |
 | `toReadOnlyAccount()` | Creates a read-only version of this account | `Promise<WalletAccountReadOnlySpark>` |
 | `dispose()` | Disposes the wallet account, clearing private keys | `void` |
 
 ##### `getAddress()`
 Returns the account's Spark network address.
 
-**Returns:** `Promise<string>` - The account's Spark address
+**Returns:** `Promise<SparkAddressFormat>` - The account's Spark address
 
 **Example:**
 ```javascript
@@ -392,14 +387,18 @@ Transfers tokens to another address.
 
 **Parameters:**
 - `options` (TransferOptions): Transfer options object
+  - `token` (string): Token identifier (Bech32m token identifier, e.g., `btkn1...`)
+  - `amount` (bigint): Amount of tokens to transfer
+  - `recipient` (string): Recipient Spark address
 
 **Returns:** `Promise<{hash: string, fee: bigint}>` - Transfer result containing transaction details
 
 **Example:**
 ```javascript
 const result = await account.transfer({
-  to: 'spark1...',
-  value: 1000000 // Amount in satoshis
+  token: 'btkn1...', // Token identifier
+  amount: BigInt(1000000), // Amount of tokens
+  recipient: 'spark1...' // Recipient address
 })
 console.log('Transfer hash:', result.hash)
 ```
@@ -453,12 +452,14 @@ Gets the transaction receipt for a given transaction hash.
 **Parameters:**
 - `hash` (string): Transaction hash
 
-**Returns:** `Promise<{hash: string, blockNumber: number, status: string, gasUsed: number} | null>` - Transaction receipt details, or null if not found
+**Returns:** `Promise<SparkTransactionReceipt | null>` - Transaction receipt from the SparkScan API, or null if not found
 
 **Example:**
 ```javascript
-const receipt = await account.getTransactionReceipt('0x...')
-console.log('Transaction receipt:', receipt)
+const receipt = await account.getTransactionReceipt('txid...')
+if (receipt) {
+  console.log('Transaction receipt:', receipt)
+}
 ```
 
 ##### `getTransfers(options?)`
@@ -492,20 +493,15 @@ const depositAddress = await account.getSingleUseDepositAddress()
 console.log('Send Bitcoin to:', depositAddress)
 ```
 
-##### `getUtxosForDepositAddress(depositAddress, limit?, offset?)`
-Returns confirmed utxos for a given Spark deposit address.
+##### `getStaticDepositAddress()`
+Gets a reusable static deposit address for Bitcoin deposits from layer 1. Unlike single-use addresses, this address can be reused for multiple deposits.
 
-**Parameters:**
-- `depositAddress` (string): The deposit address to query
-- `limit` (number, optional): Maximum number of utxos to return (default: 100)
-- `offset` (number, optional): Pagination offset (default: 0)
-
-**Returns:** `Promise<string[]>` - List of confirmed utxos
+**Returns:** `Promise<string>` - Bitcoin static deposit address
 
 **Example:**
 ```javascript
-const utxos = await account.getUtxosForDepositAddress(depositAddress, 50, 0)
-console.log('Confirmed UTXOs:', utxos)
+const staticAddress = await account.getStaticDepositAddress()
+console.log('Static deposit address:', staticAddress)
 ```
 
 ##### `claimDeposit(txId)`
@@ -522,53 +518,112 @@ const leaves = await account.claimDeposit('bitcoin_tx_id...')
 console.log('Claimed deposit:', leaves)
 ```
 
-##### `getLatestDepositTxId(depositAddress)`
-Checks for a confirmed Bitcoin deposit to the specified address.
+##### `getUnusedDepositAddresses()`
+Gets all unused single-use deposit addresses.
 
-**Parameters:**
-- `depositAddress` (string): Bitcoin deposit address to check
-
-**Returns:** `Promise<string | null>` - Transaction ID if found, null otherwise
+**Returns:** `Promise<string[]>` - List of unused deposit addresses
 
 **Example:**
 ```javascript
-const txId = await account.getLatestDepositTxId(depositAddress)
-if (txId) {
-  console.log('Found deposit:', txId)
-}
+const unusedAddresses = await account.getUnusedDepositAddresses()
+console.log('Unused deposit addresses:', unusedAddresses)
 ```
 
-##### `withdraw({to, value})`
+##### `claimStaticDeposit(txId)`
+Claims a static Bitcoin deposit to add funds to the Spark wallet.
+
+**Parameters:**
+- `txId` (string): Bitcoin transaction ID of the deposit
+
+**Returns:** `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` - Wallet leaves created from the deposit
+
+**Example:**
+```javascript
+const leaves = await account.claimStaticDeposit('bitcoin_tx_id...')
+console.log('Claimed static deposit:', leaves)
+```
+
+##### `refundStaticDeposit(options)`
+Refunds a deposit made to a static deposit address back to a specified Bitcoin address. The minimum fee is 300 satoshis.
+
+**Parameters:**
+- `options` (object): Refund options
+  - `depositTransactionId` (string): The transaction ID of the original deposit
+  - `outputIndex` (number): The output index of the deposit
+  - `destinationAddress` (string): The Bitcoin address to send the refund to
+  - `satsPerVbyteFee` (number): The fee rate in sats per vbyte for the refund transaction
+
+**Returns:** `Promise<string>` - The refund transaction as a hex string that needs to be broadcast
+
+**Example:**
+```javascript
+const refundTx = await account.refundStaticDeposit({
+  depositTransactionId: 'txid...',
+  outputIndex: 0,
+  destinationAddress: 'bc1q...',
+  satsPerVbyteFee: 10
+})
+console.log('Refund transaction (hex):', refundTx)
+// Broadcast this transaction to the Bitcoin network
+```
+
+##### `quoteWithdraw(options)`
+Gets a fee quote for withdrawing funds from Spark cooperatively to an on-chain Bitcoin address.
+
+**Parameters:**
+- `options` (object): Withdrawal quote options
+  - `withdrawalAddress` (string): The Bitcoin address where the funds should be sent
+  - `amountSats` (number): The amount in satoshis to withdraw
+
+**Returns:** `Promise<CoopExitFeeQuote>` - The withdrawal fee quote
+
+**Example:**
+```javascript
+const feeQuote = await account.quoteWithdraw({
+  withdrawalAddress: 'bc1q...',
+  amountSats: 1000000
+})
+console.log('Withdrawal fee quote:', feeQuote)
+```
+
+##### `withdraw(options)`
 Withdraws funds from the Spark network to an on-chain Bitcoin address.
 
 **Parameters:**
-- `to` (string): Bitcoin address to withdraw to
-- `value` (number): Amount in satoshis
+- `options` (WithdrawOptions): Withdrawal options object
+  - `onchainAddress` (string): Bitcoin address to withdraw to
+  - `amountSats` (number): Amount in satoshis to withdraw
+  - Additional options from `WithdrawParams` may be supported
 
-**Returns:** `Promise<{id: string, to: string, value: number, status: string, fee: number} | null | undefined>` - Withdrawal request details
+**Returns:** `Promise<CoopExitRequest | null | undefined>` - Withdrawal request details
 
 **Example:**
 ```javascript
+// Withdraw funds to a Bitcoin address (fee quote is fetched internally)
 const withdrawal = await account.withdraw({
-  to: 'bc1q...',
-  value: 1000000
+  onchainAddress: 'bc1q...',
+  amountSats: 1000000
 })
 console.log('Withdrawal request:', withdrawal)
 ```
 
-##### `createLightningInvoice({value, memo?})`
+**Note:** The fee quote is automatically fetched internally by the `withdraw()` method. Use `quoteWithdraw()` if you want to preview the fees before initiating a withdrawal.
+
+##### `createLightningInvoice(options)`
 Creates a Lightning invoice for receiving payments.
 
 **Parameters:**
-- `value` (number): Amount in satoshis
-- `memo` (string, optional): Invoice description
+- `options` (CreateLightningInvoiceParams): Invoice options object
+  - `amountSats` (number, optional): Amount in satoshis
+  - `memo` (string, optional): Invoice description
+  - Additional options from `CreateLightningInvoiceParams` may be supported
 
-**Returns:** `Promise<{id: string, invoice: string, status: string, value: number, memo?: string}>` - Lightning invoice details
+**Returns:** `Promise<LightningReceiveRequest>` - Lightning invoice details
 
 **Example:**
 ```javascript
 const invoice = await account.createLightningInvoice({
-  value: 100000,
+  amountSats: 100000,
   memo: 'Payment for services'
 })
 console.log('Invoice:', invoice.invoice)
@@ -590,38 +645,141 @@ if (request) {
 }
 ```
 
-##### `payLightningInvoice({invoice, maxFeeSats})`
+##### `getLightningSendRequest(requestId)`
+Gets a Lightning send request by id.
+
+**Parameters:**
+- `requestId` (string): The id of the Lightning send request
+
+**Returns:** `Promise<LightningSendRequest | null>` - The Lightning send request
+
+**Example:**
+```javascript
+const request = await account.getLightningSendRequest(requestId)
+if (request) {
+  console.log('Lightning send request:', request)
+}
+```
+
+##### `payLightningInvoice(options)`
 Pays a Lightning invoice.
 
 **Parameters:**
-- `invoice` (string): BOLT11 Lightning invoice
-- `maxFeeSats` (number): Maximum fee willing to pay in satoshis
+- `options` (PayLightningInvoiceParams): Payment options object
+  - `encodedInvoice` (string): BOLT11 Lightning invoice
+  - `maxFeeSats` (number, optional): Maximum fee willing to pay in satoshis
+  - Additional options from `PayLightningInvoiceParams` may be supported
 
-**Returns:** `Promise<{id: string, invoice: string, status: string, fee: number}>` - Payment details
+**Returns:** `Promise<LightningSendRequest>` - Payment details
 
 **Example:**
 ```javascript
 const payment = await account.payLightningInvoice({
-  invoice: 'lnbc...',
+  encodedInvoice: 'lnbc...',
   maxFeeSats: 1000
 })
 console.log('Payment result:', payment)
 ```
 
-##### `getLightningSendFeeEstimate({invoice})`
+##### `quotePayLightningInvoice(options)`
 Estimates the fee for paying a Lightning invoice.
 
 **Parameters:**
-- `invoice` (string): BOLT11 Lightning invoice
+- `options` (LightningSendFeeEstimateInput): Fee estimation options
+  - `encodedInvoice` (string): BOLT11 Lightning invoice
+  - Additional options may be supported
 
-**Returns:** `Promise<number>` - Estimated fee in satoshis
+**Returns:** `Promise<bigint>` - Estimated fee in satoshis
 
 **Example:**
 ```javascript
-const feeEstimate = await account.getLightningSendFeeEstimate({
-  invoice: 'lnbc...'
+const feeEstimate = await account.quotePayLightningInvoice({
+  encodedInvoice: 'lnbc...'
 })
-console.log('Estimated Lightning fee:', feeEstimate, 'satoshis')
+console.log('Estimated Lightning fee:', Number(feeEstimate), 'satoshis')
+```
+
+##### `createSparkSatsInvoice(options)`
+Creates a Spark invoice for receiving a sats payment.
+
+**Parameters:**
+- `options` (object): Invoice options
+  - `amount` (number, optional): The amount of sats to receive (optional for open invoices)
+  - `memo` (string, optional): Optional memo/description for the payment
+  - `senderSparkAddress` (SparkAddressFormat, optional): Optional Spark address of the expected sender
+  - `expiryTime` (Date, optional): Optional expiry time for the invoice
+
+**Returns:** `Promise<SparkAddressFormat>` - A Spark invoice that can be paid by another Spark wallet
+
+**Example:**
+```javascript
+const invoice = await account.createSparkSatsInvoice({
+  amount: 100000,
+  memo: 'Payment for services'
+})
+console.log('Spark invoice:', invoice)
+```
+
+##### `createSparkTokensInvoice(options)`
+Creates a Spark invoice for receiving a token payment.
+
+**Parameters:**
+- `options` (object): Invoice options
+  - `tokenIdentifier` (string, optional): The Bech32m token identifier (e.g., `btkn1...`)
+  - `amount` (bigint, optional): The amount of tokens to receive
+  - `memo` (string, optional): Optional memo/description for the payment
+  - `senderSparkAddress` (SparkAddressFormat, optional): Optional Spark address of the expected sender
+  - `expiryTime` (Date, optional): Optional expiry time for the invoice
+
+**Returns:** `Promise<SparkAddressFormat>` - A Spark invoice that can be paid by another Spark wallet
+
+**Example:**
+```javascript
+const invoice = await account.createSparkTokensInvoice({
+  tokenIdentifier: 'btkn1...',
+  amount: BigInt(1000),
+  memo: 'Token payment'
+})
+console.log('Spark token invoice:', invoice)
+```
+
+##### `paySparkInvoice(invoices)`
+Fulfills one or more Spark invoices by paying them.
+
+**Parameters:**
+- `invoices` (SparkInvoice[]): Array of invoices to fulfill
+  - Each invoice has:
+    - `invoice` (SparkAddressFormat): The Spark invoice to pay
+    - `amount` (bigint, optional): Amount to pay (required for invoices without encoded amount)
+
+**Returns:** `Promise<FulfillSparkInvoiceResponse>` - Response containing transaction results and errors
+
+**Example:**
+```javascript
+const result = await account.paySparkInvoice([
+  {
+    invoice: 'spark1...',
+    amount: BigInt(100000)
+  }
+])
+console.log('Payment result:', result)
+```
+
+##### `getSparkInvoices(invoices)`
+Queries the status of Spark invoices.
+
+**Parameters:**
+- `invoices` (string[]): Array of invoice addresses to query
+
+**Returns:** `Promise<QuerySparkInvoicesResponse>` - Response containing invoice status information
+
+**Example:**
+```javascript
+const status = await account.getSparkInvoices([
+  'spark1...',
+  'spark1...'
+])
+console.log('Invoice statuses:', status)
 ```
 
 ##### `toReadOnlyAccount()`
