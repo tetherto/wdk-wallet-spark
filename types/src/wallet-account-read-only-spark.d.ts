@@ -47,6 +47,14 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
      */
     getTransactionReceipt(hash: string): Promise<SparkTransactionReceipt | null>;
+    /**
+     * Verifies a message's signature.
+     *
+     * @param {string} message - The original message.
+     * @param {string} signature - The signature to verify (hex-encoded, DER or compact).
+     * @returns {Promise<boolean>} True if the signature is valid.
+     */
+    verify(message: string, signature: string): Promise<boolean>;
 }
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkTransactionReceipt = import("@sparkscan/api-node-sdk-client").TxV1Response;

@@ -18,6 +18,11 @@ import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
 
 import { addressSummaryV1AddressAddressGet, getTransactionDetailsByIdV1TxTxidGet } from '@sparkscan/api-node-sdk-client'
 
+import { decodeSparkAddress } from '@buildonspark/spark-sdk'
+import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
+import { hexToBytes } from '@noble/curves/utils'
+import { sha256 } from '@noble/hashes/sha2.js'
+
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 
 /** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
@@ -128,5 +133,24 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 
       throw error
     }
+  }
+
+  /**
+   * Verifies a message's signature.
+   *
+   * @param {string} message - The original message.
+   * @param {string} signature - The signature to verify (hex-encoded, DER or compact).
+   * @returns {Promise<boolean>} True if the signature is valid.
+   */
+  async verify (message, signature) {
+
+    const address = await this.getAddress()
+    const { identityPublicKey } = decodeSparkAddress(address, this._config.network)
+
+    const hash = sha256(Buffer.from(message, 'utf8'))
+    const sigBytes = hexToBytes(signature)
+    const pubKeyBytes = hexToBytes(identityPublicKey)
+
+    return curvesSecp256k1.verify(sigBytes, hash, pubKeyBytes)
   }
 }

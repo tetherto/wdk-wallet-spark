@@ -1,5 +1,9 @@
 import { describe, beforeEach, expect, jest, test } from '@jest/globals'
 
+
+const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
+
+
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
 const DUMMY_SPARK_SCAN_API_KEY = 'dummy-spark-scan-api-key'
@@ -107,6 +111,59 @@ describe('WalletAccountReadOnlySpark', () => {
       })
 
       expect(receipt).toBe(null)
+    })
+  })
+
+  describe('verify', () => {
+    test('should return true for a valid signature', async () => {
+      const { WalletAccountSpark } = await import('../index.js')
+      const mainAccount = await WalletAccountSpark.at(SEED_PHRASE, 0, { network: 'MAINNET' })
+
+      const MESSAGE = 'Dummy message to sign.'
+      const signature = await mainAccount.sign(MESSAGE)
+
+      const result = await account.verify(MESSAGE, signature)
+
+      expect(result).toBe(true)
+
+      mainAccount.dispose()
+      await mainAccount.cleanupConnections()
+    })
+
+    test('should return false for an invalid signature', async () => {
+      const { WalletAccountSpark } = await import('../index.js')
+      const mainAccount = await WalletAccountSpark.at(SEED_PHRASE, 0, { network: 'MAINNET' })
+
+      const MESSAGE1 = 'Message 1'
+      const MESSAGE2 = 'Message 2'
+      const signature = await mainAccount.sign(MESSAGE1)
+
+      expect(await account.verify(MESSAGE1, signature)).toBe(true)
+      expect(await account.verify(MESSAGE2, signature)).toBe(false)
+
+      mainAccount.dispose()
+      await mainAccount.cleanupConnections()
+    })
+
+    test('should return false for signature from different address', async () => {
+      const { WalletAccountSpark } = await import('../index.js')
+      const otherAccount = await WalletAccountSpark.at(SEED_PHRASE, 1, { network: 'MAINNET' })
+
+      const MESSAGE = 'Dummy message to sign.'
+      const signature = await otherAccount.sign(MESSAGE)
+
+      const result = await account.verify(MESSAGE, signature)
+
+      expect(result).toBe(false)
+
+      otherAccount.dispose()
+      await otherAccount.cleanupConnections()
+    })
+
+    test('should throw on a malformed signature', async () => {
+      const MESSAGE = 'Dummy message to sign.'
+      await expect(account.verify(MESSAGE, 'A bad signature'))
+        .rejects.toThrow('hex string expected')
     })
   })
 })

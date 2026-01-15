@@ -128,17 +128,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Verifies a message's signature.
-   *
-   * @param {string} message - The original message.
-   * @param {string} signature - The signature to verify.
-   * @returns {Promise<boolean>} True if the signature is valid.
-   */
-  async verify (message, signature) {
-    return await this._wallet.validateMessageWithIdentityKey(message, signature)
-  }
-
-  /**
    * Sends a transaction.
    *
    * @param {SparkTransaction} tx - The transaction.
