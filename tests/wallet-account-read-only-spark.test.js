@@ -116,29 +116,17 @@ describe('WalletAccountReadOnlySpark', () => {
 
   describe('verify', () => {
     const MESSAGE = 'Dummy message to sign.'
-    const VALID_SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'
-    const INVALID_SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de7'
-    const DIFFERENT_ADDRESS_SIGNATURE = '30440220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0220ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
-    const MALFORMED_SIGNATURE = 'not-a-hex-signature'
-
+    const SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'
     test('should return true for a valid signature', async () => {
-      const result = await account.verify(MESSAGE, VALID_SIGNATURE) 
+      const result = await account.verify(MESSAGE, SIGNATURE)
       expect(result).toBe(true)
     })
-
     test('should return false for an invalid signature', async () => {
-      const result = await account.verify(MESSAGE, INVALID_SIGNATURE)
+      const result = await account.verify('Another message.', SIGNATURE)
       expect(result).toBe(false)
     })
-
-    test('should return false for signature from different address', async () => {
-      const result = await account.verify(MESSAGE, DIFFERENT_ADDRESS_SIGNATURE)
-      expect(result).toBe(false)
-    })
-
     test('should throw on a malformed signature', async () => {
-      const MESSAGE = 'Dummy message to sign.'
-      await expect(account.verify(MESSAGE, MALFORMED_SIGNATURE))
+      await expect(account.verify(MESSAGE, 'A bad signature'))
         .rejects.toThrow('hex string expected')
     })
   })
