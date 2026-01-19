@@ -143,7 +143,6 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-
     const address = await this.getAddress()
     const { identityPublicKey } = decodeSparkAddress(address, this._config.network)
 
