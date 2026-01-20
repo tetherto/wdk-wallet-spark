@@ -4,6 +4,7 @@
     "src/**/*.js",
   ],
   "compilerOptions": {
+    "rootDir": ".",
     "target": "ES2015",
     "module": "NodeNext",
     "moduleResolution": "nodenext",
