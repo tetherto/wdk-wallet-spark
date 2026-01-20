@@ -495,9 +495,7 @@ describe('WalletAccountSpark', () => {
 
       const response = await account.paySparkInvoice(DUMMY_INVOICES)
 
-      expect(sparkWallet.fulfillSparkInvoice).toHaveBeenCalledWith({
-        sparkInvoices: DUMMY_INVOICES
-      })
+      expect(sparkWallet.fulfillSparkInvoice).toHaveBeenCalledWith(DUMMY_INVOICES)
       expect(response).toEqual(DUMMY_RESPONSE)
     })
   })

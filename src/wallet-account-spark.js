@@ -396,7 +396,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
    */
   async paySparkInvoice (invoices) {
-    return await this._wallet.fulfillSparkInvoice({ sparkInvoices: invoices })
+    return await this._wallet.fulfillSparkInvoice(invoices)
   }
 
   /**
