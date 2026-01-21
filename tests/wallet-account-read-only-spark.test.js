@@ -1,9 +1,5 @@
 import { describe, beforeEach, expect, jest, test } from '@jest/globals'
 
-
-const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
-
-
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
 const DUMMY_SPARK_SCAN_API_KEY = 'dummy-spark-scan-api-key'
