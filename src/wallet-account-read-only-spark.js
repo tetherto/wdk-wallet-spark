@@ -16,7 +16,11 @@
 
 import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
 
-import { addressSummaryV1AddressAddressGet, getTransactionDetailsByIdV1TxTxidGet } from '@sparkscan/api-node-sdk-client'
+import {
+  addressSummaryV1AddressAddressGet,
+  getAddressTokensV1AddressAddressTokensGet,
+  getTransactionDetailsByIdV1TxTxidGet
+} from '@sparkscan/api-node-sdk-client'
 
 import { decodeSparkAddress } from '@buildonspark/spark-sdk'
 import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
@@ -34,7 +38,7 @@ import { sha256 } from '@noble/hashes/sha2.js'
 /**
  * @typedef {Object} SparkTransaction
  * @property {string} to - The transaction's recipient.
- * @property {number} value - The amount of bitcoins to send to the recipient (in satoshis).
+ * @property {number | bigint} value - The amount of bitcoins to send to the recipient (in satoshis).
  */
 
 /**
@@ -42,6 +46,8 @@ import { sha256 } from '@noble/hashes/sha2.js'
  * @property {NetworkType} [network] - The network (default: "MAINNET").
  * @property {string} [sparkScanApiKey] - The spark scan api-key.
  */
+
+export const DEFAULT_NETWORK = 'MAINNET'
 
 export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
@@ -59,7 +65,24 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @protected
      * @type {SparkWalletConfig}
      */
-    this._config = config
+    this._config = {
+      ...config,
+      network: config.network || DEFAULT_NETWORK
+    }
+  }
+
+  /**
+   * Returns the API request options for SparkScan.
+   *
+   * @private
+   * @returns {{ headers: { Authorization?: string } }}
+   */
+  get _apiOptions () {
+    return {
+      headers: {
+        Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
+      }
+    }
   }
 
   /**
@@ -69,16 +92,12 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    */
   async getBalance () {
     const address = await this.getAddress()
-
-    const { balance } = await addressSummaryV1AddressAddressGet(address, { network: this._config.network }, {
-      headers: {
-        Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
-      }
-    })
-
-    const btcHardBalanceSats = balance.btcHardBalanceSats
-
-    return BigInt(btcHardBalanceSats)
+    const { balance } = await addressSummaryV1AddressAddressGet(
+      address,
+      { network: this._config.network },
+      this._apiOptions
+    )
+    return BigInt(balance.btcHardBalanceSats)
   }
 
   /**
@@ -88,7 +107,14 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<bigint>} The token balance (in base unit).
    */
   async getTokenBalance (tokenAddress) {
-    throw new Error('Method not supported on the spark blockchain.')
+    const address = await this.getAddress()
+    const { tokens } = await getAddressTokensV1AddressAddressTokensGet(
+      address,
+      { network: this._config.network },
+      this._apiOptions
+    )
+    const token = tokens.find(t => t.tokenAddress === tokenAddress)
+    return token ? BigInt(token.balance) : 0n
   }
 
   /**
@@ -108,7 +134,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
    */
   async quoteTransfer (options) {
-    throw new Error('Method not supported on the spark blockchain.')
+    return { fee: 0n }
   }
 
   /**
@@ -119,18 +145,15 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    */
   async getTransactionReceipt (hash) {
     try {
-      const receipt = await getTransactionDetailsByIdV1TxTxidGet(hash, { network: this._config.network }, {
-        headers: {
-          Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
-        }
-      })
-
-      return receipt
+      return await getTransactionDetailsByIdV1TxTxidGet(
+        hash,
+        { network: this._config.network },
+        this._apiOptions
+      )
     } catch (error) {
       if (error.status === 404) {
         return null
       }
-
       throw error
     }
   }

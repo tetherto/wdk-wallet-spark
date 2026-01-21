@@ -10,10 +10,13 @@ const DUMMY_SPARK_SCAN_API_KEY = 'dummy-spark-scan-api-key'
 
 const addressSummaryV1AddressAddressGetMock = jest.fn()
 
+const getAddressTokensV1AddressAddressTokensGetMock = jest.fn()
+
 const getTransactionDetailsByIdV1TxTxidGetMock = jest.fn()
 
 jest.unstable_mockModule('@sparkscan/api-node-sdk-client', () => ({
   addressSummaryV1AddressAddressGet: addressSummaryV1AddressAddressGetMock,
+  getAddressTokensV1AddressAddressTokensGet: getAddressTokensV1AddressAddressTokensGetMock,
   getTransactionDetailsByIdV1TxTxidGet: getTransactionDetailsByIdV1TxTxidGetMock
 }))
 
@@ -51,9 +54,40 @@ describe('WalletAccountReadOnlySpark', () => {
   })
 
   describe('getTokenBalance', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.getTokenBalance('token-address'))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
+    const DUMMY_TOKEN_ADDRESS = '0x1234567890abcdef'
+
+    test('should return the correct token balance', async () => {
+      const DUMMY_TOKENS_RESPONSE = {
+        tokens: [
+          { tokenAddress: DUMMY_TOKEN_ADDRESS, balance: 5_000 },
+          { tokenAddress: '0xother', balance: 1_000 }
+        ]
+      }
+
+      getAddressTokensV1AddressAddressTokensGetMock.mockResolvedValue(DUMMY_TOKENS_RESPONSE)
+
+      const balance = await account.getTokenBalance(DUMMY_TOKEN_ADDRESS)
+
+      expect(getAddressTokensV1AddressAddressTokensGetMock).toHaveBeenCalledWith(ADDRESS, { network: 'MAINNET' }, {
+        headers: {
+          Authorization: `Bearer ${DUMMY_SPARK_SCAN_API_KEY}`
+        }
+      })
+      expect(balance).toBe(5_000n)
+    })
+
+    test('should return 0n if the token is not found', async () => {
+      const DUMMY_TOKENS_RESPONSE = {
+        tokens: [
+          { tokenAddress: '0xother', balance: 1_000 }
+        ]
+      }
+
+      getAddressTokensV1AddressAddressTokensGetMock.mockResolvedValue(DUMMY_TOKENS_RESPONSE)
+
+      const balance = await account.getTokenBalance(DUMMY_TOKEN_ADDRESS)
+
+      expect(balance).toBe(0n)
     })
   })
 
@@ -71,9 +105,10 @@ describe('WalletAccountReadOnlySpark', () => {
   })
 
   describe('quoteTransfer', () => {
-    test('should throw an unsupported operation error', async () => {
-      await expect(account.quoteTransfer({}))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
+    test('should successfully quote a transfer', async () => {
+      const { fee } = await account.quoteTransfer({})
+
+      expect(fee).toBe(0n)
     })
   })
 

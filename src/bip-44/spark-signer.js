@@ -18,7 +18,7 @@ import { sodium_memzero } from 'sodium-universal'
 
 import Bip44HDKeysGenerator from './hd-keys-generator.js'
 
-import { DefaultSparkSigner } from '../libs/spark-sdk.js'
+import { DefaultSparkSigner } from '#libs/spark-sdk'
 
 /** @internal */
 export default class Bip44SparkSigner extends DefaultSparkSigner {
@@ -33,14 +33,16 @@ export default class Bip44SparkSigner extends DefaultSparkSigner {
   }
 
   dispose () {
-    sodium_memzero(this.identityKey.privateKey)
-    sodium_memzero(this.signingKey.privateKey)
-    sodium_memzero(this.depositKey.privateKey)
-    sodium_memzero(this.staticDepositKey.privateKey)
+    if (this.identityKey?.privateKey) sodium_memzero(this.identityKey.privateKey)
+    if (this.signingKey?.privateKey) sodium_memzero(this.signingKey.privateKey)
+    if (this.depositKey?.privateKey) sodium_memzero(this.depositKey.privateKey)
+    if (this.staticDepositKey?.privateKey) sodium_memzero(this.staticDepositKey.privateKey)
+    if (this.htlcPreimageKey?.privateKey) sodium_memzero(this.htlcPreimageKey.privateKey)
 
     this.identityKey = undefined
     this.signingKey = undefined
     this.depositKey = undefined
     this.staticDepositKey = undefined
+    this.htlcPreimageKey = undefined
   }
 }
