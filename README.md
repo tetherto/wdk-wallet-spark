@@ -159,8 +159,9 @@ const message = 'Hello, Spark!'
 const signature = await account.sign(message)
 console.log('Signature:', signature)
 
-// Verify a signature
-const isValid = await account.verify(message, signature)
+// Verify a signature (using read-only account)
+const readOnlyAccount = await account.toReadOnlyAccount()
+const isValid = await readOnlyAccount.verify(message, signature)
 console.log('Signature valid:', isValid)
 ```
 
@@ -275,7 +276,6 @@ Represents an individual Spark wallet account. Implements `IWalletAccount` from 
 |--------|-------------|---------|
 | `getAddress()` | Returns the account's Spark address | `Promise<SparkAddressFormat>` |
 | `sign(message)` | Signs a message using the account's identity key | `Promise<string>` |
-| `verify(message, signature)` | Verifies a message signature | `Promise<boolean>` |
 | `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
 | `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
 | `transfer(options)` | Transfers tokens to another address | `Promise<{hash: string, fee: bigint}>` |
@@ -326,20 +326,6 @@ Signs a message using the account's identity key.
 ```javascript
 const signature = await account.sign('Hello Spark!')
 console.log('Signature:', signature)
-```
-##### `verify(message, signature)`
-Verifies a message signature using the account's identity key.
-
-**Parameters:**
-- `message` (string): Original message
-- `signature` (string): Signature as hex string
-
-**Returns:** `Promise<boolean>` - True if signature is valid
-
-**Example:**
-```javascript
-const isValid = await account.verify('Hello Spark!', signature)
-console.log('Signature valid:', isValid)
 ```
 
 ##### `sendTransaction(tx)`
