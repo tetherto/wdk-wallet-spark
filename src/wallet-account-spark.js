@@ -296,6 +296,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
    */
   async withdraw (options) {
+    options.exitSpeed = options.exitSpeed || 'MEDIUM'
     const feeQuote = await this.quoteWithdraw({
       withdrawalAddress: options.onchainAddress,
       amountSats: options.amountSats
@@ -385,7 +386,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
    */
   async paySparkInvoice (invoices) {
-    return await this._wallet.fulfillSparkInvoice({ sparkInvoices: invoices })
+    return await this._wallet.fulfillSparkInvoice(invoices)
   }
 
   /**
