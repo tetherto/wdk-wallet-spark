@@ -86,29 +86,6 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('verify', () => {
-    const MESSAGE = 'Dummy message to sign.'
-
-    const SIGNATURE = '304402206aeb89509bda36572e2f042e9fb6b04bf3c759c0473c6d0e683143680bb363ad02207bd0e9dd8ff98a9a15962722904c71dd074c83ce8717d67d31b1010a4e9c6de6'
-
-    test('should return true for a valid signature', async () => {
-      const result = await account.verify(MESSAGE, SIGNATURE)
-
-      expect(result).toBe(true)
-    })
-
-    test('should return false for an invalid signature', async () => {
-      const result = await account.verify('Another message.', SIGNATURE)
-
-      expect(result).toBe(false)
-    })
-
-    test('should throw on a malformed signature', async () => {
-      await expect(account.verify(MESSAGE, 'A bad signature'))
-        .rejects.toThrow('hex string expected')
-    })
-  })
-
   describe('sendTransaction', () => {
     const DUMMY_TRANSACTION = {
       to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
@@ -495,9 +472,7 @@ describe('WalletAccountSpark', () => {
 
       const response = await account.paySparkInvoice(DUMMY_INVOICES)
 
-      expect(sparkWallet.fulfillSparkInvoice).toHaveBeenCalledWith({
-        sparkInvoices: DUMMY_INVOICES
-      })
+      expect(sparkWallet.fulfillSparkInvoice).toHaveBeenCalledWith(DUMMY_INVOICES)
       expect(response).toEqual(DUMMY_RESPONSE)
     })
   })

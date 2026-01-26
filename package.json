@@ -1,6 +1,6 @@
 {
   "name": "@tetherto/wdk-wallet-spark",
-  "version": "1.0.0-beta.6",
+  "version": "1.0.0-beta.7",
   "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
   "keywords": [
     "wdk",
@@ -21,15 +21,18 @@
     "build:types": "rimraf *.d.ts **/*.d.ts; tsc",
     "lint": "standard --env jest",
     "lint:fix": "standard --fix --env jest",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage"
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathIgnorePatterns=integration",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=integration --testTimeout=60000",
+    "test:all": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testTimeout=60000",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --testPathIgnorePatterns=integration"
   },
   "dependencies": {
-    "@buildonspark/bare": "0.0.30",
-    "@buildonspark/spark-sdk": "0.5.1",
+    "@buildonspark/bare": "0.0.36",
+    "@buildonspark/spark-sdk": "0.5.7",
+    "@noble/hashes": "^2.0.1",
     "@scure/bip32": "1.7.0",
     "@sparkscan/api-node-sdk-client": "0.1.8",
-    "@tetherto/wdk-wallet": "^1.0.0-beta.1",
+    "@tetherto/wdk-wallet": "1.0.0-beta.7",
     "bare-node-runtime": "^1.1.4",
     "bip39": "3.1.0",
     "sodium-universal": "5.0.1"
