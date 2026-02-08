@@ -4,5 +4,6 @@ export {
   SparkWallet,
   Network,
   ValidationError,
-  BareSparkSigner as DefaultSparkSigner
+  BareSparkSigner as DefaultSparkSigner,
+  decodeSparkAddress
 } from '@buildonspark/bare'

@@ -22,7 +22,7 @@ import {
   getTransactionDetailsByIdV1TxTxidGet
 } from '@sparkscan/api-node-sdk-client'
 
-import { decodeSparkAddress } from '@buildonspark/spark-sdk'
+import { decodeSparkAddress } from '#libs/spark-sdk'
 import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
 import { hexToBytes } from '@noble/curves/utils'
 import { sha256 } from '@noble/hashes/sha2.js'
