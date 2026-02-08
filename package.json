@@ -1,6 +1,6 @@
 {
   "name": "@tetherto/wdk-wallet-spark",
-  "version": "1.0.0-beta.7",
+  "version": "1.0.0-beta.8",
   "description": "A simple package to manage BIP-32 wallets for the Spark blockchain.",
   "keywords": [
     "wdk",
@@ -27,8 +27,8 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --testPathIgnorePatterns=integration"
   },
   "dependencies": {
-    "@buildonspark/bare": "0.0.36",
-    "@buildonspark/spark-sdk": "0.5.7",
+    "@buildonspark/bare": "0.0.40",
+    "@buildonspark/spark-sdk": "0.6.1",
     "@noble/hashes": "^2.0.1",
     "@scure/bip32": "1.7.0",
     "@sparkscan/api-node-sdk-client": "0.1.8",
