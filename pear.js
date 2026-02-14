@@ -1,4 +1,4 @@
-// Copyright 2024 Tether Operations Limited
+// Copyright 2026 Tether Operations Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,7 @@
 
 // Pear Runtime entry point.
 // Pear's bare-module resolver does not support the `with { imports }` syntax
-// used in bare.js. This entry point omits it, but transitive dependencies
-// that use Node.js builtins will need individual patching via a postinstall
-// script. See: https://github.com/tetherto/wdk-wallet-spark/issues/55
+// used in bare.js.
 
 import 'bare-node-runtime/global'
 
