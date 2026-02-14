@@ -44,6 +44,7 @@
   "exports": {
     ".": {
       "types": "./types/index.d.ts",
+      "pear": "./pear.js",
       "bare": "./bare.js",
       "default": "./index.js"
     },
@@ -53,6 +54,7 @@
   },
   "imports": {
     "#libs/spark-sdk": {
+      "pear": "./src/libs/spark-sdk-bare.js",
       "bare": "./src/libs/spark-sdk-bare.js",
       "default": "./src/libs/spark-sdk-node.js"
     }
@@ -64,6 +66,7 @@
   "standard": {
     "ignore": [
       "bare.js",
+      "pear.js",
       "tests/**/*.js"
     ]
   }
