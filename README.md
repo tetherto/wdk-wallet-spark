@@ -276,6 +276,7 @@ Represents an individual Spark wallet account. Implements `IWalletAccount` from 
 |--------|-------------|---------|
 | `getAddress()` | Returns the account's Spark address | `Promise<SparkAddressFormat>` |
 | `sign(message)` | Signs a message using the account's identity key | `Promise<string>` |
+| `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
 | `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
 | `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
 | `transfer(options)` | Transfers tokens to another address | `Promise<{hash: string, fee: bigint}>` |
@@ -326,6 +327,17 @@ Signs a message using the account's identity key.
 ```javascript
 const signature = await account.sign('Hello Spark!')
 console.log('Signature:', signature)
+```
+
+##### `getIdentityKey()`
+Returns the account's identity public key (hex-encoded).
+
+**Returns:** `Promise<string>` - The identity public key
+
+**Example:**
+```javascript
+const identityKey = await account.getIdentityKey()
+console.log('Identity key:', identityKey) // 02eda8...
 ```
 
 ##### `sendTransaction(tx)`
