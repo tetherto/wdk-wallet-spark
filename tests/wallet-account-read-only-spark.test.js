@@ -4,6 +4,8 @@ const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem
 
 const DUMMY_SPARK_SCAN_API_KEY = 'dummy-spark-scan-api-key'
 
+const IDENTITY_KEY = '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
+
 const addressSummaryV1AddressAddressGetMock = jest.fn()
 
 const getAddressTokensV1AddressAddressTokensGetMock = jest.fn()
@@ -159,6 +161,14 @@ describe('WalletAccountReadOnlySpark', () => {
     test('should throw on a malformed signature', async () => {
       await expect(account.verify(MESSAGE, 'A bad signature'))
         .rejects.toThrow('hex string expected')
+    })
+  })
+
+  describe('getIdentityKey', () => {
+    test('should return the identity public key', async () => {
+      const identityKey = await account.getIdentityKey()
+
+      expect(identityKey).toBe(IDENTITY_KEY)
     })
   })
 })

@@ -159,6 +159,18 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
+   * Returns the account's identity public key.
+   *
+   * @returns {Promise<string>} The identity public key (hex-encoded).
+   */
+  async getIdentityKey () {
+    const address = await this.getAddress()
+    const { identityPublicKey } = decodeSparkAddress(address, this._config.network)
+
+    return identityPublicKey
+  }
+
+  /**
    * Verifies a message's signature.
    *
    * @param {string} message - The original message.
@@ -166,8 +178,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * @returns {Promise<boolean>} True if the signature is valid.
    */
   async verify (message, signature) {
-    const address = await this.getAddress()
-    const { identityPublicKey } = decodeSparkAddress(address, this._config.network)
+    const identityPublicKey = await this.getIdentityKey()
 
     const hash = sha256(Buffer.from(message, 'utf8'))
     const sigBytes = hexToBytes(signature)
