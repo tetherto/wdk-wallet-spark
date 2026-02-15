@@ -14,6 +14,7 @@
 'use strict'
 
 import WalletManager from '@tetherto/wdk-wallet'
+import WalletAccountSpark from './wallet-account-spark.js'
 
 /** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
 
@@ -41,7 +42,6 @@ export default class WalletManagerSpark extends WalletManager {
    */
   async getAccount (index = 0) {
     if (!this._accounts[index]) {
-      const { default: WalletAccountSpark } = await import('./wallet-account-spark.js')
       const account = await WalletAccountSpark.at(this.seed, index, this._config)
 
       this._accounts[index] = account
