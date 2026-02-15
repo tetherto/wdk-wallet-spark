@@ -44,6 +44,12 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      */
     getTransactionReceipt(hash: string): Promise<SparkTransactionReceipt | null>;
     /**
+     * Returns the account's identity public key.
+     *
+     * @returns {Promise<string>} The identity public key (hex-encoded).
+     */
+    getIdentityKey(): Promise<string>;
+    /**
      * Verifies a message's signature.
      *
      * @param {string} message - The original message.
