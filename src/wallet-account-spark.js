@@ -173,6 +173,15 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Returns the account's identity public key.
+   *
+   * @returns {string} The identity public key (hex-encoded).
+   */
+  getIdentityKey () {
+    return Buffer.from(this._signer.identityKey.publicKey).toString('hex')
+  }
+
+  /**
    * Signs a message.
    *
    * @param {string} message - The message to sign.
