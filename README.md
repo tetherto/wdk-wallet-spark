@@ -295,12 +295,12 @@ const readOnly = new WalletAccountReadOnlySpark('sp1pgs...', {
 |--------|-------------|---------|
 | `getBalance()` | Returns the native token balance in satoshis | `Promise<bigint>` |
 | `getTokenBalance(tokenAddress)` | Returns the balance for a specific token | `Promise<bigint>` |
-| `getTransactionReceipt(hash)` | Gets a transfer by its ID | `Promise<Object \| null>` |
+| `getTransactionReceipt(hash)` | Gets a Spark transfer by its ID | `Promise<Object \| null>` |
 | `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
 | `verify(message, signature)` | Verifies a message's signature | `Promise<boolean>` |
 | `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
 | `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
-| `getTransfers(options?)` | Returns the account's transfer history | `Promise<Array>` |
+| `getTransfers(options?)` | Returns the account's Spark transfer history | `Promise<Array>` |
 | `getUnusedDepositAddresses(options?)` | Returns unused single-use deposit addresses | `Promise<{depositAddresses: Array, offset: number}>` |
 | `getStaticDepositAddresses()` | Returns all static deposit addresses | `Promise<Array>` |
 | `getUtxosForDepositAddress(options)` | Returns confirmed UTXOs for a deposit address | `Promise<{utxos: Array<{txid: string, vout: number}>, offset: number}>` |
@@ -332,18 +332,18 @@ console.log('Token balance:', balance)
 ```
 
 ##### `getTransactionReceipt(hash)`
-Gets a transfer by its ID.
+Gets a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
 
 **Parameters:**
-- `hash` (string): The transfer ID
+- `hash` (string): The Spark transfer ID
 
-**Returns:** `Promise<Object | null>` - The transfer object, or null if not found
+**Returns:** `Promise<Object | null>` - The Spark transfer object, or null if not found
 
 **Example:**
 ```javascript
 const transfer = await readOnly.getTransactionReceipt('transfer-id...')
 if (transfer) {
-  console.log('Transfer:', transfer)
+  console.log('Spark transfer:', transfer)
 }
 ```
 
@@ -374,7 +374,7 @@ console.log('Signature valid:', isValid)
 ```
 
 ##### `getTransfers(options?)`
-Returns the account's transfer history with filtering and pagination options.
+Returns the account's Spark transfer history with filtering and pagination options. Only returns Spark transfers, not on-chain Bitcoin transactions.
 
 **Parameters:**
 - `options` (object, optional): Filter options
@@ -382,7 +382,7 @@ Returns the account's transfer history with filtering and pagination options.
   - `limit` (number): Maximum transfers to return (default: 10)
   - `skip` (number): Number of transfers to skip (default: 0)
 
-**Returns:** `Promise<Array>` - Array of transfer objects
+**Returns:** `Promise<Array>` - Array of Spark transfer objects
 
 **Example:**
 ```javascript
@@ -636,18 +636,18 @@ console.log('Token balance:', tokenBalance)
 ```
 
 ##### `getTransactionReceipt(hash)`
-Gets a transfer by its ID. Inherited from `WalletAccountReadOnlySpark`.
+Gets a Spark transfer by its ID. Inherited from `WalletAccountReadOnlySpark`. Only returns Spark transfers, not on-chain Bitcoin transactions.
 
 **Parameters:**
-- `hash` (string): The transfer ID
+- `hash` (string): The Spark transfer ID
 
-**Returns:** `Promise<Object | null>` - The transfer object, or null if not found
+**Returns:** `Promise<Object | null>` - The Spark transfer object, or null if not found
 
 **Example:**
 ```javascript
 const transfer = await account.getTransactionReceipt('transfer-id...')
 if (transfer) {
-  console.log('Transfer:', transfer)
+  console.log('Spark transfer:', transfer)
 }
 ```
 

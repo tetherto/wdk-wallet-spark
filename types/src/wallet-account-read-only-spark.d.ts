@@ -59,10 +59,37 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      */
     protected _client: any;
     /**
-     * Returns a transfer by its ID.
+     * Returns the account's bitcoin balance.
      *
-     * @param {string} hash - The transfer's ID.
-     * @returns {Promise<Object | null>} The transfer, or null if not found.
+     * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+     */
+    getBalance(): Promise<bigint>;
+    /**
+     * Returns the account balance for a specific token.
+     *
+     * @param {string} tokenAddress - The token identifier (Bech32m token identifier, e.g., `btkn1...`).
+     * @returns {Promise<bigint>} The token balance (in base unit).
+     */
+    getTokenBalance(tokenAddress: string): Promise<bigint>;
+    /**
+     * Quotes the costs of a send transaction operation.
+     *
+     * @param {SparkTransaction} tx - The transaction.
+     * @returns {Promise<Omit<TransactionResult, 'hash'>>} The transaction's quotes.
+     */
+    quoteSendTransaction(tx: SparkTransaction): Promise<Omit<TransactionResult, 'hash'>>;
+    /**
+     * Quotes the costs of a transfer operation.
+     *
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<Omit<TransferResult, 'hash'>>} The transfer's quotes.
+     */
+    quoteTransfer(options: TransferOptions): Promise<Omit<TransferResult, 'hash'>>;
+    /**
+     * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
+     *
+     * @param {string} hash - The Spark transfer's ID.
+     * @returns {Promise<Object | null>} The Spark transfer, or null if not found.
      */
     getTransactionReceipt(hash: string): Promise<Object | null>;
     /**
@@ -80,10 +107,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      */
     verify(message: string, signature: string): Promise<boolean>;
     /**
-     * Returns the bitcoin transfer history of the account.
+     * Returns the Spark transfer history of the account. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *
      * @param {GetTransfersOptions} [options] - The options.
-     * @returns {Promise<Array>} The bitcoin transfers.
+     * @returns {Promise<Array>} The Spark transfers.
      */
     getTransfers(options?: GetTransfersOptions): Promise<Array<any>>;
     /**

@@ -145,10 +145,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns a transfer by its ID.
+   * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
-   * @param {string} hash - The transfer's ID.
-   * @returns {Promise<Object | null>} The transfer, or null if not found.
+   * @param {string} hash - The Spark transfer's ID.
+   * @returns {Promise<Object | null>} The Spark transfer, or null if not found.
    */
   async getTransactionReceipt (hash) {
     const transfers = await this._client.getTransfersByIds([hash])
@@ -185,10 +185,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns the bitcoin transfer history of the account.
+   * Returns the Spark transfer history of the account. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
    * @param {GetTransfersOptions} [options] - The options.
-   * @returns {Promise<Array>} The bitcoin transfers.
+   * @returns {Promise<Array>} The Spark transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
