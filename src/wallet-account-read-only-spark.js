@@ -16,20 +16,13 @@
 
 import { WalletAccountReadOnly } from '@tetherto/wdk-wallet'
 
-import {
-  addressSummaryV1AddressAddressGet,
-  getAddressTokensV1AddressAddressTokensGet,
-  getTransactionDetailsByIdV1TxTxidGet
-} from '@sparkscan/api-node-sdk-client'
-
-import { decodeSparkAddress } from '#libs/spark-sdk'
+import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 import { secp256k1 as curvesSecp256k1 } from '@noble/curves/secp256k1'
 import { hexToBytes } from '@noble/curves/utils'
 import { sha256 } from '@noble/hashes/sha2.js'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
-
-/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
+/** @typedef {import('@buildonspark/spark-sdk').TokenBalanceMap} TokenBalanceMap */
 
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
@@ -44,7 +37,34 @@ import { sha256 } from '@noble/hashes/sha2.js'
 /**
  * @typedef {Object} SparkWalletConfig
  * @property {NetworkType} [network] - The network (default: "MAINNET").
- * @property {string} [sparkScanApiKey] - The spark scan api-key.
+ */
+
+/**
+ * @typedef {Object} GetTransfersOptions
+ * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
+ * @property {number} [limit] - The number of transfers to return (default: 10).
+ * @property {number} [skip] - The number of transfers to skip (default: 0).
+ */
+
+/**
+ * @typedef {Object} GetUnusedDepositAddressesOptions
+ * @property {number} [limit] - The maximum number of addresses to return (default: 100).
+ * @property {number} [offset] - The pagination offset (default: 0).
+ */
+
+/**
+ * @typedef {Object} GetUtxosForDepositAddressOptions
+ * @property {string} depositAddress - The Bitcoin deposit address to query.
+ * @property {number} [limit] - The maximum number of UTXOs to return (default: 100).
+ * @property {number} [offset] - The pagination offset (default: 0).
+ * @property {boolean} [excludeClaimed] - If true, excludes already-claimed UTXOs.
+ */
+
+/**
+ * @typedef {Object} GetSparkInvoicesOptions
+ * @property {string[]} invoices - Array of Spark invoice strings to query.
+ * @property {number} [limit] - The maximum number of results to return (default: 100).
+ * @property {number} [offset] - The pagination offset (default: 0).
  */
 
 export const DEFAULT_NETWORK = 'MAINNET'
@@ -69,20 +89,15 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
       ...config,
       network: config.network || DEFAULT_NETWORK
     }
-  }
 
-  /**
-   * Returns the API request options for SparkScan.
-   *
-   * @private
-   * @returns {{ headers: { Authorization?: string } }}
-   */
-  get _apiOptions () {
-    return {
-      headers: {
-        Authorization: this._config.sparkScanApiKey ? `Bearer ${this._config.sparkScanApiKey}` : undefined
-      }
-    }
+    /**
+     * The readonly client for querying wallet data.
+     *
+     * @protected
+     */
+    this._client = SparkReadonlyClient.createPublic({
+      network: this._config.network
+    })
   }
 
   /**
@@ -92,29 +107,21 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    */
   async getBalance () {
     const address = await this.getAddress()
-    const { balance } = await addressSummaryV1AddressAddressGet(
-      address,
-      { network: this._config.network },
-      this._apiOptions
-    )
-    return BigInt(balance.btcHardBalanceSats)
+    return await this._client.getAvailableBalance(address)
   }
 
   /**
    * Returns the account balance for a specific token.
    *
-   * @param {string} tokenAddress - The smart contract address of the token.
+   * @param {string} tokenAddress - The token identifier (Bech32m token identifier, e.g., `btkn1...`).
    * @returns {Promise<bigint>} The token balance (in base unit).
    */
   async getTokenBalance (tokenAddress) {
     const address = await this.getAddress()
-    const { tokens } = await getAddressTokensV1AddressAddressTokensGet(
-      address,
-      { network: this._config.network },
-      this._apiOptions
-    )
-    const token = tokens.find(t => t.tokenAddress === tokenAddress)
-    return token ? BigInt(token.balance) : 0n
+    const balanceMap = await this._client.getTokenBalance(address, [tokenAddress])
+
+    const entry = balanceMap.get(tokenAddress)
+    return entry ? entry.availableToSendBalance : 0n
   }
 
   /**
@@ -138,24 +145,14 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns a transaction's receipt.
+   * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
-   * @param {string} hash - The transaction's hash.
-   * @returns {Promise<SparkTransactionReceipt | null>} The receipt, or null if the transaction has not been included in a block yet.
+   * @param {string} hash - The Spark transfer's ID.
+   * @returns {Promise<Object | null>} The Spark transfer, or null if not found.
    */
   async getTransactionReceipt (hash) {
-    try {
-      return await getTransactionDetailsByIdV1TxTxidGet(
-        hash,
-        { network: this._config.network },
-        this._apiOptions
-      )
-    } catch (error) {
-      if (error.status === 404) {
-        return null
-      }
-      throw error
-    }
+    const transfers = await this._client.getTransfersByIds([hash])
+    return transfers.length > 0 ? transfers[0] : null
   }
 
   /**
@@ -185,5 +182,83 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     const pubKeyBytes = hexToBytes(identityPublicKey)
 
     return curvesSecp256k1.verify(sigBytes, hash, pubKeyBytes)
+  }
+
+  /**
+   * Returns the Spark transfer history of the account. Only returns Spark transfers, not on-chain Bitcoin transactions.
+   *
+   * @param {GetTransfersOptions} [options] - The options.
+   * @returns {Promise<Array>} The Spark transfers.
+   */
+  async getTransfers (options = {}) {
+    const { direction = 'all', limit = 10, skip = 0 } = options
+    const address = await this.getAddress()
+
+    const batchSize = limit + skip
+    const transfers = []
+    let offset = 0
+
+    while (transfers.length < batchSize) {
+      const { transfers: batch } = await this._client.getTransfers({
+        sparkAddress: address,
+        limit: batchSize,
+        offset
+      })
+
+      if (batch.length === 0) break
+
+      const filtered = direction === 'all'
+        ? batch
+        : batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
+
+      transfers.push(...filtered)
+      offset += batchSize
+    }
+
+    return transfers.slice(skip, skip + limit)
+  }
+
+  /**
+   * Returns unused single-use deposit addresses for the account.
+   *
+   * @param {GetUnusedDepositAddressesOptions} [options] - The options.
+   * @returns {Promise<{ depositAddresses: Array, offset: number }>} The unused deposit addresses.
+   */
+  async getUnusedDepositAddresses (options = {}) {
+    const address = await this.getAddress()
+    return await this._client.getUnusedDepositAddresses({
+      sparkAddress: address,
+      ...options
+    })
+  }
+
+  /**
+   * Returns all static deposit addresses for the account.
+   *
+   * @returns {Promise<Array>} The static deposit addresses.
+   */
+  async getStaticDepositAddresses () {
+    const address = await this.getAddress()
+    return await this._client.getStaticDepositAddresses(address)
+  }
+
+  /**
+   * Returns confirmed UTXOs for a specific deposit address.
+   *
+   * @param {GetUtxosForDepositAddressOptions} options - The options.
+   * @returns {Promise<{ utxos: Array<{ txid: string, vout: number }>, offset: number }>} The UTXOs.
+   */
+  async getUtxosForDepositAddress (options) {
+    return await this._client.getUtxosForDepositAddress(options)
+  }
+
+  /**
+   * Queries the status of Spark invoices.
+   *
+   * @param {GetSparkInvoicesOptions} params - The query parameters.
+   * @returns {Promise<{ invoiceStatuses: Array, offset: number }>} The invoice statuses.
+   */
+  async getSparkInvoices (params) {
+    return await this._client.getSparkInvoices(params)
   }
 }
