@@ -23,6 +23,7 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
+/** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
 /** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
 /** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
 /** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
@@ -77,6 +78,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * The readonly client for querying wallet data.
      *
      * @protected
+     * @type {SparkReadonlyClient}
      */
     this._client = SparkReadonlyClient.createPublic({
       network: this._config.network

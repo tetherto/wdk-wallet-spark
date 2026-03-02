@@ -2,6 +2,7 @@ export { default } from "./src/wallet-manager-spark.js";
 export { default as WalletAccountReadOnlySpark } from "./src/wallet-account-read-only-spark.js";
 export { default as WalletAccountSpark } from "./src/wallet-account-spark.js";
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
+export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type WithdrawParams = import("@buildonspark/spark-sdk").WithdrawParams;
 export type CreateLightningInvoiceParams = import("@buildonspark/spark-sdk").CreateLightningInvoiceParams;
 export type PayLightningInvoiceParams = import("@buildonspark/spark-sdk").PayLightningInvoiceParams;

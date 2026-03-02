@@ -37,8 +37,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * The readonly client for querying wallet data.
      *
      * @protected
+     * @type {SparkReadonlyClient}
      */
-    protected _client: any;
+    protected _client: SparkReadonlyClient;
     /**
      * Returns the account's bitcoin balance.
      *
@@ -135,6 +136,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     }>;
 }
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
+export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type QueryDepositAddressesParams = import("@buildonspark/spark-sdk").QueryDepositAddressesParams;
 export type GetUtxosParams = import("@buildonspark/spark-sdk").GetUtxosParams;
 export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySparkInvoicesParams;
