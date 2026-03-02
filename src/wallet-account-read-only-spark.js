@@ -23,6 +23,9 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
+/** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
+/** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
+/** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
 
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
@@ -46,26 +49,6 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
  * @property {number} [skip] - The number of transfers to skip (default: 0).
  */
 
-/**
- * @typedef {Object} GetUnusedDepositAddressesOptions
- * @property {number} [limit] - The maximum number of addresses to return (default: 100).
- * @property {number} [offset] - The pagination offset (default: 0).
- */
-
-/**
- * @typedef {Object} GetUtxosForDepositAddressOptions
- * @property {string} depositAddress - The Bitcoin deposit address to query.
- * @property {number} [limit] - The maximum number of UTXOs to return (default: 100).
- * @property {number} [offset] - The pagination offset (default: 0).
- * @property {boolean} [excludeClaimed] - If true, excludes already-claimed UTXOs.
- */
-
-/**
- * @typedef {Object} GetSparkInvoicesOptions
- * @property {string[]} invoices - Array of Spark invoice strings to query.
- * @property {number} [limit] - The maximum number of results to return (default: 100).
- * @property {number} [offset] - The pagination offset (default: 0).
- */
 
 export const DEFAULT_NETWORK = 'MAINNET'
 
@@ -221,7 +204,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns unused single-use deposit addresses for the account.
    *
-   * @param {GetUnusedDepositAddressesOptions} [options] - The options.
+   * @param {Omit<QueryDepositAddressesParams, 'sparkAddress'>} [options] - The options.
    * @returns {Promise<{ depositAddresses: Array, offset: number }>} The unused deposit addresses.
    */
   async getUnusedDepositAddresses (options = {}) {
@@ -245,7 +228,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Returns confirmed UTXOs for a specific deposit address.
    *
-   * @param {GetUtxosForDepositAddressOptions} options - The options.
+   * @param {GetUtxosParams} options - The options.
    * @returns {Promise<{ utxos: Array<{ txid: string, vout: number }>, offset: number }>} The UTXOs.
    */
   async getUtxosForDepositAddress (options) {
@@ -255,7 +238,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   /**
    * Queries the status of Spark invoices.
    *
-   * @param {GetSparkInvoicesOptions} params - The query parameters.
+   * @param {QuerySparkInvoicesParams} params - The query parameters.
    * @returns {Promise<{ invoiceStatuses: Array, offset: number }>} The invoice statuses.
    */
   async getSparkInvoices (params) {

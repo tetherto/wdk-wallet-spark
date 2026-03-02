@@ -36,9 +36,9 @@
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 /** @typedef {import('./src/wallet-account-read-only-spark.js').GetTransfersOptions} GetTransfersOptions */
-/** @typedef {import('./src/wallet-account-read-only-spark.js').GetUnusedDepositAddressesOptions} GetUnusedDepositAddressesOptions */
-/** @typedef {import('./src/wallet-account-read-only-spark.js').GetUtxosForDepositAddressOptions} GetUtxosForDepositAddressOptions */
-/** @typedef {import('./src/wallet-account-read-only-spark.js').GetSparkInvoicesOptions} GetSparkInvoicesOptions */
+/** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
+/** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
+/** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
 
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
