@@ -23,7 +23,6 @@ import { sha256 } from '@noble/hashes/sha2.js'
 import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
-/** @typedef {import('@buildonspark/spark-sdk').TokenBalanceMap} TokenBalanceMap */
 
 /** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
