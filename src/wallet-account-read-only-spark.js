@@ -25,6 +25,7 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
 /** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').DepositAddressQueryResult} DepositAddressQueryResult */
 /** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
 /** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
 /** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
@@ -208,7 +209,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns unused single-use deposit addresses for the account.
    *
    * @param {Omit<QueryDepositAddressesParams, 'sparkAddress'>} [options] - The options.
-   * @returns {Promise<{ depositAddresses: Array, offset: number }>} The unused deposit addresses.
+   * @returns {Promise<{ depositAddresses: DepositAddressQueryResult[], offset: number }>} The unused deposit addresses.
    */
   async getUnusedDepositAddresses (options = {}) {
     const address = await this.getAddress()

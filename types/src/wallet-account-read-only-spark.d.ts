@@ -102,7 +102,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @returns {Promise<{ depositAddresses: Array, offset: number }>} The unused deposit addresses.
      */
     getUnusedDepositAddresses(options?: Omit<QueryDepositAddressesParams, 'sparkAddress'>): Promise<{
-        depositAddresses: Array<any>;
+        depositAddresses: DepositAddressQueryResult[];
         offset: number;
     }>;
     /**
@@ -138,6 +138,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type SparkTransfer = import("@buildonspark/spark-sdk/proto/spark").Transfer;
+export type DepositAddressQueryResult = import("@buildonspark/spark-sdk/proto/spark").DepositAddressQueryResult;
 export type QueryDepositAddressesParams = import("@buildonspark/spark-sdk").QueryDepositAddressesParams;
 export type GetUtxosParams = import("@buildonspark/spark-sdk").GetUtxosParams;
 export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySparkInvoicesParams;
