@@ -29,7 +29,6 @@ describe('WalletAccountReadOnlySpark', () => {
   let account
 
   beforeEach(async () => {
-    jest.clearAllMocks()
     account = new WalletAccountReadOnlySpark(ADDRESS, {
       network: 'MAINNET'
     })
