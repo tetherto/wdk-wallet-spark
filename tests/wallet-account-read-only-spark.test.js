@@ -66,6 +66,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
       const balance = await account.getTokenBalance(DUMMY_TOKEN_ADDRESS)
 
+      expect(mockClient.getTokenBalance).toHaveBeenCalledWith(ADDRESS, [DUMMY_TOKEN_ADDRESS])
       expect(balance).toBe(0n)
     })
   })
