@@ -320,6 +320,26 @@ describe('WalletAccountReadOnlySpark', () => {
       expect(mockClient.getUtxosForDepositAddress).toHaveBeenCalledWith(OPTIONS)
       expect(result).toEqual(DUMMY_RESPONSE)
     })
+
+    test('should correctly paginate the UTXOs for a deposit address', async () => {
+      const OPTIONS = {
+        depositAddress: 'bc1qdeposit123',
+        limit: 5,
+        offset: 10
+      }
+
+      const DUMMY_RESPONSE = {
+        utxos: [{ txid: 'txid1', vout: 0 }],
+        offset: 10
+      }
+
+      mockClient.getUtxosForDepositAddress.mockResolvedValue(DUMMY_RESPONSE)
+
+      const result = await account.getUtxosForDepositAddress(OPTIONS)
+
+      expect(mockClient.getUtxosForDepositAddress).toHaveBeenCalledWith(OPTIONS)
+      expect(result).toEqual(DUMMY_RESPONSE)
+    })
   })
 
   describe('getSparkInvoices', () => {
