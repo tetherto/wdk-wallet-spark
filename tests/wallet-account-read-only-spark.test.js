@@ -247,8 +247,8 @@ describe('WalletAccountReadOnlySpark', () => {
     test('should return unused deposit addresses', async () => {
       const DUMMY_RESPONSE = {
         depositAddresses: [
-          { address: 'bc1qunused1' },
-          { address: 'bc1qunused2' }
+          { depositAddress: 'bc1qunused1' },
+          { depositAddress: 'bc1qunused2' }
         ],
         offset: 0
       }
@@ -265,7 +265,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
     test('should pass pagination options', async () => {
       const DUMMY_RESPONSE = {
-        depositAddresses: [{ address: 'bc1qunused1' }],
+        depositAddresses: [{ depositAddress: 'bc1qunused1' }],
         offset: 10
       }
 
@@ -285,8 +285,8 @@ describe('WalletAccountReadOnlySpark', () => {
   describe('getStaticDepositAddresses', () => {
     test('should return static deposit addresses', async () => {
       const DUMMY_ADDRESSES = [
-        { address: 'bc1qstatic1' },
-        { address: 'bc1qstatic2' }
+        { depositAddress: 'bc1qstatic1' },
+        { depositAddress: 'bc1qstatic2' }
       ]
 
       mockClient.getStaticDepositAddresses.mockResolvedValue(DUMMY_ADDRESSES)
