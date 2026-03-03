@@ -284,17 +284,17 @@ describe('WalletAccountReadOnlySpark', () => {
 
   describe('getStaticDepositAddresses', () => {
     test('should return static deposit addresses', async () => {
-      const DUMMY_ADDRESSES = [
-        { depositAddress: 'bc1qstatic1' },
-        { depositAddress: 'bc1qstatic2' }
+      const DUMMY_STATIC_DEPOSIT_ADDRESSES = [
+        { depositAddress: 'dummy-deposit-address-1' },
+        { depositAddress: 'dummy-deposit-address-2' }
       ]
 
-      mockClient.getStaticDepositAddresses.mockResolvedValue(DUMMY_ADDRESSES)
+      mockClient.getStaticDepositAddresses.mockResolvedValue(DUMMY_STATIC_DEPOSIT_ADDRESSES)
 
       const result = await account.getStaticDepositAddresses()
 
       expect(mockClient.getStaticDepositAddresses).toHaveBeenCalledWith(ADDRESS)
-      expect(result).toEqual(DUMMY_ADDRESSES)
+      expect(result).toEqual(DUMMY_STATIC_DEPOSIT_ADDRESSES)
     })
   })
 
