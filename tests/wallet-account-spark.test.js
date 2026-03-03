@@ -447,6 +447,26 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('toReadOnlyAccount', () => {
+    test('should return a WalletAccountReadOnlySpark instance', async () => {
+      const readOnlyAccount = await account.toReadOnlyAccount()
+
+      expect(readOnlyAccount).toBeInstanceOf(WalletAccountReadOnlySpark)
+    })
+
+    test('should return a read-only account with the correct address', async () => {
+      const readOnlyAccount = await account.toReadOnlyAccount()
+
+      expect(await readOnlyAccount.getAddress()).toBe(ACCOUNT.address)
+    })
+
+    test('should return a read-only account with the correct network config', async () => {
+      const readOnlyAccount = await account.toReadOnlyAccount()
+
+      expect(readOnlyAccount._config.network).toBe('MAINNET')
+    })
+  })
+
   describe('cleanupConnections', () => {
     test('should close and clean up connections with the blockchain', async () => {
       sparkWallet.cleanupConnections = jest.fn()
