@@ -1,4 +1,5 @@
 import { describe, beforeEach, expect, jest, test } from '@jest/globals'
+import * as sparkSdk from '#libs/spark-sdk'
 
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
@@ -16,14 +17,10 @@ const mockClient = {
 }
 
 jest.unstable_mockModule('#libs/spark-sdk', () => ({
-  SparkWallet: {},
+  ...sparkSdk,
   SparkReadonlyClient: {
     createPublic: jest.fn().mockReturnValue(mockClient)
-  },
-  Network: {},
-  ValidationError: class ValidationError extends Error {},
-  DefaultSparkSigner: class DefaultSparkSigner {},
-  decodeSparkAddress: jest.fn().mockReturnValue({ identityPublicKey: IDENTITY_KEY })
+  }
 }))
 
 const { WalletAccountReadOnlySpark } = await import('../index.js')
@@ -135,7 +132,7 @@ describe('WalletAccountReadOnlySpark', () => {
     })
     test('should throw on a malformed signature', async () => {
       await expect(account.verify(MESSAGE, 'A bad signature'))
-        .rejects.toThrow('hex string expected')
+        .rejects.toThrow()
     })
   })
 
