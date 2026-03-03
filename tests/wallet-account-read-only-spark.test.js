@@ -300,7 +300,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
   describe('getUtxosForDepositAddress', () => {
     test('should return UTXOs for a deposit address', async () => {
-      const DUMMY_OPTIONS = {
+      const OPTIONS = {
         depositAddress: 'bc1qdeposit123',
         excludeClaimed: true
       }
@@ -315,9 +315,9 @@ describe('WalletAccountReadOnlySpark', () => {
 
       mockClient.getUtxosForDepositAddress.mockResolvedValue(DUMMY_RESPONSE)
 
-      const result = await account.getUtxosForDepositAddress(DUMMY_OPTIONS)
+      const result = await account.getUtxosForDepositAddress(OPTIONS)
 
-      expect(mockClient.getUtxosForDepositAddress).toHaveBeenCalledWith(DUMMY_OPTIONS)
+      expect(mockClient.getUtxosForDepositAddress).toHaveBeenCalledWith(OPTIONS)
       expect(result).toEqual(DUMMY_RESPONSE)
     })
   })
