@@ -233,7 +233,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns confirmed UTXOs for a specific deposit address.
    *
    * @param {GetUtxosParams} options - The options.
-   * @returns {Promise<{ utxos: Array<{ txid: string, vout: number }>, offset: number }>} The UTXOs.
+   * @returns {Promise<{ utxos: { txid: string, vout: number }[], offset: number }>} The UTXOs.
    */
   async getUtxosForDepositAddress (options) {
     return await this._client.getUtxosForDepositAddress(options)

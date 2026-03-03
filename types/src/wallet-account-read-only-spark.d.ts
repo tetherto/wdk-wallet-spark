@@ -118,10 +118,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @returns {Promise<{ utxos: Array<{ txid: string, vout: number }>, offset: number }>} The UTXOs.
      */
     getUtxosForDepositAddress(options: GetUtxosParams): Promise<{
-        utxos: Array<{
+        utxos: {
             txid: string;
             vout: number;
-        }>;
+        }[];
         offset: number;
     }>;
     /**
