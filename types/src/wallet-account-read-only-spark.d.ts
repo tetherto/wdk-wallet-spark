@@ -110,7 +110,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      *
      * @returns {Promise<Array>} The static deposit addresses.
      */
-    getStaticDepositAddresses(): Promise<Array<any>>;
+    getStaticDepositAddresses(): Promise<DepositAddressQueryResult[]>;
     /**
      * Returns confirmed UTXOs for a specific deposit address.
      *
