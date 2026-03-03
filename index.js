@@ -17,6 +17,7 @@
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
 /** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
 /** @typedef {import('@buildonspark/spark-sdk/proto/spark').DepositAddressQueryResult} DepositAddressQueryResult */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').InvoiceResponse} InvoiceResponse */
 /** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
 /** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
 /** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */

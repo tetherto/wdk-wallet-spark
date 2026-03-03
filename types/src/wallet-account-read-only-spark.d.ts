@@ -131,7 +131,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @returns {Promise<{ invoiceStatuses: Array, offset: number }>} The invoice statuses.
      */
     getSparkInvoices(params: QuerySparkInvoicesParams): Promise<{
-        invoiceStatuses: Array<any>;
+        invoiceStatuses: InvoiceResponse[];
         offset: number;
     }>;
 }
@@ -139,6 +139,7 @@ export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type SparkTransfer = import("@buildonspark/spark-sdk/proto/spark").Transfer;
 export type DepositAddressQueryResult = import("@buildonspark/spark-sdk/proto/spark").DepositAddressQueryResult;
+export type InvoiceResponse = import("@buildonspark/spark-sdk/proto/spark").InvoiceResponse;
 export type QueryDepositAddressesParams = import("@buildonspark/spark-sdk").QueryDepositAddressesParams;
 export type GetUtxosParams = import("@buildonspark/spark-sdk").GetUtxosParams;
 export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySparkInvoicesParams;

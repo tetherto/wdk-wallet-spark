@@ -26,6 +26,7 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
 /** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
 /** @typedef {import('@buildonspark/spark-sdk/proto/spark').DepositAddressQueryResult} DepositAddressQueryResult */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').InvoiceResponse} InvoiceResponse */
 /** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
 /** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
 /** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
@@ -243,7 +244,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Queries the status of Spark invoices.
    *
    * @param {QuerySparkInvoicesParams} params - The query parameters.
-   * @returns {Promise<{ invoiceStatuses: Array, offset: number }>} The invoice statuses.
+   * @returns {Promise<{ invoiceStatuses: InvoiceResponse[], offset: number }>} The invoice statuses.
    */
   async getSparkInvoices (params) {
     return await this._client.getSparkInvoices(params)

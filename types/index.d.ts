@@ -5,6 +5,7 @@ export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type SparkTransfer = import("@buildonspark/spark-sdk/proto/spark").Transfer;
 export type DepositAddressQueryResult = import("@buildonspark/spark-sdk/proto/spark").DepositAddressQueryResult;
+export type InvoiceResponse = import("@buildonspark/spark-sdk/proto/spark").InvoiceResponse;
 export type WithdrawParams = import("@buildonspark/spark-sdk").WithdrawParams;
 export type CreateLightningInvoiceParams = import("@buildonspark/spark-sdk").CreateLightningInvoiceParams;
 export type PayLightningInvoiceParams = import("@buildonspark/spark-sdk").PayLightningInvoiceParams;
