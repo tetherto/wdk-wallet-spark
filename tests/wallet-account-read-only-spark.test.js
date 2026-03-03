@@ -263,7 +263,7 @@ describe('WalletAccountReadOnlySpark', () => {
       expect(result).toEqual(DUMMY_RESPONSE)
     })
 
-    test('should pass pagination options', async () => {
+    test('should correctly paginate unused deposit addresses', async () => {
       const DUMMY_RESPONSE = {
         depositAddresses: [{ depositAddress: 'bc1qunused1' }],
         offset: 10
