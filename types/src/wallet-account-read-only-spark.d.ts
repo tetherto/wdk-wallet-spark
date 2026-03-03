@@ -73,7 +73,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @param {string} hash - The Spark transfer's ID.
      * @returns {Promise<Object | null>} The Spark transfer, or null if not found.
      */
-    getTransactionReceipt(hash: string): Promise<Object | null>;
+    getTransactionReceipt(hash: string): Promise<SparkTransfer | null>;
     /**
      * Returns the account's identity public key.
      *
@@ -137,6 +137,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 }
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
+export type SparkTransfer = import("@buildonspark/spark-sdk/proto/spark").Transfer;
 export type QueryDepositAddressesParams = import("@buildonspark/spark-sdk").QueryDepositAddressesParams;
 export type GetUtxosParams = import("@buildonspark/spark-sdk").GetUtxosParams;
 export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySparkInvoicesParams;

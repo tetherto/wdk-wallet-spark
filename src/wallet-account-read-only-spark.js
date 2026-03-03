@@ -24,6 +24,7 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
 /** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
 /** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
 /** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
@@ -133,7 +134,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
    * @param {string} hash - The Spark transfer's ID.
-   * @returns {Promise<Object | null>} The Spark transfer, or null if not found.
+   * @returns {Promise<SparkTransfer | null>} The Spark transfer, or null if not found.
    */
   async getTransactionReceipt (hash) {
     const transfers = await this._client.getTransfersByIds([hash])
