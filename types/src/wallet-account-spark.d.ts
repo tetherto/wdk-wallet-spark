@@ -124,13 +124,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getSingleUseDepositAddress(): Promise<string>;
     /**
-     * Gets static deposit address for bitcoin deposits from layer 1.
-     * This address can be reused.
-     *
-     * @returns {Promise<string>} The static deposit address.
-     */
-    getStaticDepositAddress(): Promise<string>;
-    /**
      * Claims a deposit to the wallet.
      *
      * @param {string} txId - The transaction id of the deposit.
