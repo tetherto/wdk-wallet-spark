@@ -49,11 +49,11 @@ describe('WalletAccountReadOnlySpark', () => {
     const DUMMY_TOKEN_ADDRESS = 'btkn1abc123'
 
     test('should return the correct token balance', async () => {
-      const balanceMap = new Map([
+      const DUMMY_BALANCE_MAP = new Map([
         [DUMMY_TOKEN_ADDRESS, { ownedBalance: 6_000n, availableToSendBalance: 5_000n, tokenMetadata: {} }]
       ])
 
-      mockClient.getTokenBalance.mockResolvedValue(balanceMap)
+      mockClient.getTokenBalance.mockResolvedValue(DUMMY_BALANCE_MAP)
 
       const balance = await account.getTokenBalance(DUMMY_TOKEN_ADDRESS)
 
