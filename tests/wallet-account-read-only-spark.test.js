@@ -186,6 +186,11 @@ describe('WalletAccountReadOnlySpark', () => {
 
       const transfers = await account.getTransfers({ direction: 'incoming' })
 
+      expect(mockClient.getTransfers).toHaveBeenCalledWith({
+        sparkAddress: ADDRESS,
+        limit: 10,
+        offset: 0
+      })
       expect(transfers).toEqual([DUMMY_TRANSFERS[0], DUMMY_TRANSFERS[2], DUMMY_TRANSFERS[4]])
     })
 
@@ -195,6 +200,11 @@ describe('WalletAccountReadOnlySpark', () => {
 
       const transfers = await account.getTransfers({ direction: 'outgoing' })
 
+      expect(mockClient.getTransfers).toHaveBeenCalledWith({
+        sparkAddress: ADDRESS,
+        limit: 10,
+        offset: 0
+      })
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[3]])
     })
 
