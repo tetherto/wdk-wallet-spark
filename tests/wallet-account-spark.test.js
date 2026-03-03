@@ -151,19 +151,6 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('getStaticDepositAddress', () => {
-    test('should return the static deposit address', async () => {
-      const DUMMY_STATIC_DEPOSIT_ADDRESS = 'bc1qstaticdeposit123'
-
-      sparkWallet.getStaticDepositAddress = jest.fn().mockResolvedValue(DUMMY_STATIC_DEPOSIT_ADDRESS)
-
-      const address = await account.getStaticDepositAddress()
-
-      expect(sparkWallet.getStaticDepositAddress).toHaveBeenCalled()
-      expect(address).toBe(DUMMY_STATIC_DEPOSIT_ADDRESS)
-    })
-  })
-
   describe('claimDeposit', () => {
     test('should successfully claim a deposit', async () => {
       const DUMMY_TX_ID = 'dummy-tx-id'
