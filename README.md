@@ -182,7 +182,8 @@ wallet.dispose()
 | Class | Description | Methods |
 |-------|-------------|---------|
 | [WalletManagerSpark](#walletmanagerspark) | Main class for managing Spark wallets. Extends `WalletManager` from `@tetherto/wdk-wallet`. | [Constructor](#constructor), [Methods](#methods) |
-| [WalletAccountSpark](#walletaccountspark) | Individual Spark wallet account implementation. Implements `IWalletAccount`. | [Constructor](#constructor-1), [Methods](#methods-1), [Properties](#properties) |
+| [WalletAccountReadOnlySpark](#walletaccountreadonlyspark) | Read-only Spark wallet account for querying balances, transfers, and deposit addresses without private keys. | [Constructor](#constructor-1), [Methods](#methods-1) |
+| [WalletAccountSpark](#walletaccountspark) | Full-access Spark wallet account. Implements `IWalletAccount`. Inherits all read-only methods. | [Constructor](#constructor-2), [Methods](#methods-2), [Properties](#properties) |
 
 ### WalletManagerSpark
 
@@ -264,44 +265,234 @@ wallet.dispose()
 - Network configuration is limited to predefined values
 - Uses BIP-44 derivation paths with coin type 998 for Liquid Bitcoin
 
-### WalletAccountSpark
+### WalletAccountReadOnlySpark
 
-Represents an individual Spark wallet account. Implements `IWalletAccount` from `@tetherto/wdk-wallet`.
+A read-only Spark wallet account for querying wallet data without needing private keys. Uses the `SparkReadonlyClient` from `@buildonspark/spark-sdk` for all queries.
 
-**Note**: WalletAccountSpark instances are created internally by `WalletManagerSpark.getAccount()` and are not intended to be constructed directly.
+#### Constructor
+
+```javascript
+new WalletAccountReadOnlySpark(address, config)
+```
+
+**Parameters:**
+- `address` (string): The account's Spark address
+- `config` (object, optional): Configuration object
+  - `network` (string, optional): 'MAINNET', 'TESTNET', or 'REGTEST' (default: 'MAINNET')
+
+**Example:**
+```javascript
+import { WalletAccountReadOnlySpark } from '@tetherto/wdk-wallet-spark'
+
+const readOnly = new WalletAccountReadOnlySpark('sp1pgs...', {
+  network: 'MAINNET'
+})
+```
 
 #### Methods
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `getAddress()` | Returns the account's Spark address | `Promise<SparkAddressFormat>` |
-| `sign(message)` | Signs a message using the account's identity key | `Promise<string>` |
-| `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
-| `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
-| `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
-| `transfer(options)` | Transfers tokens to another address | `Promise<{hash: string, fee: bigint}>` |
-| `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
 | `getBalance()` | Returns the native token balance in satoshis | `Promise<bigint>` |
 | `getTokenBalance(tokenAddress)` | Returns the balance for a specific token | `Promise<bigint>` |
-| `getTransactionReceipt(hash)` | Gets the transaction receipt for a given transaction hash | `Promise<SparkTransactionReceipt | null>` |
-| `getTransfers(options?)` | Returns the account's transfer history | `Promise<Array<{hash: string, from: string, to: string, value: bigint, timestamp: number, direction: string}>>` |
+| `getTransactionReceipt(hash)` | Gets a Spark transfer by its ID | `Promise<Object \| null>` |
+| `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
+| `verify(message, signature)` | Verifies a message's signature | `Promise<boolean>` |
+| `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
+| `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
+| `getTransfers(options?)` | Returns the account's Spark transfer history | `Promise<Array>` |
+| `getUnusedDepositAddresses(options?)` | Returns unused single-use deposit addresses | `Promise<{depositAddresses: Array, offset: number}>` |
+| `getStaticDepositAddresses()` | Returns all static deposit addresses | `Promise<Array>` |
+| `getUtxosForDepositAddress(options)` | Returns confirmed UTXOs for a deposit address | `Promise<{utxos: Array<{txid: string, vout: number}>, offset: number}>` |
+| `getSparkInvoices(params)` | Queries the status of Spark invoices | `Promise<{invoiceStatuses: Array, offset: number}>` |
+
+##### `getBalance()`
+Returns the account's available bitcoin balance in satoshis.
+
+**Returns:** `Promise<bigint>` - Balance in satoshis
+
+**Example:**
+```javascript
+const balance = await readOnly.getBalance()
+console.log('Balance:', balance, 'satoshis')
+```
+
+##### `getTokenBalance(tokenAddress)`
+Returns the available-to-send balance for a specific token.
+
+**Parameters:**
+- `tokenAddress` (string): Token identifier (Bech32m, e.g., `btkn1...`)
+
+**Returns:** `Promise<bigint>` - Token balance (returns `0n` if token not found)
+
+**Example:**
+```javascript
+const balance = await readOnly.getTokenBalance('btkn1...')
+console.log('Token balance:', balance)
+```
+
+##### `getTransactionReceipt(hash)`
+Gets a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
+
+**Parameters:**
+- `hash` (string): The Spark transfer ID
+
+**Returns:** `Promise<Object | null>` - The Spark transfer object, or null if not found
+
+**Example:**
+```javascript
+const transfer = await readOnly.getTransactionReceipt('transfer-id...')
+if (transfer) {
+  console.log('Spark transfer:', transfer)
+}
+```
+
+##### `getIdentityKey()`
+Returns the account's identity public key (hex-encoded), derived from the Spark address.
+
+**Returns:** `Promise<string>` - The identity public key
+
+**Example:**
+```javascript
+const identityKey = await readOnly.getIdentityKey()
+console.log('Identity key:', identityKey)
+```
+
+##### `verify(message, signature)`
+Verifies a message's signature against the account's identity key.
+
+**Parameters:**
+- `message` (string): The original message
+- `signature` (string): The signature to verify (hex-encoded, DER or compact)
+
+**Returns:** `Promise<boolean>` - True if the signature is valid
+
+**Example:**
+```javascript
+const isValid = await readOnly.verify('Hello, Spark!', signatureHex)
+console.log('Signature valid:', isValid)
+```
+
+##### `getTransfers(options?)`
+Returns the account's Spark transfer history with filtering and pagination options. Only returns Spark transfers, not on-chain Bitcoin transactions.
+
+**Parameters:**
+- `options` (object, optional): Filter options
+  - `direction` (string): 'all', 'incoming', or 'outgoing' (default: 'all')
+  - `limit` (number): Maximum transfers to return (default: 10)
+  - `skip` (number): Number of transfers to skip (default: 0)
+
+**Returns:** `Promise<Array>` - Array of Spark transfer objects
+
+**Example:**
+```javascript
+const transfers = await readOnly.getTransfers({
+  direction: 'incoming',
+  limit: 5
+})
+console.log('Incoming transfers:', transfers)
+```
+
+##### `getUnusedDepositAddresses(options?)`
+Returns unused single-use deposit addresses for the account.
+
+**Parameters:**
+- `options` (object, optional): Pagination options
+  - `limit` (number): Maximum number of addresses to return (default: 100)
+  - `offset` (number): Pagination offset (default: 0)
+
+**Returns:** `Promise<{depositAddresses: Array, offset: number}>` - Unused deposit addresses with pagination offset
+
+**Example:**
+```javascript
+const result = await readOnly.getUnusedDepositAddresses({ limit: 10 })
+console.log('Unused addresses:', result.depositAddresses)
+```
+
+##### `getStaticDepositAddresses()`
+Returns all static deposit addresses for the account.
+
+**Returns:** `Promise<Array>` - Array of static deposit address objects
+
+**Example:**
+```javascript
+const addresses = await readOnly.getStaticDepositAddresses()
+console.log('Static deposit addresses:', addresses)
+```
+
+##### `getUtxosForDepositAddress(options)`
+Returns confirmed UTXOs for a specific deposit address.
+
+**Parameters:**
+- `options` (object): Query options
+  - `depositAddress` (string): The Bitcoin deposit address to query
+  - `limit` (number, optional): Maximum number of UTXOs to return (default: 100)
+  - `offset` (number, optional): Pagination offset (default: 0)
+  - `excludeClaimed` (boolean, optional): If true, excludes already-claimed UTXOs
+
+**Returns:** `Promise<{utxos: Array<{txid: string, vout: number}>, offset: number}>` - UTXOs with pagination offset
+
+**Example:**
+```javascript
+const result = await readOnly.getUtxosForDepositAddress({
+  depositAddress: 'bc1q...',
+  excludeClaimed: true
+})
+console.log('UTXOs:', result.utxos)
+```
+
+##### `getSparkInvoices(params)`
+Queries the status of Spark invoices.
+
+**Parameters:**
+- `params` (object): Query parameters
+  - `invoices` (string[]): Array of Spark invoice strings to query
+  - `limit` (number, optional): Maximum number of results to return (default: 100)
+  - `offset` (number, optional): Pagination offset (default: 0)
+
+**Returns:** `Promise<{invoiceStatuses: Array, offset: number}>` - Invoice statuses with pagination offset
+
+**Example:**
+```javascript
+const result = await readOnly.getSparkInvoices({
+  invoices: ['spark1invoice1', 'spark1invoice2']
+})
+console.log('Invoice statuses:', result.invoiceStatuses)
+```
+
+---
+
+### WalletAccountSpark
+
+Represents an individual Spark wallet account with full write access. Implements `IWalletAccount` from `@tetherto/wdk-wallet`. Extends `WalletAccountReadOnlySpark`, inheriting all read-only methods.
+
+**Note**: WalletAccountSpark instances are created internally by `WalletManagerSpark.getAccount()` and are not intended to be constructed directly.
+
+#### Methods
+
+All methods from [WalletAccountReadOnlySpark](#walletaccountreadonlyspark) are inherited. The following additional methods are available:
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `getAddress()` | Returns the account's Spark address | `Promise<SparkAddressFormat>` |
+| `sign(message)` | Signs a message using the account's identity key | `Promise<string>` |
+| `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
+| `transfer(options)` | Transfers tokens to another address | `Promise<{hash: string, fee: bigint}>` |
 | `getSingleUseDepositAddress()` | Generates a single-use Bitcoin deposit address | `Promise<string>` |
 | `getStaticDepositAddress()` | Gets a reusable static deposit address | `Promise<string>` |
-| `getUnusedDepositAddresses()` | Gets all unused single-use deposit addresses | `Promise<string[]>` |
-| `claimDeposit(txId)` | Claims a Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
-| `claimStaticDeposit(txId)` | Claims a static Bitcoin deposit to the wallet | `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` |
+| `claimDeposit(txId)` | Claims a Bitcoin deposit to the wallet | `Promise<WalletLeaf[] \| undefined>` |
+| `claimStaticDeposit(txId)` | Claims a static Bitcoin deposit to the wallet | `Promise<WalletLeaf[] \| undefined>` |
 | `refundStaticDeposit(options)` | Refunds a static deposit back to a Bitcoin address | `Promise<string>` |
 | `quoteWithdraw(options)` | Gets a fee quote for withdrawing funds | `Promise<CoopExitFeeQuote>` |
-| `withdraw(options)` | Withdraws funds to a Bitcoin address | `Promise<CoopExitRequest | null | undefined>` |
+| `withdraw(options)` | Withdraws funds to a Bitcoin address | `Promise<CoopExitRequest \| null \| undefined>` |
 | `createLightningInvoice(options)` | Creates a Lightning invoice | `Promise<LightningReceiveRequest>` |
-| `getLightningReceiveRequest(invoiceId)` | Gets Lightning receive request by id | `Promise<LightningReceiveRequest | null>` |
-| `getLightningSendRequest(requestId)` | Gets Lightning send request by id | `Promise<LightningSendRequest | null>` |
+| `getLightningReceiveRequest(invoiceId)` | Gets Lightning receive request by id | `Promise<LightningReceiveRequest \| null>` |
+| `getLightningSendRequest(requestId)` | Gets Lightning send request by id | `Promise<LightningSendRequest \| null>` |
 | `payLightningInvoice(options)` | Pays a Lightning invoice | `Promise<LightningSendRequest>` |
 | `quotePayLightningInvoice(options)` | Gets fee estimate for Lightning payments | `Promise<bigint>` |
 | `createSparkSatsInvoice(options)` | Creates a Spark invoice for receiving sats | `Promise<SparkAddressFormat>` |
 | `createSparkTokensInvoice(options)` | Creates a Spark invoice for receiving tokens | `Promise<SparkAddressFormat>` |
 | `paySparkInvoice(invoices)` | Pays one or more Spark invoices | `Promise<FulfillSparkInvoiceResponse>` |
-| `getSparkInvoices(invoices)` | Queries the status of Spark invoices | `Promise<QuerySparkInvoicesResponse>` |
 | `toReadOnlyAccount()` | Creates a read-only version of this account | `Promise<WalletAccountReadOnlySpark>` |
 | `dispose()` | Disposes the wallet account, clearing private keys | `void` |
 
@@ -445,39 +636,19 @@ console.log('Token balance:', tokenBalance)
 ```
 
 ##### `getTransactionReceipt(hash)`
-Gets the transaction receipt for a given transaction hash.
+Gets a Spark transfer by its ID. Inherited from `WalletAccountReadOnlySpark`. Only returns Spark transfers, not on-chain Bitcoin transactions.
 
 **Parameters:**
-- `hash` (string): Transaction hash
+- `hash` (string): The Spark transfer ID
 
-**Returns:** `Promise<SparkTransactionReceipt | null>` - Transaction receipt from the SparkScan API, or null if not found
+**Returns:** `Promise<Object | null>` - The Spark transfer object, or null if not found
 
 **Example:**
 ```javascript
-const receipt = await account.getTransactionReceipt('txid...')
-if (receipt) {
-  console.log('Transaction receipt:', receipt)
+const transfer = await account.getTransactionReceipt('transfer-id...')
+if (transfer) {
+  console.log('Spark transfer:', transfer)
 }
-```
-
-##### `getTransfers(options?)`
-Returns the account's transfer history with filtering options.
-
-**Parameters:**
-- `options` (object, optional): Filter options
-  - `direction` (string): 'all', 'incoming', or 'outgoing' (default: 'all')
-  - `limit` (number): Maximum transfers to return (default: 10)
-  - `skip` (number): Number of transfers to skip (default: 0)
-
-**Returns:** `Promise<Array<{hash: string, from: string, to: string, value: bigint, timestamp: number, direction: string}>>` - Array of transfer objects
-
-**Example:**
-```javascript
-const transfers = await account.getTransfers({
-  direction: 'incoming',
-  limit: 5
-})
-console.log('Recent incoming transfers:', transfers)
 ```
 
 ##### `getSingleUseDepositAddress()`
@@ -514,17 +685,6 @@ Claims a Bitcoin deposit to add funds to the Spark wallet.
 ```javascript
 const leaves = await account.claimDeposit('bitcoin_tx_id...')
 console.log('Claimed deposit:', leaves)
-```
-
-##### `getUnusedDepositAddresses()`
-Gets all unused single-use deposit addresses.
-
-**Returns:** `Promise<string[]>` - List of unused deposit addresses
-
-**Example:**
-```javascript
-const unusedAddresses = await account.getUnusedDepositAddresses()
-console.log('Unused deposit addresses:', unusedAddresses)
 ```
 
 ##### `claimStaticDeposit(txId)`
@@ -761,23 +921,6 @@ const result = await account.paySparkInvoice([
   }
 ])
 console.log('Payment result:', result)
-```
-
-##### `getSparkInvoices(invoices)`
-Queries the status of Spark invoices.
-
-**Parameters:**
-- `invoices` (string[]): Array of invoice addresses to query
-
-**Returns:** `Promise<QuerySparkInvoicesResponse>` - Response containing invoice status information
-
-**Example:**
-```javascript
-const status = await account.getSparkInvoices([
-  'spark1...',
-  'spark1...'
-])
-console.log('Invoice statuses:', status)
 ```
 
 ##### `toReadOnlyAccount()`

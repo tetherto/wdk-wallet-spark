@@ -2,6 +2,7 @@
 
 export {
   SparkWallet,
+  SparkReadonlyClient,
   Network,
   ValidationError,
   BareSparkSigner as DefaultSparkSigner,

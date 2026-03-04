@@ -14,6 +14,10 @@
 'use strict'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
+/** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').DepositAddressQueryResult} DepositAddressQueryResult */
+/** @typedef {import('@buildonspark/spark-sdk/proto/spark').InvoiceResponse} InvoiceResponse */
 /** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
 /** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
 /** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */
@@ -25,10 +29,6 @@
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendFeeEstimateInput} LightningSendFeeEstimateInput */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').QuerySparkInvoicesResponse} QuerySparkInvoicesResponse */
-
-/** @typedef {import('@sparkscan/api-node-sdk-client').TxV1Response} SparkTransactionReceipt */
 
 /** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
 /** @typedef {import('@tetherto/wdk-wallet').KeyPair} KeyPair */
@@ -39,9 +39,13 @@
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
 /** @typedef {import('./src/wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
+/** @typedef {import('./src/wallet-account-read-only-spark.js').GetTransfersOptions} GetTransfersOptions */
+/** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
+/** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
+/** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
+
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
-/** @typedef {import('./src/wallet-account-spark.js').GetTransfersOptions} GetTransfersOptions */
 /** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateSatsInvoiceOptions} CreateSatsInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */
