@@ -4,6 +4,8 @@ import * as sparkSdk from '#libs/spark-sdk'
 const ADDRESS = 'sp1pgss9mdgv7f6cf3lq5a3feh2jtnuypgf2x438tdq79q9jxtnflj9hhq4htem47'
 
 const IDENTITY_KEY = '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
+const IDENTITY_KEY_BYTES = Buffer.from(IDENTITY_KEY, 'hex')
+const OTHER_KEY_BYTES = Buffer.from('023e33e2920326f64ea31058d44777442d97d7d5cbfcf54e3060bc1695e5261c93', 'hex')
 
 const mockClient = {
   getAvailableBalance: jest.fn(),
@@ -146,11 +148,11 @@ describe('WalletAccountReadOnlySpark', () => {
 
   describe('getTransfers', () => {
     const DUMMY_TRANSFERS = [
-      { id: 'dummy-transfer-1', transferDirection: 'INCOMING', totalValue: 1_000 },
-      { id: 'dummy-transfer-2', transferDirection: 'OUTGOING', totalValue: 2_000 },
-      { id: 'dummy-transfer-3', transferDirection: 'INCOMING', totalValue: 3_000 },
-      { id: 'dummy-transfer-4', transferDirection: 'OUTGOING', totalValue: 4_000 },
-      { id: 'dummy-transfer-5', transferDirection: 'INCOMING', totalValue: 5_000 }
+      { id: 'dummy-transfer-1', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 1_000 },
+      { id: 'dummy-transfer-2', receiverIdentityPublicKey: OTHER_KEY_BYTES, totalValue: 2_000 },
+      { id: 'dummy-transfer-3', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 3_000 },
+      { id: 'dummy-transfer-4', receiverIdentityPublicKey: OTHER_KEY_BYTES, totalValue: 4_000 },
+      { id: 'dummy-transfer-5', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 5_000 }
     ]
 
     test('should return an empty transfer history', async () => {

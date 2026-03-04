@@ -181,6 +181,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
     const address = await this.getAddress()
+    const identityPubKey = direction !== 'all'
+      ? hexToBytes(await this.getIdentityKey())
+      : null
 
     const batchSize = limit + skip
     const transfers = []
@@ -197,7 +200,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
 
       const filtered = direction === 'all'
         ? batch
-        : batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
+        : batch.filter(t => {
+          const isIncoming = t.receiverIdentityPublicKey.equals(identityPubKey)
+          return direction === 'incoming' ? isIncoming : !isIncoming
+        })
 
       transfers.push(...filtered)
       offset += batchSize
