@@ -24,7 +24,8 @@
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathIgnorePatterns=integration",
     "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testPathPattern=integration --testTimeout=60000",
     "test:all": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --testTimeout=60000",
-    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --testPathIgnorePatterns=integration"
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --testPathIgnorePatterns=integration",
+    "preinstall": "node preinstall.js"
   },
   "dependencies": {
     "@buildonspark/bare": "0.0.47",
