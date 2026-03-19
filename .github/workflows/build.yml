@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint
     steps:
-      - uses: tetherto/actions/node-base@v1
+      - uses: tetherto/oss-actions/node-base@v1
       - run: npm run lint
   test:
     strategy:
@@ -22,5 +22,5 @@ jobs:
     runs-on: ${{ matrix.os }}
     name: Test / ${{ matrix.platform }}
     steps:
-      - uses: tetherto/actions/node-base@v1
+      - uses: tetherto/oss-actions/node-base@v1
       - run: npm test
