@@ -1,0 +1,28 @@
+# add to each OSS repo for npm, under .github/workflows/public-publish.yml
+
+name: Release to public npm
+run-name: "Release (${{ inputs.bump }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    uses: tetherto/actions/.github/workflows/public-publish.yml@main
+    with:
+      bump: ${{ inputs.bump }}
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
