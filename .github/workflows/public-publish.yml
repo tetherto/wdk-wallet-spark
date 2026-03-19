@@ -26,7 +26,7 @@ permissions:
   id-token: write
 jobs:
   release:
-    uses: mafintosh/actions/.github/workflows/public-publish.yml@main
+    uses: tetherto/actions/.github/workflows/public-publish.yml@main
     with:
       bump: ${{ inputs.bump }}
       preid: ${{ inputs.preid }}
