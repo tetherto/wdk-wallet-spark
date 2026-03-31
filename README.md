@@ -479,7 +479,6 @@ All methods from [WalletAccountReadOnlySpark](#walletaccountreadonlyspark) are i
 | `sendTransaction(tx)` | Sends a Spark transaction | `Promise<{hash: string, fee: bigint}>` |
 | `transfer(options)` | Transfers tokens to another address | `Promise<{hash: string, fee: bigint}>` |
 | `getSingleUseDepositAddress()` | Generates a single-use Bitcoin deposit address | `Promise<string>` |
-| `getStaticDepositAddress()` | Gets a reusable static deposit address | `Promise<string>` |
 | `claimDeposit(txId)` | Claims a Bitcoin deposit to the wallet | `Promise<WalletLeaf[] \| undefined>` |
 | `claimStaticDeposit(txId)` | Claims a static Bitcoin deposit to the wallet | `Promise<WalletLeaf[] \| undefined>` |
 | `refundStaticDeposit(options)` | Refunds a static deposit back to a Bitcoin address | `Promise<string>` |
@@ -625,7 +624,7 @@ console.log('Balance in BTC:', Number(balance) / 1e8)
 Returns the balance for a specific token.
 
 **Parameters:**
-- `tokenAddress` (string): Token contract address
+- `tokenAddress` (string): Token identifier (Bech32m token identifier, e.g., `btkn1...`)
 
 **Returns:** `Promise<bigint>` - Token balance in base unit
 
@@ -662,24 +661,13 @@ const depositAddress = await account.getSingleUseDepositAddress()
 console.log('Send Bitcoin to:', depositAddress)
 ```
 
-##### `getStaticDepositAddress()`
-Gets a reusable static deposit address for Bitcoin deposits from layer 1. Unlike single-use addresses, this address can be reused for multiple deposits.
-
-**Returns:** `Promise<string>` - Bitcoin static deposit address
-
-**Example:**
-```javascript
-const staticAddress = await account.getStaticDepositAddress()
-console.log('Static deposit address:', staticAddress)
-```
-
 ##### `claimDeposit(txId)`
 Claims a Bitcoin deposit to add funds to the Spark wallet.
 
 **Parameters:**
 - `txId` (string): Bitcoin transaction ID of the deposit
 
-**Returns:** `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` - Wallet leaves created from the deposit
+**Returns:** `Promise<WalletLeaf[] | undefined>` - Wallet leaves created from the deposit
 
 **Example:**
 ```javascript
@@ -693,7 +681,7 @@ Claims a static Bitcoin deposit to add funds to the Spark wallet.
 **Parameters:**
 - `txId` (string): Bitcoin transaction ID of the deposit
 
-**Returns:** `Promise<Array<{id: string, value: bigint, address: string}> | undefined>` - Wallet leaves created from the deposit
+**Returns:** `Promise<WalletLeaf[] | undefined>` - Wallet leaves created from the deposit
 
 **Example:**
 ```javascript
