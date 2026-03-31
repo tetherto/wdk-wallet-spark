@@ -53,7 +53,6 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
  * @property {number} [skip] - The number of transfers to skip (default: 0).
  */
 
-
 export const DEFAULT_NETWORK = 'MAINNET'
 
 export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
