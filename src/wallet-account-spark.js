@@ -162,6 +162,17 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   async getAddress () {
     return await this._wallet.getSparkAddress()
   }
+  
+  /**
+   * Returns the account's total bitcoin balance.
+   *
+   * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+   */
+  async getBalance() {
+    const { satsBalance: { owned } } = await this._wallet.getBalance()
+    
+    return owned
+  }
 
   /**
    * Signs a message.

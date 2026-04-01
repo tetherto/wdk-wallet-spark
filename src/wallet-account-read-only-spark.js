@@ -88,7 +88,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns the account's bitcoin balance.
+   * Returns the account's available (non-pending) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
    */
