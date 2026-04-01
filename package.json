@@ -27,7 +27,7 @@
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage --testPathIgnorePatterns=integration"
   },
   "dependencies": {
-    "@buildonspark/bare": "0.0.52",
+    "@buildonspark/bare": "0.0.53",
     "@buildonspark/spark-sdk": "0.7.2",
     "@noble/curves": "^1.9.7",
     "@noble/hashes": "^2.0.1",
