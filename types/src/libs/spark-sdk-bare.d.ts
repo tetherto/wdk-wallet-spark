@@ -1,1 +1,1 @@
-export { SparkWallet, Network, ValidationError, BareSparkSigner as DefaultSparkSigner } from "@buildonspark/bare";
+export { SparkWallet, SparkReadonlyClient, Network, ValidationError, BareSparkSigner as DefaultSparkSigner, decodeSparkAddress } from "@buildonspark/bare";
