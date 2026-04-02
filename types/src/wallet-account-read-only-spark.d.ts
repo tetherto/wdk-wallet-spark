@@ -38,9 +38,9 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * Returns the Spark transfer history of the account. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *
      * @param {GetTransfersOptions} [options] - The options.
-     * @returns {Promise<Array>} The Spark transfers.
+     * @returns {Promise<SparkTransfer[]>} The Spark transfers.
      */
-    getTransfers(options?: GetTransfersOptions): Promise<any[]>;
+    getTransfers(options?: GetTransfersOptions): Promise<SparkTransfer[]>;
     /**
      * Returns unused single-use deposit addresses for the account.
      *

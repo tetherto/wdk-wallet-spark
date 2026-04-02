@@ -293,23 +293,23 @@ const readOnly = new WalletAccountReadOnlySpark('sp1pgs...', {
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `getBalance()` | Returns the native token balance in satoshis | `Promise<bigint>` |
-| `getTokenBalance(tokenAddress)` | Returns the balance for a specific token | `Promise<bigint>` |
+| `getBalance()` | Returns the available (spendable) bitcoin balance in satoshis | `Promise<bigint>` |
+| `getTokenBalance(tokenAddress)` | Returns the available-to-send balance for a specific token | `Promise<bigint>` |
 | `getTransactionReceipt(hash)` | Gets a Spark transfer by its ID | `Promise<Object \| null>` |
 | `getIdentityKey()` | Returns the account's identity public key | `Promise<string>` |
 | `verify(message, signature)` | Verifies a message's signature | `Promise<boolean>` |
 | `quoteSendTransaction(tx)` | Estimates transaction fee (always 0) | `Promise<{fee: bigint}>` |
 | `quoteTransfer(options)` | Quotes the costs of a transfer operation | `Promise<{fee: bigint}>` |
-| `getTransfers(options?)` | Returns the account's Spark transfer history | `Promise<Array>` |
+| `getTransfers(options?)` | Returns the account's Spark transfer history | `Promise<SparkTransfer[]>` |
 | `getUnusedDepositAddresses(options?)` | Returns unused single-use deposit addresses | `Promise<{depositAddresses: Array, offset: number}>` |
 | `getStaticDepositAddresses()` | Returns all static deposit addresses | `Promise<Array>` |
 | `getUtxosForDepositAddress(options)` | Returns confirmed UTXOs for a deposit address | `Promise<{utxos: Array<{txid: string, vout: number}>, offset: number}>` |
 | `getSparkInvoices(params)` | Queries the status of Spark invoices | `Promise<{invoiceStatuses: Array, offset: number}>` |
 
 ##### `getBalance()`
-Returns the account's available bitcoin balance in satoshis.
+Returns the account's available (spendable) bitcoin balance in satoshis. This excludes sats that are locked in pending outgoing transfers.
 
-**Returns:** `Promise<bigint>` - Balance in satoshis
+**Returns:** `Promise<bigint>` - Available balance in satoshis
 
 **Example:**
 ```javascript
@@ -609,9 +609,9 @@ console.log('Transfer fee estimate:', Number(quote.fee))
 ```
 
 ##### `getBalance()`
-Returns the account's native token balance in satoshis.
+Returns the account's total owned bitcoin balance in satoshis. This includes both available (spendable) sats and sats locked in pending outgoing transfers. This differs from `WalletAccountReadOnlySpark.getBalance()`, which only returns the available balance.
 
-**Returns:** `Promise<bigint>` - Balance in satoshis
+**Returns:** `Promise<bigint>` - Total owned balance in satoshis
 
 **Example:**
 ```javascript
@@ -621,16 +621,16 @@ console.log('Balance in BTC:', Number(balance) / 1e8)
 ```
 
 ##### `getTokenBalance(tokenAddress)`
-Returns the balance for a specific token.
+Returns the available-to-send balance for a specific token. Inherited from `WalletAccountReadOnlySpark`; both classes return the same available-to-send value.
 
 **Parameters:**
 - `tokenAddress` (string): Token identifier (Bech32m token identifier, e.g., `btkn1...`)
 
-**Returns:** `Promise<bigint>` - Token balance in base unit
+**Returns:** `Promise<bigint>` - Token balance in base unit (available to send)
 
 **Example:**
 ```javascript
-const tokenBalance = await account.getTokenBalance('token_address...')
+const tokenBalance = await account.getTokenBalance('btkn1...')
 console.log('Token balance:', tokenBalance)
 ```
 
