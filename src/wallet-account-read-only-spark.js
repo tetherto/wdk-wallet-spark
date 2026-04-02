@@ -226,7 +226,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns all static deposit addresses for the account.
+   * Returns all existing static deposit addresses for the account.
    *
    * @returns {Promise<DepositAddressQueryResult[]>} The static deposit addresses.
    */
