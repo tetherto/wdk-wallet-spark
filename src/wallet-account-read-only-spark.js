@@ -88,7 +88,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns the account's bitcoin balance.
+   * Returns the account's available (non-pending) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
    */
@@ -175,7 +175,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns the Spark transfer history of the account. Only returns Spark transfers, not on-chain Bitcoin transactions.
    *
    * @param {GetTransfersOptions} [options] - The options.
-   * @returns {Promise<Array>} The Spark transfers.
+   * @returns {Promise<SparkTransfer[]>} The Spark transfers.
    */
   async getTransfers (options = {}) {
     const { direction = 'all', limit = 10, skip = 0 } = options
@@ -226,7 +226,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
   }
 
   /**
-   * Returns all static deposit addresses for the account.
+   * Returns all existing static deposit addresses for the account.
    *
    * @returns {Promise<DepositAddressQueryResult[]>} The static deposit addresses.
    */
