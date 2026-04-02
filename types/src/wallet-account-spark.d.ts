@@ -1,62 +1,3 @@
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
-/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
-/** @typedef {import('@buildonspark/spark-sdk/types').CoopExitFeeQuote} CoopExitFeeQuote */
-/** @typedef {import('@buildonspark/spark-sdk/types').LightningSendFeeEstimateInput} LightningSendFeeEstimateInput */
-/** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
-/** @typedef {import('@buildonspark/spark-sdk').CreateLightningInvoiceParams} CreateLightningInvoiceParams */
-/** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */
-/** @typedef {import('@buildonspark/spark-sdk').SparkAddressFormat} SparkAddressFormat */
-/** @typedef {import('@buildonspark/spark-sdk').FulfillSparkInvoiceResponse} FulfillSparkInvoiceResponse */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').QuerySparkInvoicesResponse} QuerySparkInvoicesResponse */
-/** @typedef {import('@tetherto/wdk-wallet').IWalletAccount} IWalletAccount */
-/** @typedef {import('@tetherto/wdk-wallet').KeyPair} KeyPair */
-/** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
-/** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
-/** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
-/** @typedef {import('./wallet-account-read-only-spark.js').SparkTransaction} SparkTransaction */
-/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
-/** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
-/**
- * @typedef {Object} QuoteWithdrawOptions
- * @property {string} withdrawalAddress - The Bitcoin address where the funds should be sent.
- * @property {number} amountSats - The amount in satoshis to withdraw.
- */
-/**
- * @typedef {Object} GetTransfersOptions
- * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
- * @property {number} [limit] - The number of transfers to return (default: 10).
- * @property {number} [skip] - The number of transfers to skip (default: 0).
- */
-/**
- * @typedef {Object} RefundStaticDepositOptions
- * @property {string} depositTransactionId - The transaction ID of the original deposit.
- * @property {number} outputIndex - The output index of the deposit.
- * @property {string} destinationAddress - The Bitcoin address to send the refund to.
- * @property {number} satsPerVbyteFee - The fee rate in sats per vbyte for the refund transaction.
- */
-/**
- * @typedef {Object} CreateSatsInvoiceOptions
- * @property {number} [amount] - The amount of sats to receive (optional for open invoices).
- * @property {string} [memo] - Optional memo/description for the payment.
- * @property {SparkAddressFormat} [senderSparkAddress] - Optional Spark address of the expected sender.
- * @property {Date} [expiryTime] - Optional expiry time for the invoice.
- */
-/**
- * @typedef {Object} CreateTokensInvoiceOptions
- * @property {string} [tokenIdentifier] - The Bech32m token identifier (e.g., `btkn1...`).
- * @property {bigint} [amount] - The amount of tokens to receive.
- * @property {string} [memo] - Optional memo/description for the payment.
- * @property {SparkAddressFormat} [senderSparkAddress] - Optional Spark address of the expected sender.
- * @property {Date} [expiryTime] - Optional expiry time for the invoice.
- */
-/**
- * @typedef {Object} SparkInvoice
- * @property {SparkAddressFormat} invoice - The Spark invoice to pay.
- * @property {bigint} [amount] - Amount to pay (required for invoices without encoded amount).
- */
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark extends WalletAccountReadOnlySpark implements IWalletAccount {
     /**
@@ -132,18 +73,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getSingleUseDepositAddress(): Promise<string>;
     /**
-     * Gets static deposit address for bitcoin deposits from layer 1.
-     * This address can be reused.
+     * Returns a static deposit address for Bitcoin deposits from layer 1,
+     * generating one if it does not already exist. The address is reusable.
      *
      * @returns {Promise<string>} The static deposit address.
      */
     getStaticDepositAddress(): Promise<string>;
-    /**
-     * Gets all unused single-use deposit addresses.
-     *
-     * @returns {Promise<string[]>} List of unused deposit addresses.
-     */
-    getUnusedDepositAddresses(): Promise<string[]>;
     /**
      * Claims a deposit to the wallet.
      *
@@ -237,20 +172,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
     /**
-     * Queries the status of Spark invoices.
-     *
-     * @param {string[]} invoices - Array of invoices to query.
-     * @returns {Promise<QuerySparkInvoicesResponse>} Response containing invoice status information.
-     */
-    getSparkInvoices(invoices: string[]): Promise<QuerySparkInvoicesResponse>;
-    /**
-     * Returns the bitcoin transfer history of the account.
-     *
-     * @param {GetTransfersOptions} [options] - The options.
-     * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
-     */
-    getTransfers(options?: GetTransfersOptions): Promise<SparkTransfer[]>;
-    /**
      * Returns a read-only copy of the account.
      *
      * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
@@ -273,7 +194,6 @@ export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
 export type LightningReceiveRequest = import("@buildonspark/spark-sdk/types").LightningReceiveRequest;
 export type LightningSendRequest = import("@buildonspark/spark-sdk/types").LightningSendRequest;
-export type SparkTransfer = import("@buildonspark/spark-sdk/types").WalletTransfer;
 export type CoopExitFeeQuote = import("@buildonspark/spark-sdk/types").CoopExitFeeQuote;
 export type LightningSendFeeEstimateInput = import("@buildonspark/spark-sdk/types").LightningSendFeeEstimateInput;
 export type WithdrawParams = import("@buildonspark/spark-sdk").WithdrawParams;
@@ -281,7 +201,6 @@ export type CreateLightningInvoiceParams = import("@buildonspark/spark-sdk").Cre
 export type PayLightningInvoiceParams = import("@buildonspark/spark-sdk").PayLightningInvoiceParams;
 export type SparkAddressFormat = import("@buildonspark/spark-sdk").SparkAddressFormat;
 export type FulfillSparkInvoiceResponse = import("@buildonspark/spark-sdk").FulfillSparkInvoiceResponse;
-export type QuerySparkInvoicesResponse = import("@buildonspark/spark-sdk/proto/spark").QuerySparkInvoicesResponse;
 export type IWalletAccount = import("@tetherto/wdk-wallet").IWalletAccount;
 export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
@@ -299,20 +218,6 @@ export type QuoteWithdrawOptions = {
      * - The amount in satoshis to withdraw.
      */
     amountSats: number;
-};
-export type GetTransfersOptions = {
-    /**
-     * - If set, only returns transfers with the given direction (default: "all").
-     */
-    direction?: "incoming" | "outgoing" | "all";
-    /**
-     * - The number of transfers to return (default: 10).
-     */
-    limit?: number;
-    /**
-     * - The number of transfers to skip (default: 0).
-     */
-    skip?: number;
 };
 export type RefundStaticDepositOptions = {
     /**

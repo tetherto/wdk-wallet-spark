@@ -25,7 +25,6 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendRequest} LightningSendRequest */
-/** @typedef {import('@buildonspark/spark-sdk/types').WalletTransfer} SparkTransfer */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitFeeQuote} CoopExitFeeQuote */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningSendFeeEstimateInput} LightningSendFeeEstimateInput */
 /** @typedef {import('@buildonspark/spark-sdk').WithdrawParams} WithdrawParams */
@@ -33,7 +32,6 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */
 /** @typedef {import('@buildonspark/spark-sdk').SparkAddressFormat} SparkAddressFormat */
 /** @typedef {import('@buildonspark/spark-sdk').FulfillSparkInvoiceResponse} FulfillSparkInvoiceResponse */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').QuerySparkInvoicesResponse} QuerySparkInvoicesResponse */
 
 /** @typedef {import('@tetherto/wdk-wallet').IWalletAccount} IWalletAccount */
 
@@ -51,13 +49,6 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
  * @typedef {Object} QuoteWithdrawOptions
  * @property {string} withdrawalAddress - The Bitcoin address where the funds should be sent.
  * @property {number} amountSats - The amount in satoshis to withdraw.
- */
-
-/**
- * @typedef {Object} GetTransfersOptions
- * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
- * @property {number} [limit] - The number of transfers to return (default: 10).
- * @property {number} [skip] - The number of transfers to skip (default: 0).
  */
 
 /**
@@ -173,6 +164,17 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Returns the account's total (available + locked in outgoing transfer) bitcoin balance.
+   *
+   * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+   */
+  async getBalance () {
+    const { satsBalance: { owned } } = await this._wallet.getBalance()
+
+    return owned
+  }
+
+  /**
    * Signs a message.
    *
    * @param {string} message - The message to sign.
@@ -224,22 +226,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
-   * Gets static deposit address for bitcoin deposits from layer 1.
-   * This address can be reused.
+   * Returns a static deposit address for Bitcoin deposits from layer 1,
+   * generating one if it does not already exist. The address is reusable.
    *
    * @returns {Promise<string>} The static deposit address.
    */
   async getStaticDepositAddress () {
     return await this._wallet.getStaticDepositAddress()
-  }
-
-  /**
-   * Gets all unused single-use deposit addresses.
-   *
-   * @returns {Promise<string[]>} List of unused deposit addresses.
-   */
-  async getUnusedDepositAddresses () {
-    return await this._wallet.getUnusedDepositAddresses()
   }
 
   /**
@@ -387,45 +380,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async paySparkInvoice (invoices) {
     return await this._wallet.fulfillSparkInvoice(invoices)
-  }
-
-  /**
-   * Queries the status of Spark invoices.
-   *
-   * @param {string[]} invoices - Array of invoices to query.
-   * @returns {Promise<QuerySparkInvoicesResponse>} Response containing invoice status information.
-   */
-  async getSparkInvoices (invoices) {
-    return await this._wallet.querySparkInvoices(invoices)
-  }
-
-  /**
-   * Returns the bitcoin transfer history of the account.
-   *
-   * @param {GetTransfersOptions} [options] - The options.
-   * @returns {Promise<SparkTransfer[]>} The bitcoin transfers.
-   */
-  async getTransfers (options = {}) {
-    const { direction = 'all', limit = 10, skip = 0 } = options
-
-    const batchSize = limit + skip
-    const transfers = []
-    let offset = 0
-
-    while (transfers.length < batchSize) {
-      const { transfers: batch } = await this._wallet.getTransfers(batchSize, offset)
-
-      if (batch.length === 0) break
-
-      const filtered = direction === 'all'
-        ? batch
-        : batch.filter(({ transferDirection }) => direction === transferDirection.toLowerCase())
-
-      transfers.push(...filtered)
-      offset += batchSize
-    }
-
-    return transfers.slice(skip, skip + limit)
   }
 
   /**
