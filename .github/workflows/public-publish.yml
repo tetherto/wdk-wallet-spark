@@ -1,35 +1,33 @@
 name: Release to public npm
-run-name: "Release (${{ inputs.bump }}${{ inputs.preid && format('-{0}', inputs.preid) || '' }})"
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: Version bump type
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prerelease
-      preid:
-        description: Pre-release identifier
-        required: false
-        type: string
-      tag:
-        description: npm dist-tag
-        required: false
-        default: 'latest'
-        type: string
-permissions:
-  contents: write
-  id-token: write
+  pull_request:
+    types: [closed]
+    branches:
+      - main
 jobs:
-  release:
-    uses: tetherto/oss-actions/.github/workflows/public-publish.yml@main
-    with:
-      bump: ${{ inputs.bump }}
-      preid: ${{ inputs.preid }}
-      tag: ${{ inputs.tag }}
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+  approve-release:
+    if: "${{ github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'Release: ') }}"
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+        with:
+          node-version: lts/*
+          registry-url: 'https://registry.npmjs.org'
+      - run: |
+          VERSION=$(node -p "require('./package.json').version")
+          npm version $VERSION --no-git-tag-version --allow-same-version
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          if ! git ls-remote --tags origin | grep -q "refs/tags/v$VERSION$"; then
+            git tag "v$VERSION"
+            git push origin "v$VERSION"
+          fi
+          npm publish --access public --provenance --tag latest --ignore-scripts
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
