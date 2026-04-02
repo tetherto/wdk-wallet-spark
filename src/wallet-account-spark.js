@@ -162,15 +162,15 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   async getAddress () {
     return await this._wallet.getSparkAddress()
   }
-  
+
   /**
    * Returns the account's total (available + locked in outgoing transfer) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
    */
-  async getBalance() {
+  async getBalance () {
     const { satsBalance: { owned } } = await this._wallet.getBalance()
-    
+
     return owned
   }
 
@@ -224,14 +224,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   async getSingleUseDepositAddress () {
     return await this._wallet.getSingleUseDepositAddress()
   }
-  
+
   /**
    * Returns a static deposit address for Bitcoin deposits from layer 1,
    * generating one if it does not already exist. The address is reusable.
    *
    * @returns {Promise<string>} The static deposit address.
    */
-  async getStaticDepositAddress() {
+  async getStaticDepositAddress () {
     return await this._wallet.getStaticDepositAddress()
   }
 
