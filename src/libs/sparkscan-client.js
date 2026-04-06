@@ -50,7 +50,7 @@ export class SparkScanClient {
    * @param {SparkScanConfig} config
    */
   constructor (config = {}) {
-    this._baseUrl = config.baseUrl || 'https://api.sparkscan.io/v1'
+    this._baseUrl = config.baseUrl || 'https://api.sparkscan.io'
     this._network = config.network || 'MAINNET'
 
     this._headers = {
@@ -86,6 +86,6 @@ export class SparkScanClient {
    * @returns {Promise<AddressInfo>} Account information
    */
   async getAddressInfo (address) {
-    return this.request(`/address/${address}`)
+    return this.request(`/v1/address/${address}`)
   }
 }
