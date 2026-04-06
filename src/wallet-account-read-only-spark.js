@@ -21,6 +21,7 @@ import { hexToBytes } from '@noble/curves/utils'
 import { sha256 } from '@noble/hashes/sha2.js'
 
 import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
+import { SparkScanClient } from '#libs/sparkscan-client'
 
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
@@ -35,6 +36,8 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 /** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
 /** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
 
+/** @typedef {import('./libs/sparkscan-client.js').SparkScanConfig} SparkScanConfig */
+
 /**
  * @typedef {Object} SparkTransaction
  * @property {string} to - The transaction's recipient.
@@ -44,6 +47,7 @@ import { SparkReadonlyClient, decodeSparkAddress } from '#libs/spark-sdk'
 /**
  * @typedef {Object} SparkWalletConfig
  * @property {NetworkType} [network] - The network (default: "MAINNET").
+ * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
  */
 
 /**
@@ -85,6 +89,19 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     this._client = SparkReadonlyClient.createPublic({
       network: this._config.network
     })
+
+    /**
+     * Sparkscan client used for getting balances
+     *
+     * @protected
+     * @type {SparkScanClient}
+     */
+    if (this._config.sparkscan) {
+      this._sparkscan = new SparkScanClient({
+        network: this._config.network,
+        ...this._config.sparkscan
+      })
+    }
   }
 
   /**
@@ -94,6 +111,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    */
   async getBalance () {
     const address = await this.getAddress()
+    if (this._sparkscan) {
+      const info = await this._sparkscan.getAddressInfo(address)
+      return BigInt(info.balance.btcHardBalanceSats)
+    }
     return await this._client.getAvailableBalance(address)
   }
 
