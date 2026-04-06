@@ -35,22 +35,32 @@ const NETWORK = 'REGTEST'
 describe('WalletAccountSpark Integration Tests (REGTEST)', () => {
   let wallet1
   let wallet2
+  let walletWithSparkScan
   let account1
   let account2
+  let accountWithSparkScan
 
   beforeAll(async () => {
     // Initialize two wallets for testing transfers
     wallet1 = new WalletManagerSpark(SEED_PHRASE_1, { network: NETWORK })
     wallet2 = new WalletManagerSpark(SEED_PHRASE_2, { network: NETWORK })
+    walletWithSparkScan = new WalletManagerSpark(SEED_PHRASE_1, {
+      network: NETWORK,
+      sparkscan: {
+        baseUrl: process.env.SPARKSCAN_BASE_URL || 'https://api.sparkscan.io/v1'
+      }
+    })
 
     account1 = await wallet1.getAccount(0)
     account2 = await wallet2.getAccount(0)
+    accountWithSparkScan = await walletWithSparkScan.getAccount(0)
   })
 
   afterAll(async () => {
     // Clean up connections
     if (account1) await account1.cleanupConnections()
     if (account2) await account2.cleanupConnections()
+    if (accountWithSparkScan) await accountWithSparkScan.cleanupConnections()
   })
 
   describe('Wallet Initialization', () => {
@@ -154,6 +164,13 @@ describe('WalletAccountSpark Integration Tests (REGTEST)', () => {
 
       expect(typeof tokenBalance).toBe('bigint')
       expect(Number(tokenBalance) >= 0).toBe(true)
+    })
+
+    test('should get balance using SparkScan without apiKey', async () => {
+      const balance = await accountWithSparkScan.getBalance()
+
+      expect(typeof balance).toBe('bigint')
+      expect(Number(balance) >= 0).toBe(true)
     })
   })
 
