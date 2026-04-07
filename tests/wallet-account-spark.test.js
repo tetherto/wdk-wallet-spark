@@ -74,6 +74,40 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getBalance', () => {
+    test('should return owned sats balance from spark wallet by default', async () => {
+      const DUMMY_BALANCE = 12_345n
+      sparkWallet.getBalance = jest.fn().mockResolvedValue({
+        satsBalance: { owned: DUMMY_BALANCE }
+      })
+
+      const balance = await account.getBalance()
+
+      expect(sparkWallet.getBalance).toHaveBeenCalled()
+      expect(balance).toBe(DUMMY_BALANCE)
+    })
+
+    test('should return hard balance from sparkscan when configured', async () => {
+      sparkWallet.getSparkAddress = jest.fn().mockResolvedValue(ACCOUNT.address)
+      sparkWallet.getBalance = jest.fn().mockResolvedValue({
+        satsBalance: { owned: 111n }
+      })
+      account._sparkscan = {
+        getAddressInfo: jest.fn().mockResolvedValue({
+          balance: {
+            btcSoftBalanceSats: 45_678
+          }
+        })
+      }
+
+      const balance = await account.getBalance()
+
+      expect(account._sparkscan.getAddressInfo).toHaveBeenCalledWith(ACCOUNT.address)
+      expect(sparkWallet.getBalance).not.toHaveBeenCalled()
+      expect(balance).toBe(45_678n)
+    })
+  })
+
   describe('sign', () => {
     const MESSAGE = 'Dummy message to sign.'
 

@@ -21,6 +21,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @type {SparkReadonlyClient}
      */
     protected _client: SparkReadonlyClient;
+    protected _sparkscan?: SparkScanClient;
     /**
      * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *
@@ -92,6 +93,7 @@ export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySp
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
 export type TransferOptions = import("@tetherto/wdk-wallet").TransferOptions;
 export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
+export type SparkScanConfig = import("./libs/sparkscan-client.js").SparkScanConfig;
 export type SparkTransaction = {
     /**
      * - The transaction's recipient.
@@ -107,6 +109,10 @@ export type SparkWalletConfig = {
      * - The network (default: "MAINNET").
      */
     network?: NetworkType;
+    /**
+     * - Optional sparkscan client config
+     */
+    sparkscan?: SparkScanConfig;
 };
 export type GetTransfersOptions = {
     /**
@@ -124,3 +130,4 @@ export type GetTransfersOptions = {
 };
 import { WalletAccountReadOnly } from '@tetherto/wdk-wallet';
 import { SparkReadonlyClient } from '#libs/spark-sdk';
+import { SparkScanClient } from '#libs/sparkscan-client';

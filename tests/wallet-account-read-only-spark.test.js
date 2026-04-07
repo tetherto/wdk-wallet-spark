@@ -18,11 +18,21 @@ const mockClient = {
   getSparkInvoices: jest.fn()
 }
 
+const mockSparkScanClient = {
+  getAddressInfo: jest.fn()
+}
+
+const mockSparkScanConstructor = jest.fn().mockImplementation(() => mockSparkScanClient)
+
 jest.unstable_mockModule('#libs/spark-sdk', () => ({
   ...sparkSdk,
   SparkReadonlyClient: {
     createPublic: jest.fn().mockReturnValue(mockClient)
   }
+}))
+
+jest.unstable_mockModule('#libs/sparkscan-client', () => ({
+  SparkScanClient: mockSparkScanConstructor
 }))
 
 const { WalletAccountReadOnlySpark } = await import('../index.js')
@@ -31,19 +41,45 @@ describe('WalletAccountReadOnlySpark', () => {
   let account
 
   beforeEach(async () => {
+    jest.clearAllMocks()
+
     account = new WalletAccountReadOnlySpark(ADDRESS, {
       network: 'MAINNET'
     })
   })
 
   describe('getBalance', () => {
-    test('should return the correct balance of the account', async () => {
+    test('should return the balance from spark readonly client by default', async () => {
       mockClient.getAvailableBalance.mockResolvedValue(12_345n)
 
       const balance = await account.getBalance()
 
       expect(mockClient.getAvailableBalance).toHaveBeenCalledWith(ADDRESS)
       expect(balance).toBe(12_345n)
+    })
+
+    test('should return the balance from sparkscan when configured', async () => {
+      const accountWithSparkScan = new WalletAccountReadOnlySpark(ADDRESS, {
+        network: 'MAINNET',
+        sparkscan: { baseUrl: 'https://api.sparkscan.local', apiKey: 'test-api-key' }
+      })
+
+      mockSparkScanClient.getAddressInfo.mockResolvedValue({
+        balance: {
+          btcSoftBalanceSats: 45_678
+        }
+      })
+
+      const balance = await accountWithSparkScan.getBalance()
+
+      expect(mockSparkScanConstructor).toHaveBeenCalledWith({
+        network: 'MAINNET',
+        baseUrl: 'https://api.sparkscan.local',
+        apiKey: 'test-api-key'
+      })
+      expect(mockSparkScanClient.getAddressInfo).toHaveBeenCalledWith(ADDRESS)
+      expect(mockClient.getAvailableBalance).not.toHaveBeenCalled()
+      expect(balance).toBe(45_678n)
     })
   })
 

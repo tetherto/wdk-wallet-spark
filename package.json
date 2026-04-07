@@ -60,6 +60,9 @@
       "pear": "./src/libs/spark-sdk-bare.js",
       "bare": "./src/libs/spark-sdk-bare.js",
       "default": "./src/libs/spark-sdk-node.js"
+    },
+    "#libs/sparkscan-client": {
+      "default": "./src/libs/sparkscan-client.js"
     }
   },
   "publishConfig": {
