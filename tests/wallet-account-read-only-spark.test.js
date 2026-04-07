@@ -66,7 +66,7 @@ describe('WalletAccountReadOnlySpark', () => {
 
       mockSparkScanClient.getAddressInfo.mockResolvedValue({
         balance: {
-          btcHardBalanceSats: 45_678
+          btcSoftBalanceSats: 45_678
         }
       })
 

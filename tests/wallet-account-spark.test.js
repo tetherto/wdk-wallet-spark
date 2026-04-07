@@ -95,7 +95,7 @@ describe('WalletAccountSpark', () => {
       account._sparkscan = {
         getAddressInfo: jest.fn().mockResolvedValue({
           balance: {
-            btcHardBalanceSats: 45_678
+            btcSoftBalanceSats: 45_678
           }
         })
       }

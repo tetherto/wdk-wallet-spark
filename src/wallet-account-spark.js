@@ -171,7 +171,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   async getBalance () {
     if (this._sparkscan) {
       const info = await this._sparkscan.getAddressInfo(await this.getAddress())
-      return BigInt(info.balance.btcHardBalanceSats)
+      return BigInt(info.balance.btcSoftBalanceSats)
     }
     const { satsBalance: { owned } } = await this._wallet.getBalance()
 

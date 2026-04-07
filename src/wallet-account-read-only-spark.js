@@ -113,7 +113,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     const address = await this.getAddress()
     if (this._sparkscan) {
       const info = await this._sparkscan.getAddressInfo(address)
-      return BigInt(info.balance.btcHardBalanceSats)
+      return BigInt(info.balance.btcSoftBalanceSats)
     }
     return await this._client.getAvailableBalance(address)
   }
