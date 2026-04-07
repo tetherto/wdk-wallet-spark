@@ -1,31 +1,3 @@
-/** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
-/** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').Transfer} SparkTransfer */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').DepositAddressQueryResult} DepositAddressQueryResult */
-/** @typedef {import('@buildonspark/spark-sdk/proto/spark').InvoiceResponse} InvoiceResponse */
-/** @typedef {import('@buildonspark/spark-sdk').QueryDepositAddressesParams} QueryDepositAddressesParams */
-/** @typedef {import('@buildonspark/spark-sdk').GetUtxosParams} GetUtxosParams */
-/** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
-/** @typedef {import('@tetherto/wdk-wallet').TransactionResult} TransactionResult */
-/** @typedef {import('@tetherto/wdk-wallet').TransferOptions} TransferOptions */
-/** @typedef {import('@tetherto/wdk-wallet').TransferResult} TransferResult */
-/** @typedef {import('./libs/sparkscan-client.js').SparkScanConfig} SparkScanConfig */
-/**
- * @typedef {Object} SparkTransaction
- * @property {string} to - The transaction's recipient.
- * @property {number | bigint} value - The amount of bitcoins to send to the recipient (in satoshis).
- */
-/**
- * @typedef {Object} SparkWalletConfig
- * @property {NetworkType} [network] - The network (default: "MAINNET").
- * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
- */
-/**
- * @typedef {Object} GetTransfersOptions
- * @property {"incoming" | "outgoing" | "all"} [direction] - If set, only returns transfers with the given direction (default: "all").
- * @property {number} [limit] - The number of transfers to return (default: 10).
- * @property {number} [skip] - The number of transfers to skip (default: 0).
- */
 export const DEFAULT_NETWORK: "MAINNET";
 export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     /**

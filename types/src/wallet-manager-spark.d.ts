@@ -1,5 +1,3 @@
-/** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
-/** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 export default class WalletManagerSpark extends WalletManager {
     /**
      * Creates a new wallet manager for the Spark blockchain.
