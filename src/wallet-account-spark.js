@@ -113,7 +113,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     const options = {
       signer: new Bip44SparkSigner(index),
       mnemonicOrSeed: seed,
-      options: { network }
+      options: {
+        network,
+        optimizationOptions: {
+          auto: false
+        }
+      }
     }
     const { wallet } = await SparkWallet.initialize(options)
 
@@ -384,6 +389,20 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async paySparkInvoice (invoices) {
     return await this._wallet.fulfillSparkInvoice(invoices)
+  }
+
+  /**
+   * Optimize wallet balance
+   *
+   * @returns {Promise<boolean>} - If false it means there's already sync in progress or no balance is available
+   */
+  async syncWalletBalance () {
+    let result = false
+    // eslint-disable-next-line no-unused-vars
+    for await (const _ of this._wallet.optimizeLeaves()) {
+      result = true
+    }
+    return result
   }
 
   /**

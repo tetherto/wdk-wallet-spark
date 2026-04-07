@@ -172,6 +172,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
     /**
+     * Optimize wallet balance
+     *
+     * @returns {Promise<boolean>} - If false it means there's already sync in progress or no balance is available
+     */
+    syncWalletBalance(): Promise<boolean>;
+    /**
      * Returns a read-only copy of the account.
      *
      * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.

@@ -87,7 +87,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @type {SparkReadonlyClient}
      */
     this._client = SparkReadonlyClient.createPublic({
-      network: this._config.network
+      network: this._config.network,
+      optimizationOptions: {
+        auto: false
+      }
     })
 
     /**
