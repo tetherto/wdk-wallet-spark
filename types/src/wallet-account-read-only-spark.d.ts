@@ -21,13 +21,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @type {SparkReadonlyClient}
      */
     protected _client: SparkReadonlyClient;
-    /**
-     * Sparkscan client used for getting balances
-     *
-     * @protected
-     * @type {SparkScanClient}
-     */
-    protected _sparkscan: SparkScanClient;
+    protected _sparkscan?: SparkScanClient;
     /**
      * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *

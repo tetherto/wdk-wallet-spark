@@ -53,6 +53,11 @@ export class SparkScanClient {
     this._baseUrl = config.baseUrl || 'https://api.sparkscan.io'
     this._network = config.network || 'MAINNET'
 
+    const SUPPORTED_NETWORKS = new Set(['MAINNET', 'REGTEST'])
+    if (!SUPPORTED_NETWORKS.has(this._network)) {
+      throw new Error(`SparkScan does not support network: ${this._network}`)
+    }
+
     this._headers = {
       'Content-Type': 'application/json'
     }
@@ -61,7 +66,7 @@ export class SparkScanClient {
     }
   }
 
-  async request (path, headers = {}, method = 'get', query = {}) {
+  async _request (path, headers = {}, method = 'get', query = {}) {
     query.network = this._network
     const search = Object.entries(query).map(([k, v]) => `${k}=${v}`).join('&')
     const url = `${this._baseUrl}${path}?${search}`
@@ -86,6 +91,6 @@ export class SparkScanClient {
    * @returns {Promise<AddressInfo>} Account information
    */
   async getAddressInfo (address) {
-    return this.request(`/v1/address/${address}`)
+    return this._request(`/v1/address/${address}`)
   }
 }

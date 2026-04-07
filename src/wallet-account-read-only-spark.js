@@ -91,8 +91,6 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     })
 
     /**
-     * Sparkscan client used for getting balances
-     *
      * @protected
      * @type {SparkScanClient}
      */

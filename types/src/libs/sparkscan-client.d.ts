@@ -10,7 +10,7 @@ export class SparkScanClient {
     _headers: {
         'Content-Type': string;
     };
-    request(path: any, headers?: {}, method?: string, query?: {}): Promise<any>;
+    _request(path: any, headers?: {}, method?: string, query?: {}): Promise<any>;
     /**
      * Get account information for an address
      * @see https://docs.sparkscan.io/api/address#get-v1-address-by-address
