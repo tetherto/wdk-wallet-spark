@@ -204,7 +204,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       const { id } = await doTransfer()
       return { hash: id, fee: 0n }
     } catch (_) {
-      await this._syncLeaves()
+      await this.syncWalletBalance()
       const { id } = await doTransfer()
       return { hash: id, fee: 0n }
     }
@@ -352,7 +352,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     try {
       return await this._wallet.payLightningInvoice(options)
     } catch (_) {
-      await this._syncLeaves()
+      await this.syncWalletBalance()
       return await this._wallet.payLightningInvoice(options)
     }
   }
@@ -405,7 +405,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<void>}
    */
   async syncWalletBalance () {
-    await this._syncLeaves()
+    await this._wallet.experimental_syncWallet()
+
+    const deadline = Date.now() + 10_000
+    while (await this._wallet.isOptimizationInProgress()) {
+      if (Date.now() > deadline) break
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
   }
 
   /**
@@ -439,22 +445,5 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     this.cleanupConnections().catch(console.error)
 
     this._signer.dispose()
-  }
-
-  /**
-   * Forces a full wallet sync and waits for any triggered
-   * auto-optimisation to settle.
-   *
-   * @returns {Promise<void>}
-   * @private
-   */
-  async _syncLeaves () {
-    await this._wallet.experimental_syncWallet()
-
-    const deadline = Date.now() + 10_000
-    while (await this._wallet.isOptimizationInProgress()) {
-      if (Date.now() > deadline) break
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
   }
 }
