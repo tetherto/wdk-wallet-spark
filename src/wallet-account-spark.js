@@ -195,12 +195,21 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<TransactionResult>} The transaction's result.
    */
   async sendTransaction ({ to, value }) {
-    const { id } = await this._wallet.transfer({
-      receiverSparkAddress: to,
-      amountSats: Number(value)
-    })
+    const params = { receiverSparkAddress: to, amountSats: Number(value) }
 
-    return { hash: id, fee: 0n }
+    if (!this._config.syncAndRetry) {
+      const { id } = await this._wallet.transfer(params)
+      return { hash: id, fee: 0n }
+    }
+
+    try {
+      const { id } = await this._wallet.transfer(params)
+      return { hash: id, fee: 0n }
+    } catch (_) {
+      await this.syncWalletBalance()
+      const { id } = await this._wallet.transfer(params)
+      return { hash: id, fee: 0n }
+    }
   }
 
   /**
@@ -342,7 +351,16 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    */
   async payLightningInvoice (options) {
-    return await this._wallet.payLightningInvoice(options)
+    if (!this._config.syncAndRetry) {
+      return await this._wallet.payLightningInvoice(options)
+    }
+
+    try {
+      return await this._wallet.payLightningInvoice(options)
+    } catch (_) {
+      await this.syncWalletBalance()
+      return await this._wallet.payLightningInvoice(options)
+    }
   }
 
   /**
@@ -384,6 +402,22 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async paySparkInvoice (invoices) {
     return await this._wallet.fulfillSparkInvoice(invoices)
+  }
+
+  /**
+   * Reconciles the wallet's internal state with the server and waits
+   * for any triggered optimisation to complete.
+   *
+   * @returns {Promise<void>}
+   */
+  async syncWalletBalance () {
+    await this._wallet.experimental_syncWallet()
+
+    const deadline = Date.now() + 10_000
+    while (await this._wallet.isOptimizationInProgress()) {
+      if (Date.now() > deadline) break
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
   }
 
   /**
