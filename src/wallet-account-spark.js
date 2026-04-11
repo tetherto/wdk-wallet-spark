@@ -195,17 +195,19 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<TransactionResult>} The transaction's result.
    */
   async sendTransaction ({ to, value }) {
-    const doTransfer = () => this._wallet.transfer({
-      receiverSparkAddress: to,
-      amountSats: Number(value)
-    })
+    const params = { receiverSparkAddress: to, amountSats: Number(value) }
+
+    if (!this._config.syncAndRetry) {
+      const { id } = await this._wallet.transfer(params)
+      return { hash: id, fee: 0n }
+    }
 
     try {
-      const { id } = await doTransfer()
+      const { id } = await this._wallet.transfer(params)
       return { hash: id, fee: 0n }
     } catch (_) {
       await this.syncWalletBalance()
-      const { id } = await doTransfer()
+      const { id } = await this._wallet.transfer(params)
       return { hash: id, fee: 0n }
     }
   }
@@ -349,6 +351,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    */
   async payLightningInvoice (options) {
+    if (!this._config.syncAndRetry) {
+      return await this._wallet.payLightningInvoice(options)
+    }
+
     try {
       return await this._wallet.payLightningInvoice(options)
     } catch (_) {
