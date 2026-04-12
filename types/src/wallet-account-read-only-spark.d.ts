@@ -113,6 +113,10 @@ export type SparkWalletConfig = {
      * - Optional sparkscan client config
      */
     sparkscan?: SparkScanConfig;
+    /**
+     * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+     */
+    syncAndRetry?: boolean;
 };
 export type GetTransfersOptions = {
     /**
