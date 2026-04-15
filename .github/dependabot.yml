@@ -1,0 +1,32 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "tetherto/wdk-sdk-write"
+    assignees:
+      - "jonathunne"
+    labels:
+      - "security"
+    # Ignore for version updates
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch", "version-update:semver-major", "version-update:semver-minor"]
+    # group for security updates
+    groups:
+      security-patch-updates:
+        applies-to: security-updates
+        update-types:
+          - "patch"
+      security-minor-updates:
+        applies-to: security-updates
+        update-types:
+          - "minor"
+      security-major-updates:
+        applies-to: security-updates
+        update-types:
+          - "major"
+      # if No fix — no PR created, tracked in Security tab alerts
