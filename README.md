@@ -199,6 +199,7 @@ new WalletManagerSpark(seed, config)
 - `seed` (string | Uint8Array): BIP-39 mnemonic seed phrase or seed bytes
 - `config` (object, optional): Configuration object
   - `network` (string, optional): 'MAINNET', 'TESTNET', or 'REGTEST' (default: 'MAINNET')
+  - `privacy` (boolean, optional): Enable privacy mode on initialization (default: `false`). See [Privacy Mode](#-privacy-mode) for risks before enabling.
 
 
 #### Methods
@@ -1032,6 +1033,9 @@ const regtestWallet = new WalletManagerSpark(seedPhrase, {
   - The Spark signer automatically clears sensitive data
   - Avoid keeping references to disposed wallet instances
   - Use proper error handling to ensure cleanup even on failures
+
+- **Privacy Mode**:
+  Hides your wallet's Bitcoin transactions from block explorers and public APIs. Disabled by default — opt in with `privacy: true` in the config. Applies to Bitcoin transactions only — token transactions remain public. Risk of leaving it off: your address and full transaction history are visible to anyone via block explorers and public Spark APIs.
 
 ## 🛠️ Development
 
