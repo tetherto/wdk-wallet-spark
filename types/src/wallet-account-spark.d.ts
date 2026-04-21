@@ -52,6 +52,17 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     sign(message: string): Promise<string>;
     /**
+     * Signs a transaction.
+     *
+     * Not supported on spark: transfers are signed collaboratively with the spark operators
+     * via a FROST / Statechain protocol, so a signed payload cannot be produced locally and
+     * broadcast independently. Use `sendTransaction` instead.
+     *
+     * @param {SparkTransaction} tx - The transaction.
+     * @returns {Promise<never>} Never resolves; always throws.
+     */
+    signTransaction(tx: SparkTransaction): Promise<never>;
+    /**
      * Sends a transaction.
      *
      * @param {SparkTransaction} tx - The transaction.
