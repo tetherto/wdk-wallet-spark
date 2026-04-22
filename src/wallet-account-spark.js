@@ -426,11 +426,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
    */
   async toReadOnlyAccount () {
-    const address = await this.getAddress()
+    if (!this._sparkReadOnlyAccount) {
+      const address = await this.getAddress()
+      this._sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
+    }
 
-    const sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
-
-    return sparkReadOnlyAccount
+    return this._sparkReadOnlyAccount
   }
 
   /**
