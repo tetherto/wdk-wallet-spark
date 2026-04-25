@@ -117,6 +117,10 @@ export type SparkWalletConfig = {
      * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
      */
     syncAndRetry?: boolean;
+    /**
+     * - When true, hides Bitcoin transactions from block explorers and public APIs on initialization (default: false). When false, address and transaction history are publicly visible.
+     */
+    privacy?: boolean;
 };
 export type GetTransfersOptions = {
     /**

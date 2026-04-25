@@ -117,6 +117,15 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     }
     const { wallet } = await SparkWallet.initialize(options)
 
+    if (config.privacy === true) {
+      try {
+        await wallet.setPrivacyEnabled(true)
+      } catch (err) {
+        await wallet.cleanupConnections().catch(() => {})
+        throw err
+      }
+    }
+
     const account = new WalletAccountSpark(wallet, config)
 
     return account
