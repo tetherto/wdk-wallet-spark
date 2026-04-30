@@ -189,6 +189,20 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Signs a transaction.
+   *
+   * Not supported on spark: transfers are signed collaboratively with the spark operators
+   * via a FROST / Statechain protocol, so a signed payload cannot be produced locally and
+   * broadcast independently. Use `sendTransaction` instead.
+   *
+   * @param {SparkTransaction} tx - The transaction.
+   * @returns {Promise<never>} Never resolves; always throws.
+   */
+  async signTransaction (tx) {
+    throw new Error("Method 'signTransaction(tx)' not supported on spark.")
+  }
+
+  /**
    * Sends a transaction.
    *
    * @param {SparkTransaction} tx - The transaction.
