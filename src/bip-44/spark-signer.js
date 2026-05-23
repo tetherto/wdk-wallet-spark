@@ -39,7 +39,7 @@ export default class Bip44SparkSigner extends DefaultSparkSigner {
     if (this.staticDepositKey?.privateKey) sodium_memzero(this.staticDepositKey.privateKey)
     if (this.htlcPreimageKey?.privateKey) sodium_memzero(this.htlcPreimageKey.privateKey)
 
-    this.identityKey = undefined
+    this.identityKey.privateKey = undefined
     this.signingKey = undefined
     this.depositKey = undefined
     this.staticDepositKey = undefined
