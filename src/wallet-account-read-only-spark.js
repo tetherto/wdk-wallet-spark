@@ -49,6 +49,7 @@ import { SparkScanClient } from '#libs/sparkscan-client'
  * @property {NetworkType} [network] - The network (default: "MAINNET").
  * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
  * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+ * @property {boolean} [privacy] - When true, hides Bitcoin transactions from block explorers and public APIs on initialization (default: false). When false, address and transaction history are publicly visible.
  */
 
 /**
