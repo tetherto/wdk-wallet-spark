@@ -213,6 +213,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<TransactionResult>} The transaction's result.
    */
   async sendTransaction ({ to, value }) {
+    if (this._config.transactionMaxFee !== undefined) {
+      const { fee } = await this.quoteSendTransaction({ to, value })
+      if (fee >= this._config.transactionMaxFee) {
+        throw new Error('Exceeded maximum fee cost for transaction operation.')
+      }
+    }
+
     const params = { receiverSparkAddress: to, amountSats: Number(value) }
 
     if (!this._config.syncAndRetry) {

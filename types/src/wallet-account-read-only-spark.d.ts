@@ -117,6 +117,10 @@ export type SparkWalletConfig = {
      * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
      */
     syncAndRetry?: boolean;
+    /**
+     * - The maximum fee amount for sendTransaction operations.
+     */
+    transactionMaxFee?: number | bigint;
 };
 export type GetTransfersOptions = {
     /**

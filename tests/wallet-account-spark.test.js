@@ -144,6 +144,13 @@ describe('WalletAccountSpark', () => {
 
       expect(fee).toBe(0n)
     })
+
+    test('should throw if transaction fee exceeds the transaction max fee configuration', async () => {
+      const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', transactionMaxFee: 0 })
+
+      await expect(account.sendTransaction(DUMMY_TRANSACTION))
+        .rejects.toThrow('Exceeded maximum fee cost for transaction operation.')
+    })
   })
 
   describe('transfer', () => {
