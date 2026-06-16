@@ -458,7 +458,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<void>}
    */
   async cleanupConnections () {
-    await this._wallet.cleanupConnections()
+    await this._wallet.cleanup()
   }
 
   /**
