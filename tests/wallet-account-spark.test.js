@@ -146,10 +146,32 @@ describe('WalletAccountSpark', () => {
     })
 
     test('should throw if transaction fee exceeds the transaction max fee configuration', async () => {
-      const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', transactionMaxFee: 0 })
+      const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', transactionMaxFee: 999n })
+
+      jest.spyOn(account, 'quoteSendTransaction').mockResolvedValueOnce({ fee: 1000n })
 
       await expect(account.sendTransaction(DUMMY_TRANSACTION))
         .rejects.toThrow('Exceeded maximum fee cost for transaction operation.')
+    })
+
+    test('should allow a fee exactly equal to transactionMaxFee', async () => {
+      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
+
+      const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', transactionMaxFee: 0n })
+
+      const result = await account.sendTransaction(DUMMY_TRANSACTION)
+
+      expect(result.hash).toBe(DUMMY_WALLET_TRANSFER.id)
+    })
+
+    test('should allow a fee below transactionMaxFee', async () => {
+      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
+
+      const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', transactionMaxFee: 1n })
+
+      const result = await account.sendTransaction(DUMMY_TRANSACTION)
+
+      expect(result.hash).toBe(DUMMY_WALLET_TRANSFER.id)
     })
   })
 
