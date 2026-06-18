@@ -48,6 +48,48 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('at', () => {
+    test('should not enable privacy by default', async () => {
+      const mockWallet = {
+        setPrivacyEnabled: jest.fn().mockResolvedValue(undefined),
+        config: { signer: new Bip44SparkSigner(0) }
+      }
+      jest.spyOn(SparkWallet, 'initialize').mockResolvedValueOnce({ wallet: mockWallet })
+
+      await WalletAccountSpark.at(SEED, 0, { network: 'MAINNET' })
+
+      expect(mockWallet.setPrivacyEnabled).not.toHaveBeenCalled()
+    })
+
+    test('should enable privacy when privacy: true', async () => {
+      const mockWallet = {
+        setPrivacyEnabled: jest.fn().mockResolvedValue(undefined),
+        config: { signer: new Bip44SparkSigner(0) }
+      }
+      jest.spyOn(SparkWallet, 'initialize').mockResolvedValueOnce({ wallet: mockWallet })
+
+      await WalletAccountSpark.at(SEED, 0, { network: 'MAINNET', privacy: true })
+
+      expect(mockWallet.setPrivacyEnabled).toHaveBeenCalledWith(true)
+    })
+
+    test('should cleanup and rethrow if setPrivacyEnabled fails', async () => {
+      const privacyError = new Error('privacy unavailable')
+      const mockWallet = {
+        setPrivacyEnabled: jest.fn().mockRejectedValue(privacyError),
+        cleanupConnections: jest.fn().mockResolvedValue(undefined),
+        config: { signer: new Bip44SparkSigner(0) }
+      }
+      jest.spyOn(SparkWallet, 'initialize').mockResolvedValueOnce({ wallet: mockWallet })
+
+      await expect(
+        WalletAccountSpark.at(SEED, 0, { network: 'MAINNET', privacy: true })
+      ).rejects.toThrow(privacyError)
+
+      expect(mockWallet.cleanupConnections).toHaveBeenCalled()
+    })
+  })
+
   describe('constructor', () => {
     test('should successfully initialize an account for the given spark wallet', async () => {
       expect(account.index).toBe(ACCOUNT.index)
