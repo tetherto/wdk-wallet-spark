@@ -117,6 +117,10 @@ export type SparkWalletConfig = {
      * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
      */
     syncAndRetry?: boolean;
+    /**
+     * - When true, enable logging from within spark sdk (default: false).
+     */
+    enableLogging?: boolean;
 };
 export type GetTransfersOptions = {
     /**
