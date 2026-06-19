@@ -144,6 +144,7 @@ describe('WalletAccountSpark', () => {
 
       expect(fee).toBe(0n)
     })
+
   })
 
   describe('transfer', () => {
