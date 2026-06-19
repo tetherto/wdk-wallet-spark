@@ -113,9 +113,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     const options = {
       signer: new Bip44SparkSigner(index),
       mnemonicOrSeed: seed,
-      options: { network }
+      options: {
+        network,
+        log: config.enableLogging || false
+      }
     }
-    const { wallet } = await SparkWallet.initialize(options)
+    const { wallet } = await SparkWallet.getOrCreateWallet(options)
 
     const account = new WalletAccountSpark(wallet, config)
 
@@ -458,7 +461,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<void>}
    */
   async cleanupConnections () {
-    await this._wallet.cleanupConnections()
+    await this._wallet.cleanup()
   }
 
   /**

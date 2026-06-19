@@ -49,6 +49,7 @@ import { SparkScanClient } from '#libs/sparkscan-client'
  * @property {NetworkType} [network] - The network (default: "MAINNET").
  * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
  * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+ * @property {boolean} [enableLogging] - When true, enable logging from within spark sdk (default: false).
  */
 
 /**
@@ -88,7 +89,8 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @type {SparkReadonlyClient}
      */
     this._client = SparkReadonlyClient.createPublic({
-      network: this._config.network
+      network: this._config.network,
+      log: this._config.enableLogging || false
     })
 
     /**

@@ -504,11 +504,11 @@ describe('WalletAccountSpark', () => {
 
   describe('cleanupConnections', () => {
     test('should close and clean up connections with the blockchain', async () => {
-      sparkWallet.cleanupConnections = jest.fn()
+      sparkWallet.cleanup = jest.fn()
 
       await account.cleanupConnections()
 
-      expect(sparkWallet.cleanupConnections).toHaveBeenCalled()
+      expect(sparkWallet.cleanup).toHaveBeenCalled()
     })
   })
 })
