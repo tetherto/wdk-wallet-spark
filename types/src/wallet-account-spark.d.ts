@@ -64,6 +64,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<never>} Never resolves; always throws.
+     * @throws {UnsupportedOperationError} Always — spark transfers cannot be signed locally.
      */
     signTransaction(tx: SparkTransaction): Promise<never>;
     /**

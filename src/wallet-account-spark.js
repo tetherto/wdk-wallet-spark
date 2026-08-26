@@ -13,6 +13,8 @@
 // limitations under the License.
 'use strict'
 
+import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
 import { SparkWallet, Network } from '#libs/spark-sdk'
@@ -174,6 +176,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * Returns the account's total (available + locked in outgoing transfer) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+   * @throws {ProviderError} If a sparkscan client is configured and sparkscan responds with an error status.
    */
   async getBalance () {
     if (this._sparkscan) {
@@ -204,9 +207,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {SparkTransaction} tx - The transaction.
    * @returns {Promise<never>} Never resolves; always throws.
+   * @throws {UnsupportedOperationError} Always — spark transfers cannot be signed locally.
    */
   async signTransaction (tx) {
-    throw new Error("Method 'signTransaction(tx)' not supported on spark.")
+    throw new UnsupportedOperationError('signTransaction(tx)')
   }
 
   /**

@@ -122,6 +122,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
    * Returns the account's available (non-pending) bitcoin balance.
    *
    * @returns {Promise<bigint>} The bitcoin balance (in satoshis).
+   * @throws {ProviderError} If a sparkscan client is configured and sparkscan responds with an error status.
    */
   async getBalance () {
     const address = await this.getAddress()

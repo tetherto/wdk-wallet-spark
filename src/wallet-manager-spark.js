@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import WalletManager from '@tetherto/wdk-wallet'
+import WalletManager, { UnsupportedOperationError } from '@tetherto/wdk-wallet'
 import WalletAccountSpark from './wallet-account-spark.js'
 
 /** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
@@ -53,11 +53,14 @@ export default class WalletManagerSpark extends WalletManager {
   /**
    * Returns the wallet account at a specific BIP-44 derivation path.
    *
+   * Not supported on spark: accounts are addressed by index only.
+   *
    * @param {string} path - The derivation path (e.g. "0'/0/0").
    * @returns {Promise<WalletAccountSpark>} The account.
+   * @throws {UnsupportedOperationError} Always — the spark blockchain doesn't support derivation paths.
    */
   async getAccountByPath (path) {
-    throw new Error('Method not supported on the spark blockchain.')
+    throw new UnsupportedOperationError('getAccountByPath(path)')
   }
 
   /**

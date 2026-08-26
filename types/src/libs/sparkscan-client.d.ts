@@ -3,6 +3,7 @@ export class SparkScanClient {
      * Creates a new sparkscan client.
      *
      * @param {SparkScanConfig} config
+     * @throws {ValueError} If the configured network is not supported by sparkscan.
      */
     constructor(config?: SparkScanConfig);
     _baseUrl: string;
@@ -16,6 +17,7 @@ export class SparkScanClient {
      * @see https://docs.sparkscan.io/api/address#get-v1-address-by-address
      * @param {string} address Spark address
      * @returns {Promise<AddressInfo>} Account information
+     * @throws {ProviderError} If sparkscan responds with an error status.
      */
     getAddressInfo(address: string): Promise<AddressInfo>;
 }

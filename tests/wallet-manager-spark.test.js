@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from '@jest/globals'
 
+import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+
 import WalletManagerSpark, { WalletAccountSpark } from '../index.js'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
@@ -42,8 +44,10 @@ describe('WalletManagerSpark', () => {
 
   describe('getAccountByPath', () => {
     test('should throw an unsupported operation error', async () => {
-      await expect(wallet.getAccountByPath("0'/0/0"))
-        .rejects.toThrow('Method not supported on the spark blockchain.')
+      const promise = wallet.getAccountByPath("0'/0/0")
+
+      await expect(promise).rejects.toThrow(UnsupportedOperationError)
+      await expect(promise).rejects.toThrow("Method 'getAccountByPath(path)' is not supported.")
     })
   })
 

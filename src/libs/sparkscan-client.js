@@ -14,6 +14,8 @@
 
 'use strict'
 
+import { ProviderError, ProviderErrorReason, ValueError } from '@tetherto/wdk-wallet'
+
 /** @typedef {import('@buildonspark/spark-sdk').NetworkType} NetworkType */
 
 /**
@@ -57,11 +59,34 @@
  * @property {Array<AddressToken>|null} tokens
  */
 
+/**
+ * Maps an http status code to the matching provider error reason.
+ *
+ * @param {number} status - The response's status code.
+ * @returns {string} The provider error's reason.
+ */
+function toProviderErrorReason (status) {
+  switch (status) {
+    case 401:
+      return ProviderErrorReason.UNAUTHORIZED
+    case 403:
+      return ProviderErrorReason.FORBIDDEN
+    case 408:
+    case 504:
+      return ProviderErrorReason.REQUEST_TIMEOUT
+    default:
+      return status >= 500
+        ? ProviderErrorReason.INTERNAL_SERVER_ERROR
+        : ProviderErrorReason.NETWORK_ERROR
+  }
+}
+
 export class SparkScanClient {
   /**
    * Creates a new sparkscan client.
    *
    * @param {SparkScanConfig} config
+   * @throws {ValueError} If the configured network is not supported by sparkscan.
    */
   constructor (config = {}) {
     this._baseUrl = config.baseUrl || 'https://api.sparkscan.io'
@@ -69,7 +94,7 @@ export class SparkScanClient {
 
     const SUPPORTED_NETWORKS = new Set(['MAINNET', 'REGTEST'])
     if (!SUPPORTED_NETWORKS.has(this._network)) {
-      throw new Error(`SparkScan does not support network: ${this._network}`)
+      throw new ValueError(`SparkScan does not support network: ${this._network}`)
     }
 
     this._headers = {
@@ -93,7 +118,9 @@ export class SparkScanClient {
     })
     if (!response.ok) {
       const text = await response.text().catch(() => 'Failed to read response body')
-      throw new Error(`Sparkscan request failed: ${response.status} ${response.statusText} - ${text}`)
+      throw new ProviderError(`Sparkscan request failed: ${response.status} ${response.statusText} - ${text}`, {
+        reason: toProviderErrorReason(response.status)
+      })
     }
     return response.json()
   }
@@ -103,6 +130,7 @@ export class SparkScanClient {
    * @see https://docs.sparkscan.io/api/address#get-v1-address-by-address
    * @param {string} address Spark address
    * @returns {Promise<AddressInfo>} Account information
+   * @throws {ProviderError} If sparkscan responds with an error status.
    */
   async getAddressInfo (address) {
     return this._request(`/v1/address/${address}`)

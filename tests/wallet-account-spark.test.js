@@ -4,6 +4,8 @@ import { SparkWallet } from '@buildonspark/spark-sdk'
 
 import * as bip39 from 'bip39'
 
+import { ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
+
 import { WalletAccountSpark, WalletAccountReadOnlySpark } from '../index.js'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
@@ -106,6 +108,37 @@ describe('WalletAccountSpark', () => {
       expect(sparkWallet.getBalance).not.toHaveBeenCalled()
       expect(balance).toBe(45_678n)
     })
+
+    test('should throw if sparkscan does not support the configured network', () => {
+      expect(() => new WalletAccountSpark(sparkWallet, { network: 'TESTNET', sparkscan: {} })) // eslint-disable-line no-new
+        .toThrow(ValueError)
+      expect(() => new WalletAccountSpark(sparkWallet, { network: 'TESTNET', sparkscan: {} })) // eslint-disable-line no-new
+        .toThrow('SparkScan does not support network: TESTNET')
+    })
+
+    test('should throw if sparkscan responds with an error status', async () => {
+      const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: 'Service Unavailable',
+        text: async () => 'upstream is down'
+      })
+
+      sparkWallet.getSparkAddress = jest.fn().mockResolvedValue(ACCOUNT.address)
+
+      const accountWithSparkScan = new WalletAccountSpark(sparkWallet, {
+        network: 'MAINNET',
+        sparkscan: { baseUrl: 'https://api.sparkscan.local' }
+      })
+
+      const promise = accountWithSparkScan.getBalance()
+
+      await expect(promise).rejects.toThrow(ProviderError)
+      await expect(promise).rejects.toThrow('Sparkscan request failed: 503 Service Unavailable - upstream is down')
+      await expect(promise).rejects.toMatchObject({ reason: ProviderErrorReason.INTERNAL_SERVER_ERROR })
+
+      fetchMock.mockRestore()
+    })
   })
 
   describe('sign', () => {
@@ -117,6 +150,20 @@ describe('WalletAccountSpark', () => {
       const signature = await account.sign(MESSAGE)
 
       expect(signature).toBe(EXPECTED_SIGNATURE)
+    })
+  })
+
+  describe('signTransaction', () => {
+    test('should throw an unsupported operation error', async () => {
+      const tx = {
+        to: 'sp1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm2leurf',
+        value: 100
+      }
+
+      const promise = account.signTransaction(tx)
+
+      await expect(promise).rejects.toThrow(UnsupportedOperationError)
+      await expect(promise).rejects.toThrow("Method 'signTransaction(tx)' is not supported.")
     })
   })
 
