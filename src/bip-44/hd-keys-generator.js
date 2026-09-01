@@ -34,8 +34,7 @@ export default class Bip44HDKeysGenerator {
 
     if (!hdkey.privateKey || !hdkey.publicKey) {
       throw new ValidationError('Failed to derive keys from seed', {
-        field: 'hdkey',
-        value: seed
+        field: 'hdkey'
       })
     }
 
