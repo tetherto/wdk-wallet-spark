@@ -149,7 +149,7 @@ export type SparkWalletConfig = {
      */
     sparkscan?: SparkScanConfig;
     /**
-     * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+     * - When true, Spark send and Lightning pay failures sync wallet state. Spark sends return a matching recent outgoing transfer if one exists; otherwise stale-leaf errors retry once. Lightning retries only stale-leaf errors, reusing the same transferId (default: false).
      */
     syncAndRetry?: boolean;
     /**

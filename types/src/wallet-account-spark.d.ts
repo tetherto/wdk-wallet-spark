@@ -187,6 +187,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
+    /** @private */
+    private _isStaleLeafError;
+    /** @private */
+    private _findOutgoingTransfer;
     /**
      * Reconciles the wallet's internal state with the server and waits
      * for any triggered optimisation to complete.

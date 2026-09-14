@@ -17,7 +17,7 @@ import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network } from '#libs/spark-sdk'
+import { SparkWallet, Network, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
@@ -227,13 +227,31 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       return { hash: id, fee: 0n }
     }
 
+    const startedAt = new Date()
+
     try {
       const { id } = await this._wallet.transfer(params)
       return { hash: id, fee: 0n }
-    } catch (_) {
+    } catch (error) {
       await this.syncWalletBalance()
-      const { id } = await this._wallet.transfer(params)
-      return { hash: id, fee: 0n }
+
+      let existing
+      try {
+        existing = await this._findOutgoingTransfer(params, startedAt)
+      } catch {
+        throw error
+      }
+
+      if (existing) {
+        return { hash: existing.id, fee: 0n }
+      }
+
+      if (this._isStaleLeafError(error)) {
+        const { id } = await this._wallet.transfer(params)
+        return { hash: id, fee: 0n }
+      }
+
+      throw error
     }
   }
 
@@ -380,11 +398,21 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       return await this._wallet.payLightningInvoice(options)
     }
 
+    const params = {
+      ...options,
+      transferId: options.transferId ?? generateTransferId()
+    }
+
     try {
-      return await this._wallet.payLightningInvoice(options)
-    } catch (_) {
+      return await this._wallet.payLightningInvoice(params)
+    } catch (error) {
       await this.syncWalletBalance()
-      return await this._wallet.payLightningInvoice(options)
+
+      if (!this._isStaleLeafError(error)) {
+        throw error
+      }
+
+      return await this._wallet.payLightningInvoice(params)
     }
   }
 
@@ -427,6 +455,35 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async paySparkInvoice (invoices) {
     return await this._wallet.fulfillSparkInvoice(invoices)
+  }
+
+  /** @private */
+  _isStaleLeafError (error) {
+    const msg = error instanceof Error ? error.message.toLowerCase() : ''
+    return (
+      msg.includes('not available to transfer') ||
+      msg.includes('not owned by') ||
+      msg.includes('leaf is unavailable') ||
+      msg.includes('leaf is not available')
+    )
+  }
+
+  /** @private */
+  async _findOutgoingTransfer (params, startedAt) {
+    const windowStart = new Date(startedAt.getTime() - 5_000)
+    const { transfers } = await this._wallet.getTransfers(20, 0, windowStart)
+    const { identityPublicKey } = decodeSparkAddress(
+      params.receiverSparkAddress,
+      this._config.network
+    )
+
+    return transfers.find(transfer =>
+      transfer.transferDirection === 'OUTGOING' &&
+      transfer.totalValue === params.amountSats &&
+      transfer.receiverIdentityPublicKey === identityPublicKey &&
+      transfer.createdTime instanceof Date &&
+      transfer.createdTime.getTime() >= windowStart.getTime()
+    )
   }
 
   /**

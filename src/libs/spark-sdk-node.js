@@ -6,5 +6,6 @@ export {
   Network,
   SparkValidationError as ValidationError,
   DefaultSparkSigner,
-  decodeSparkAddress
+  decodeSparkAddress,
+  generateTransferId
 } from '@buildonspark/spark-sdk'

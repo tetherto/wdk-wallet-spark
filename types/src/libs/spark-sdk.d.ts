@@ -4,3 +4,4 @@ export let Network: any;
 export let ValidationError: any;
 export let DefaultSparkSigner: any;
 export let decodeSparkAddress: any;
+export let generateTransferId: any;
