@@ -70,16 +70,26 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Sends a transaction.
      *
+     * When `syncAndRetry` is true, matching outgoing transfer history is snapshotted
+     * before sending (so a later lookup can tell a newly landed send from an earlier
+     * identical one). Lookups page `getTransfers(limit, offset)` without `createdAfter`,
+     * up to 100 rows. Expired and returned outgoings are skipped; other live statuses,
+     * including sender-key-tweak pending, can match. If that snapshot fails, the send
+     * is not attempted. Recipients are decoded using the Spark wallet's network, not
+     * the WDK config default. A failed Spark send is never retried with a second
+     * `transfer()`; the original error is rethrown if no new matching outgoing exists.
+     *
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
+     * @throws {SparkValidationError} If the recipient address is not valid for the wallet network.
      */
     sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
-   * Transfers a token to another address.
-   *
-   * @param {TransferOptions} options - The transfer's options.
-   * @returns {Promise<TransferResult>} The transfer's result.
-   */
+     * Transfers a token to another address.
+     *
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<TransferResult>} The transfer's result.
+     */
     transfer(options: TransferOptions): Promise<TransferResult>;
     /**
      * Generates a single-use deposit address for bitcoin deposits from layer 1.
@@ -155,8 +165,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Pays a Lightning invoice.
      *
+     * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller
+     * did not pass one, reused for a single stale-leaf retry, and set on any thrown
+     * error as `error.transferId` so the same payment can be retried without double-paying.
+     *
      * @param {PayLightningInvoiceParams} options - The payment options.
      * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
+     * @throws {Error} If the pay fails. When `syncAndRetry` is true, the error includes `transferId`.
      */
     payLightningInvoice(options: PayLightningInvoiceParams): Promise<LightningSendRequest>;
     /**
@@ -189,6 +204,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
     /** @private */
     private _isStaleLeafError;
+    /** @private */
+    private _listMatchingOutgoingTransfers;
     /** @private */
     private _findOutgoingTransfer;
     /**

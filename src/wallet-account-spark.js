@@ -34,6 +34,7 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 /** @typedef {import('@buildonspark/spark-sdk').PayLightningInvoiceParams} PayLightningInvoiceParams */
 /** @typedef {import('@buildonspark/spark-sdk').SparkAddressFormat} SparkAddressFormat */
 /** @typedef {import('@buildonspark/spark-sdk').FulfillSparkInvoiceResponse} FulfillSparkInvoiceResponse */
+/** @typedef {import('@buildonspark/spark-sdk').SparkValidationError} SparkValidationError */
 
 /** @typedef {import('@tetherto/wdk-wallet').IWalletAccount} IWalletAccount */
 
@@ -83,6 +84,33 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
  * @property {SparkAddressFormat} invoice - The Spark invoice to pay.
  * @property {bigint} [amount] - Amount to pay (required for invoices without encoded amount).
  */
+
+const TRANSFER_LOOKUP_PAGE_SIZE = 20
+const TRANSFER_LOOKUP_MAX_PAGES = 5
+
+// SparkWallet.getTransfers returns WalletTransfer.status as protobuf enum names.
+// SparkReadonlyClient transfers use numeric TransferStatus (EXPIRED = 6, RETURNED = 7).
+const WALLET_TRANSFER_STATUS_EXPIRED = 'TRANSFER_STATUS_EXPIRED'
+const WALLET_TRANSFER_STATUS_RETURNED = 'TRANSFER_STATUS_RETURNED'
+const TRANSFER_STATUS_EXPIRED = 6
+const TRANSFER_STATUS_RETURNED = 7
+
+function isExpiredOrReturnedStatus (status) {
+  return (
+    status === WALLET_TRANSFER_STATUS_EXPIRED ||
+    status === WALLET_TRANSFER_STATUS_RETURNED ||
+    status === TRANSFER_STATUS_EXPIRED ||
+    status === TRANSFER_STATUS_RETURNED
+  )
+}
+
+function attachLightningTransferId (error, transferId) {
+  if (error && typeof error === 'object') {
+    error.transferId = transferId
+  }
+
+  return error
+}
 
 /** @implements {IWalletAccount} */
 export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
@@ -216,8 +244,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Sends a transaction.
    *
+   * When `syncAndRetry` is true, matching outgoing transfer history is snapshotted
+   * before sending (so a later lookup can tell a newly landed send from an earlier
+   * identical one). Lookups page `getTransfers(limit, offset)` without `createdAfter`,
+   * up to 100 rows. Expired and returned outgoings are skipped; other live statuses,
+   * including sender-key-tweak pending, can match. If that snapshot fails, the send
+   * is not attempted. Recipients are decoded using the Spark wallet's network, not
+   * the WDK config default. A failed Spark send is never retried with a second
+   * `transfer()`; the original error is rethrown if no new matching outgoing exists.
+   *
    * @param {SparkTransaction} tx - The transaction.
    * @returns {Promise<TransactionResult>} The transaction's result.
+   * @throws {SparkValidationError} If the recipient address is not valid for the wallet network.
    */
   async sendTransaction ({ to, value }) {
     const params = { receiverSparkAddress: to, amountSats: Number(value) }
@@ -227,7 +265,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       return { hash: id, fee: 0n }
     }
 
-    const startedAt = new Date()
+    const priorIds = new Set(
+      (await this._listMatchingOutgoingTransfers(params)).map(transfer => transfer.id)
+    )
 
     try {
       const { id } = await this._wallet.transfer(params)
@@ -237,7 +277,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
       let existing
       try {
-        existing = await this._findOutgoingTransfer(params, startedAt)
+        existing = await this._findOutgoingTransfer(params, priorIds)
       } catch {
         throw error
       }
@@ -246,21 +286,16 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         return { hash: existing.id, fee: 0n }
       }
 
-      if (this._isStaleLeafError(error)) {
-        const { id } = await this._wallet.transfer(params)
-        return { hash: id, fee: 0n }
-      }
-
       throw error
     }
   }
 
   /**
- * Transfers a token to another address.
- *
- * @param {TransferOptions} options - The transfer's options.
- * @returns {Promise<TransferResult>} The transfer's result.
- */
+   * Transfers a token to another address.
+   *
+   * @param {TransferOptions} options - The transfer's options.
+   * @returns {Promise<TransferResult>} The transfer's result.
+   */
   async transfer (options) {
     const txId = await this._wallet.transferTokens({
       tokenIdentifier: options.token,
@@ -390,8 +425,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Pays a Lightning invoice.
    *
+   * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller
+   * did not pass one, reused for a single stale-leaf retry, and set on any thrown
+   * error as `error.transferId` so the same payment can be retried without double-paying.
+   *
    * @param {PayLightningInvoiceParams} options - The payment options.
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
+   * @throws {Error} If the pay fails. When `syncAndRetry` is true, the error includes `transferId`.
    */
   async payLightningInvoice (options) {
     if (!this._config.syncAndRetry) {
@@ -409,10 +449,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       await this.syncWalletBalance()
 
       if (!this._isStaleLeafError(error)) {
-        throw error
+        throw attachLightningTransferId(error, params.transferId)
       }
 
-      return await this._wallet.payLightningInvoice(params)
+      try {
+        return await this._wallet.payLightningInvoice(params)
+      } catch (retryError) {
+        throw attachLightningTransferId(retryError, params.transferId)
+      }
     }
   }
 
@@ -469,21 +513,47 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /** @private */
-  async _findOutgoingTransfer (params, startedAt) {
-    const windowStart = new Date(startedAt.getTime() - 5_000)
-    const { transfers } = await this._wallet.getTransfers(20, 0, windowStart)
+  async _listMatchingOutgoingTransfers (params) {
+    const network = typeof this._wallet.config.getNetworkType === 'function'
+      ? this._wallet.config.getNetworkType()
+      : this._config.network
     const { identityPublicKey } = decodeSparkAddress(
       params.receiverSparkAddress,
-      this._config.network
+      network
     )
+    const matches = []
 
-    return transfers.find(transfer =>
-      transfer.transferDirection === 'OUTGOING' &&
-      transfer.totalValue === params.amountSats &&
-      transfer.receiverIdentityPublicKey === identityPublicKey &&
-      transfer.createdTime instanceof Date &&
-      transfer.createdTime.getTime() >= windowStart.getTime()
-    )
+    for (let page = 0; page < TRANSFER_LOOKUP_MAX_PAGES; page++) {
+      const offset = page * TRANSFER_LOOKUP_PAGE_SIZE
+      // Two-argument skip pagination. Do not pass createdAfter.
+      const { transfers } = await this._wallet.getTransfers(
+        TRANSFER_LOOKUP_PAGE_SIZE,
+        offset
+      )
+
+      for (const transfer of transfers) {
+        if (
+          transfer.transferDirection === 'OUTGOING' &&
+          transfer.totalValue === params.amountSats &&
+          transfer.receiverIdentityPublicKey === identityPublicKey &&
+          !isExpiredOrReturnedStatus(transfer.status)
+        ) {
+          matches.push(transfer)
+        }
+      }
+
+      if (transfers.length < TRANSFER_LOOKUP_PAGE_SIZE) {
+        break
+      }
+    }
+
+    return matches
+  }
+
+  /** @private */
+  async _findOutgoingTransfer (params, priorIds) {
+    const transfers = await this._listMatchingOutgoingTransfers(params)
+    return transfers.find(transfer => !priorIds.has(transfer.id))
   }
 
   /**
