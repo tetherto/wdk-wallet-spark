@@ -252,6 +252,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * is not attempted. Recipients are decoded using the Spark wallet's network, not
    * the WDK config default. A failed Spark send is never retried with a second
    * `transfer()`; the original error is rethrown if no new matching outgoing exists.
+   * Concurrent identical sends (same amount and recipient) from one wallet can be
+   * misattributed, so callers should not run those payments in parallel.
    *
    * @param {SparkTransaction} tx - The transaction.
    * @returns {Promise<TransactionResult>} The transaction's result.
