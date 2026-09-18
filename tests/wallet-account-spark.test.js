@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkRequestError, encodeSparkAddress } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError } from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
@@ -179,8 +179,6 @@ describe('WalletAccountSpark', () => {
       id: 'dummy-wallet-transfer-1'
     }
 
-    const DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY = '033674c2986b02f95a687841a4d24c22dc2e0363ae631bf7948671ac86f99e197b'
-
     test('should successfully send a transaction', async () => {
       sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
 
@@ -214,6 +212,10 @@ describe('WalletAccountSpark', () => {
         amountSats: DUMMY_TRANSACTION.value
       }
 
+      const DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY = '033674c2986b02f95a687841a4d24c22dc2e0363ae631bf7948671ac86f99e197b'
+
+      const DUMMY_REGTEST_ADDRESS = 'sparkrt1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm5u4lkv'
+
       const DUMMY_EMPTY_PAGE = {
         transfers: [],
         offset: 0
@@ -223,14 +225,16 @@ describe('WalletAccountSpark', () => {
         id: 'existing-outgoing-1',
         transferDirection: 'OUTGOING',
         totalValue: DUMMY_TRANSACTION.value,
-        receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY
+        receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY,
+        status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
       }
 
       const DUMMY_OTHER_RECIPIENT_OUTGOING = {
         id: 'other-recipient-outgoing-1',
         transferDirection: 'OUTGOING',
         totalValue: DUMMY_TRANSACTION.value,
-        receiverIdentityPublicKey: '02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15'
+        receiverIdentityPublicKey: '02d1c6f04d52a2c7b4c8e3f0a9b8d7c6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9',
+        status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
       }
 
       let retryAccount
@@ -264,17 +268,13 @@ describe('WalletAccountSpark', () => {
         const getNetworkType = jest.spyOn(sparkWallet.config, 'getNetworkType')
           .mockReturnValue('REGTEST')
         try {
-          const to = encodeSparkAddress({
-            identityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY,
-            network: 'REGTEST'
-          })
           const retryWithoutNetwork = new WalletAccountSpark(sparkWallet, {
             syncAndRetry: true
           })
           sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
 
           const { hash, fee } = await retryWithoutNetwork.sendTransaction({
-            to,
+            to: DUMMY_REGTEST_ADDRESS,
             value: DUMMY_TRANSACTION.value
           })
 
@@ -282,7 +282,7 @@ describe('WalletAccountSpark', () => {
           expect(sparkWallet.getTransfers).toHaveBeenCalledWith(20, 0)
           expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
           expect(sparkWallet.transfer).toHaveBeenCalledWith({
-            receiverSparkAddress: to,
+            receiverSparkAddress: DUMMY_REGTEST_ADDRESS,
             amountSats: DUMMY_TRANSACTION.value
           })
           expect({ hash, fee }).toEqual({ hash: DUMMY_WALLET_TRANSFER.id, fee: 0n })
