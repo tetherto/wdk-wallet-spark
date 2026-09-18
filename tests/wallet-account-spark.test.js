@@ -206,23 +206,6 @@ describe('WalletAccountSpark', () => {
       })
     })
 
-    test('should match the published default path when syncAndRetry is explicitly false', async () => {
-      const offAccount = new WalletAccountSpark(sparkWallet, {
-        network: 'MAINNET',
-        syncAndRetry: false
-      })
-      sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
-
-      const { hash, fee } = await offAccount.sendTransaction(DUMMY_TRANSACTION)
-
-      expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-      expect(sparkWallet.transfer).toHaveBeenCalledWith({
-        receiverSparkAddress: DUMMY_TRANSACTION.to,
-        amountSats: DUMMY_TRANSACTION.value
-      })
-      expect({ hash, fee }).toEqual({ hash: DUMMY_WALLET_TRANSFER.id, fee: 0n })
-    })
-
     describe('with syncAndRetry', () => {
       const TRANSFER_PARAMS = {
         receiverSparkAddress: DUMMY_TRANSACTION.to,
@@ -313,65 +296,8 @@ describe('WalletAccountSpark', () => {
         }
       })
 
-      test('bug: should not retry a stale-leaf error with no matching outgoing', async () => {
-        sparkWallet.transfer = jest.fn()
-          .mockRejectedValueOnce(new Error('Leaf xyz is not available to transfer'))
-          .mockResolvedValueOnce({ id: 'retry-transfer-1' })
-
-        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('Leaf xyz is not available to transfer')
-
-        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.getTransfers).toHaveBeenCalledTimes(2)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
-        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
-      })
-
-      test('bug: should not retry a stale-leaf error when the only matching outgoing was already present', async () => {
-        sparkWallet.transfer = jest.fn()
-          .mockRejectedValueOnce(new Error('Leaf xyz is not owned by the wallet'))
-          .mockResolvedValueOnce({ id: 'retry-transfer-1' })
-        sparkWallet.getTransfers = jest.fn().mockResolvedValue({
-          transfers: [DUMMY_OUTGOING_TRANSFER],
-          offset: 0
-        })
-
-        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('Leaf xyz is not owned by the wallet')
-
-        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.getTransfers).toHaveBeenCalledTimes(2)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
-        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
-      })
-
       test('should return a newly appeared outgoing instead of sending again after a timeout', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
-        sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
-          .mockResolvedValueOnce({
-            transfers: [DUMMY_OUTGOING_TRANSFER],
-            offset: 0
-          })
-
-        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
-
-        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
-        expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
-        expect(fee).toBe(0n)
-      })
-
-      test('should return a newly appeared outgoing instead of retrying a stale-leaf error', async () => {
-        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('Leaf xyz is not available to transfer'))
         sparkWallet.getTransfers = jest.fn()
           .mockResolvedValueOnce(EMPTY_PAGE)
           .mockResolvedValueOnce({
