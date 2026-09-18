@@ -206,23 +206,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
     /**
-     * Tells whether an error reports leaves the wallet still believes it can spend, but
-     * which the operators have already locked or reassigned.
-     *
-     * The operators report this condition as message text on a gRPC error. The SDK exposes
-     * no error class or code that distinguishes it, and matches the same fragments in its
-     * own leaf manager. Override this if a future SDK version identifies it properly.
-     *
-     * @protected
-     * @param {Error} error - An error thrown by the Spark SDK.
-     * @returns {boolean} Whether the error reports stale leaves.
-     */
-    protected _isStaleLeafError(error: Error): boolean;
-    /** @private */
-    private _listMatchingOutgoingTransfers;
-    /** @private */
-    private _findOutgoingTransfer;
-    /**
      * Reconciles the wallet's internal state with the server and waits
      * for any triggered optimisation to complete.
      *
@@ -247,6 +230,23 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {void}
      */
     dispose(): void;
+    /**
+     * Tells whether an error reports leaves the wallet still believes it can spend, but
+     * which the operators have already locked or reassigned.
+     *
+     * The operators report this condition as message text on a gRPC error. The SDK exposes
+     * no error class or code that distinguishes it, and matches the same fragments in its
+     * own leaf manager. Override this if a future SDK version identifies it properly.
+     *
+     * @protected
+     * @param {Error} error - An error thrown by the Spark SDK.
+     * @returns {boolean} Whether the error reports stale leaves.
+     */
+    protected _isStaleLeafError(error: Error): boolean;
+    /** @private */
+    private _listMatchingOutgoingTransfers;
+    /** @private */
+    private _findOutgoingTransfer;
 }
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;

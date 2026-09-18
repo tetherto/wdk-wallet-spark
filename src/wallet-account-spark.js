@@ -507,6 +507,56 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Reconciles the wallet's internal state with the server and waits
+   * for any triggered optimisation to complete.
+   *
+   * @returns {Promise<void>}
+   */
+  async syncWalletBalance () {
+    await this._wallet.experimental_syncWallet()
+
+    const deadline = Date.now() + 10_000
+    while (await this._wallet.isOptimizationInProgress()) {
+      if (Date.now() > deadline) break
+      await new Promise(resolve => setTimeout(resolve, 200))
+    }
+  }
+
+  /**
+   * Returns a read-only copy of the account.
+   *
+   * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
+   */
+  async toReadOnlyAccount () {
+    if (!this._sparkReadOnlyAccount) {
+      const address = await this.getAddress()
+      this._sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
+    }
+
+    return this._sparkReadOnlyAccount
+  }
+
+  /**
+   * Cleans up and closes the connections with the spark blockchain.
+   *
+   * @returns {Promise<void>}
+   */
+  async cleanupConnections () {
+    await this._wallet.cleanup()
+  }
+
+  /**
+   * Disposes the wallet account, erasing its private keys from the memory.
+   *
+   * @returns {void}
+   */
+  dispose () {
+    this.cleanupConnections().catch(console.error)
+
+    this._signer.dispose()
+  }
+
+  /**
    * Tells whether an error reports leaves the wallet still believes it can spend, but
    * which the operators have already locked or reassigned.
    *
@@ -563,55 +613,5 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   async _findOutgoingTransfer (params, priorIds) {
     const transfers = await this._listMatchingOutgoingTransfers(params)
     return transfers.find(transfer => !priorIds.has(transfer.id))
-  }
-
-  /**
-   * Reconciles the wallet's internal state with the server and waits
-   * for any triggered optimisation to complete.
-   *
-   * @returns {Promise<void>}
-   */
-  async syncWalletBalance () {
-    await this._wallet.experimental_syncWallet()
-
-    const deadline = Date.now() + 10_000
-    while (await this._wallet.isOptimizationInProgress()) {
-      if (Date.now() > deadline) break
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
-  }
-
-  /**
-   * Returns a read-only copy of the account.
-   *
-   * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
-   */
-  async toReadOnlyAccount () {
-    if (!this._sparkReadOnlyAccount) {
-      const address = await this.getAddress()
-      this._sparkReadOnlyAccount = new WalletAccountReadOnlySpark(address, this._config)
-    }
-
-    return this._sparkReadOnlyAccount
-  }
-
-  /**
-   * Cleans up and closes the connections with the spark blockchain.
-   *
-   * @returns {Promise<void>}
-   */
-  async cleanupConnections () {
-    await this._wallet.cleanup()
-  }
-
-  /**
-   * Disposes the wallet account, erasing its private keys from the memory.
-   *
-   * @returns {void}
-   */
-  dispose () {
-    this.cleanupConnections().catch(console.error)
-
-    this._signer.dispose()
   }
 }
