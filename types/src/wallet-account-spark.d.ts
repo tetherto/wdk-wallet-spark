@@ -205,8 +205,19 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
-    /** @private */
-    private _isStaleLeafError;
+    /**
+     * Tells whether an error reports leaves the wallet still believes it can spend, but
+     * which the operators have already locked or reassigned.
+     *
+     * The operators report this condition as message text on a gRPC error. The SDK exposes
+     * no error class or code that distinguishes it, and matches the same fragments in its
+     * own leaf manager. Override this if a future SDK version identifies it properly.
+     *
+     * @protected
+     * @param {Error} error - An error thrown by the Spark SDK.
+     * @returns {boolean} Whether the error reports stale leaves.
+     */
+    protected _isStaleLeafError(error: Error): boolean;
     /** @private */
     private _listMatchingOutgoingTransfers;
     /** @private */
