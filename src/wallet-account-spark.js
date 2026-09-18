@@ -90,19 +90,13 @@ import { LightningPaymentError } from './errors.js'
 const TRANSFER_LOOKUP_PAGE_SIZE = 20
 const TRANSFER_LOOKUP_MAX_PAGES = 5
 
-// SparkWallet.getTransfers returns WalletTransfer.status as protobuf enum names.
-// SparkReadonlyClient transfers use numeric TransferStatus (EXPIRED = 6, RETURNED = 7).
 const WALLET_TRANSFER_STATUS_EXPIRED = 'TRANSFER_STATUS_EXPIRED'
 const WALLET_TRANSFER_STATUS_RETURNED = 'TRANSFER_STATUS_RETURNED'
-const TRANSFER_STATUS_EXPIRED = 6
-const TRANSFER_STATUS_RETURNED = 7
 
 function isExpiredOrReturnedStatus (status) {
   return (
     status === WALLET_TRANSFER_STATUS_EXPIRED ||
-    status === WALLET_TRANSFER_STATUS_RETURNED ||
-    status === TRANSFER_STATUS_EXPIRED ||
-    status === TRANSFER_STATUS_RETURNED
+    status === WALLET_TRANSFER_STATUS_RETURNED
   )
 }
 

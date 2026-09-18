@@ -489,52 +489,6 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
       })
 
-      test('bug: should not treat a numeric expired outgoing as the failed send', async () => {
-        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
-        sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
-          .mockResolvedValueOnce({
-            transfers: [{
-              ...DUMMY_OUTGOING_TRANSFER,
-              id: 'expired-outgoing-numeric-1',
-              status: 6
-            }],
-            offset: 0
-          })
-
-        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
-
-        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
-      })
-
-      test('bug: should not treat a numeric returned outgoing as the failed send', async () => {
-        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
-        sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
-          .mockResolvedValueOnce({
-            transfers: [{
-              ...DUMMY_OUTGOING_TRANSFER,
-              id: 'returned-outgoing-numeric-1',
-              status: 7
-            }],
-            offset: 0
-          })
-
-        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
-
-        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
-        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
-      })
-
       test('bug: should not treat a returned outgoing as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
