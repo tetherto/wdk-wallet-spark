@@ -501,12 +501,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /** @private */
   _isStaleLeafError (error) {
-    const msg = error instanceof Error ? error.message.toLowerCase() : ''
+    const message = error.message.toLowerCase()
     return (
-      msg.includes('not available to transfer') ||
-      msg.includes('not owned by') ||
-      msg.includes('leaf is unavailable') ||
-      msg.includes('leaf is not available')
+      message.includes('not available to transfer') ||
+      message.includes('not owned by') ||
+      message.includes('leaf is unavailable') ||
+      message.includes('leaf is not available')
     )
   }
 
