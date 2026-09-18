@@ -514,6 +514,38 @@ describe('WalletAccountSpark', () => {
         expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
         expect(fee).toBe(0n)
       })
+
+      test('should stop paging transfer history after the page cap', async () => {
+        const DUMMY_UNRELATED_PAGE = {
+          transfers: Array.from({ length: 20 }, (_, i) => ({
+            id: `unrelated-incoming-${i}`,
+            transferDirection: 'INCOMING',
+            totalValue: DUMMY_TRANSACTION.value,
+            receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+            status: 'TRANSFER_STATUS_COMPLETED'
+          })),
+          offset: 0
+        }
+
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue(DUMMY_UNRELATED_PAGE)
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.getTransfers.mock.calls).toEqual([
+          [20, 0],
+          [20, 20],
+          [20, 40],
+          [20, 60],
+          [20, 80],
+          [20, 0],
+          [20, 20],
+          [20, 40],
+          [20, 60],
+          [20, 80]
+        ])
+      })
     })
   })
 
