@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, encodeSparkAddress, generateTransferId } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError, encodeSparkAddress, generateTransferId } from '@buildonspark/spark-sdk'
 
 import * as bip39 from 'bip39'
 
@@ -409,7 +409,7 @@ describe('WalletAccountSpark', () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
           .mockResolvedValueOnce(EMPTY_PAGE)
-          .mockRejectedValueOnce(new Error('history unavailable'))
+          .mockRejectedValueOnce(new SparkRequestError('history unavailable'))
 
         await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
 

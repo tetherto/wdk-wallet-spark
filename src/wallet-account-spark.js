@@ -17,7 +17,7 @@ import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
@@ -280,7 +280,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       let existing
       try {
         existing = await this._findOutgoingTransfer(params, priorIds)
-      } catch {
+      } catch (lookupError) {
+        if (!(lookupError instanceof SparkError)) throw lookupError
         throw error
       }
 

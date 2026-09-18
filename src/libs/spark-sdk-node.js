@@ -4,6 +4,7 @@ export {
   SparkWallet,
   SparkReadonlyClient,
   Network,
+  SparkError,
   SparkValidationError as ValidationError,
   DefaultSparkSigner,
   decodeSparkAddress,
