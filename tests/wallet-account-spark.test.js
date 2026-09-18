@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkRequestError, encodeSparkAddress, generateTransferId } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError, encodeSparkAddress } from '@buildonspark/spark-sdk'
+
+import { UUID } from 'uuidv7'
 
 import * as bip39 from 'bip39'
 
@@ -789,6 +791,10 @@ describe('WalletAccountSpark', () => {
     })
 
     describe('with syncAndRetry', () => {
+      const TRANSFER_ID = UUID.parse('01890a5d-ac96-774b-bcce-b302099a8057')
+
+      const OPTIONS = { ...DUMMY_OPTIONS, transferId: TRANSFER_ID }
+
       let retryAccount
 
       beforeEach(() => {
@@ -802,33 +808,29 @@ describe('WalletAccountSpark', () => {
       })
 
       test('should pay once when the first lightning pay succeeds', async () => {
-        const transferId = generateTransferId()
-        const options = { ...DUMMY_OPTIONS, transferId }
         sparkWallet.payLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_SEND_REQUEST)
 
-        const result = await retryAccount.payLightningInvoice(options)
+        const result = await retryAccount.payLightningInvoice(OPTIONS)
 
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
         expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
         expect(sparkWallet.isOptimizationInProgress).not.toHaveBeenCalled()
-        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(options)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(OPTIONS)
         expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
       })
 
       test('should retry with the same transferId after a stale-leaf error', async () => {
-        const transferId = generateTransferId()
-        const options = { ...DUMMY_OPTIONS, transferId }
         sparkWallet.payLightningInvoice = jest.fn()
           .mockRejectedValueOnce(new Error('leaf is not available'))
           .mockResolvedValueOnce(DUMMY_LIGHTNING_SEND_REQUEST)
 
-        const result = await retryAccount.payLightningInvoice(options)
+        const result = await retryAccount.payLightningInvoice(OPTIONS)
 
         expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
         expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, options)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, options)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, OPTIONS)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, OPTIONS)
         expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
       })
 
@@ -842,66 +844,53 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
         expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
-        const transferId = sparkWallet.payLightningInvoice.mock.calls[0][0].transferId
-        const params = {
-          invoice: DUMMY_OPTIONS.invoice,
-          maxFeeSats: DUMMY_OPTIONS.maxFeeSats,
-          transferId
-        }
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, params)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, params)
+        const [[firstParams], [secondParams]] = sparkWallet.payLightningInvoice.mock.calls
+        expect(firstParams).toEqual({ ...DUMMY_OPTIONS, transferId: expect.any(UUID) })
+        expect(secondParams.transferId).toBe(firstParams.transferId)
         expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
       })
 
       test('should not retry a lightning pay after a timeout', async () => {
-        const transferId = generateTransferId()
-        const options = { ...DUMMY_OPTIONS, transferId }
         sparkWallet.payLightningInvoice = jest.fn().mockRejectedValue(new Error('timeout'))
 
-        const error = await retryAccount.payLightningInvoice(options).catch(err => err)
+        const promise = retryAccount.payLightningInvoice(OPTIONS)
 
-        expect(error).toBeInstanceOf(LightningPaymentError)
-        expect(error.cause.message).toBe('timeout')
-        expect(error.transferId).toBe(transferId)
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toMatchObject({ transferId: TRANSFER_ID })
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
         expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
         expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(options)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(OPTIONS)
       })
 
-      test('bug: should attach a generated transferId to a timeout error', async () => {
+      test('should attach the generated transferId to a failed payment', async () => {
         sparkWallet.payLightningInvoice = jest.fn().mockRejectedValue(new Error('timeout'))
 
-        const error = await retryAccount.payLightningInvoice(DUMMY_OPTIONS).catch(err => err)
-        const transferId = sparkWallet.payLightningInvoice.mock.calls[0][0].transferId
-        const params = {
-          invoice: DUMMY_OPTIONS.invoice,
-          maxFeeSats: DUMMY_OPTIONS.maxFeeSats,
-          transferId
-        }
+        const promise = retryAccount.payLightningInvoice(DUMMY_OPTIONS)
 
-        expect(error).toBeInstanceOf(LightningPaymentError)
-        expect(error.cause.message).toBe('timeout')
-        expect(error.transferId).toBe(transferId)
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(params)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith({ ...DUMMY_OPTIONS, transferId: expect.any(UUID) })
+
+        const [[params]] = sparkWallet.payLightningInvoice.mock.calls
+        await expect(promise).rejects.toMatchObject({ transferId: params.transferId })
       })
 
-      test('bug: should attach transferId when a stale-leaf retry also fails', async () => {
-        const transferId = generateTransferId()
-        const options = { ...DUMMY_OPTIONS, transferId }
+      test('should attach the transferId when a stale-leaf retry also fails', async () => {
         sparkWallet.payLightningInvoice = jest.fn()
           .mockRejectedValueOnce(new Error('leaf is not available'))
           .mockRejectedValueOnce(new Error('timeout'))
 
-        const error = await retryAccount.payLightningInvoice(options).catch(err => err)
+        const promise = retryAccount.payLightningInvoice(OPTIONS)
 
-        expect(error).toBeInstanceOf(LightningPaymentError)
-        expect(error.cause.message).toBe('timeout')
-        expect(error.transferId).toBe(transferId)
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toMatchObject({ transferId: TRANSFER_ID })
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, options)
-        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, options)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, OPTIONS)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, OPTIONS)
       })
     })
   })
