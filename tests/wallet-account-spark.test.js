@@ -214,7 +214,7 @@ describe('WalletAccountSpark', () => {
         amountSats: DUMMY_TRANSACTION.value
       }
 
-      const EMPTY_PAGE = {
+      const DUMMY_EMPTY_PAGE = {
         transfers: [],
         offset: 0
       }
@@ -226,7 +226,7 @@ describe('WalletAccountSpark', () => {
         receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY
       }
 
-      const OTHER_RECIPIENT_OUTGOING = {
+      const DUMMY_OTHER_RECIPIENT_OUTGOING = {
         id: 'other-recipient-outgoing-1',
         transferDirection: 'OUTGOING',
         totalValue: DUMMY_TRANSACTION.value,
@@ -243,7 +243,7 @@ describe('WalletAccountSpark', () => {
 
         sparkWallet.experimental_syncWallet = jest.fn().mockResolvedValue(undefined)
         sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(false)
-        sparkWallet.getTransfers = jest.fn().mockResolvedValue(EMPTY_PAGE)
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue(DUMMY_EMPTY_PAGE)
       })
 
       test('should send once and return the same shape when the first transfer succeeds', async () => {
@@ -260,7 +260,7 @@ describe('WalletAccountSpark', () => {
         expect({ hash, fee }).toEqual({ hash: DUMMY_WALLET_TRANSFER.id, fee: 0n })
       })
 
-      test('bug: should decode the recipient using the Spark wallet network when WDK config omits network', async () => {
+      test('should decode the recipient using the Spark wallet network when WDK config omits network', async () => {
         const getNetworkType = jest.spyOn(sparkWallet.config, 'getNetworkType')
           .mockReturnValue('REGTEST')
         try {
@@ -294,7 +294,7 @@ describe('WalletAccountSpark', () => {
       test('should return a newly appeared outgoing instead of sending again after a timeout', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockResolvedValueOnce({
             transfers: [DUMMY_OUTGOING_TRANSFER],
             offset: 0
@@ -329,7 +329,7 @@ describe('WalletAccountSpark', () => {
       test('should rethrow the original send error when transfer lookup fails', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockRejectedValueOnce(new SparkRequestError('history unavailable'))
 
         await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
@@ -353,10 +353,10 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
       })
 
-      test('bug: should not treat a same-amount outgoing to a different recipient as the failed send', async () => {
+      test('should not treat a same-amount outgoing to a different recipient as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn().mockResolvedValue({
-          transfers: [OTHER_RECIPIENT_OUTGOING],
+          transfers: [DUMMY_OTHER_RECIPIENT_OUTGOING],
           offset: 0
         })
 
@@ -370,7 +370,7 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
       })
 
-      test('bug: should not treat an earlier identical outgoing as this send', async () => {
+      test('should not treat an earlier identical outgoing as this send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('insufficient balance'))
         sparkWallet.getTransfers = jest.fn().mockResolvedValue({
           transfers: [DUMMY_OUTGOING_TRANSFER],
@@ -387,10 +387,10 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
       })
 
-      test('bug: should not treat an expired outgoing as the failed send', async () => {
+      test('should not treat an expired outgoing as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockResolvedValueOnce({
             transfers: [{
               ...DUMMY_OUTGOING_TRANSFER,
@@ -410,10 +410,10 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
       })
 
-      test('bug: should not treat a returned outgoing as the failed send', async () => {
+      test('should not treat a returned outgoing as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockResolvedValueOnce({
             transfers: [{
               ...DUMMY_OUTGOING_TRANSFER,
@@ -436,7 +436,7 @@ describe('WalletAccountSpark', () => {
       test('should treat a sender-key-tweaked outgoing as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockResolvedValueOnce({
             transfers: [{
               ...DUMMY_OUTGOING_TRANSFER,
@@ -460,7 +460,7 @@ describe('WalletAccountSpark', () => {
       test('should treat a sender-key-tweak-pending outgoing as the failed send', async () => {
         sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
         sparkWallet.getTransfers = jest.fn()
-          .mockResolvedValueOnce(EMPTY_PAGE)
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
           .mockResolvedValueOnce({
             transfers: [{
               ...DUMMY_OUTGOING_TRANSFER,
@@ -481,8 +481,8 @@ describe('WalletAccountSpark', () => {
         expect(fee).toBe(0n)
       })
 
-      test('bug: should keep looking past the first 20 transfers for a matching outgoing', async () => {
-        const fillers = Array.from({ length: 20 }, (_, i) => ({
+      test('should keep looking past the first 20 transfers for a matching outgoing', async () => {
+        const DUMMY_FILLER_TRANSFERS = Array.from({ length: 20 }, (_, i) => ({
           id: `filler-incoming-${i}`,
           transferDirection: 'INCOMING',
           totalValue: DUMMY_TRANSACTION.value,
@@ -496,7 +496,7 @@ describe('WalletAccountSpark', () => {
         })
         sparkWallet.getTransfers = jest.fn().mockImplementation((limit, offset) => {
           if (offset === 0) {
-            return Promise.resolve({ transfers: fillers, offset: 20 })
+            return Promise.resolve({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
           }
           if (afterSend && offset === 20) {
             return Promise.resolve({
