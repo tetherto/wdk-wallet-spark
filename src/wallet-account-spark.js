@@ -512,9 +512,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /** @private */
   async _listMatchingOutgoingTransfers (params) {
-    const network = typeof this._wallet.config.getNetworkType === 'function'
-      ? this._wallet.config.getNetworkType()
-      : this._config.network
+    const network = this._wallet.config.getNetworkType()
     const { identityPublicKey } = decodeSparkAddress(
       params.receiverSparkAddress,
       network
