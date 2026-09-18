@@ -488,26 +488,16 @@ describe('WalletAccountSpark', () => {
           id: `filler-incoming-${i}`,
           transferDirection: 'INCOMING',
           totalValue: DUMMY_TRANSACTION.value,
-          receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey
+          receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+          status: 'TRANSFER_STATUS_COMPLETED'
         }))
 
-        let afterSend = false
-        sparkWallet.transfer = jest.fn().mockImplementation(() => {
-          afterSend = true
-          return Promise.reject(new Error('timeout'))
-        })
-        sparkWallet.getTransfers = jest.fn().mockImplementation((limit, offset) => {
-          if (offset === 0) {
-            return Promise.resolve({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
-          }
-          if (afterSend && offset === 20) {
-            return Promise.resolve({
-              transfers: [DUMMY_OUTGOING_TRANSFER],
-              offset: 40
-            })
-          }
-          return Promise.resolve({ transfers: [], offset })
-        })
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
+          .mockResolvedValueOnce({ transfers: [], offset: 40 })
+          .mockResolvedValueOnce({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
+          .mockResolvedValueOnce({ transfers: [DUMMY_OUTGOING_TRANSFER], offset: 40 })
 
         const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
 
