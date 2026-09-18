@@ -239,20 +239,17 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Sends a transaction.
    *
-   * When `syncAndRetry` is true, matching outgoing transfer history is snapshotted
-   * before sending (so a later lookup can tell a newly landed send from an earlier
-   * identical one). Lookups page `getTransfers(limit, offset)` without `createdAfter`,
-   * up to 100 rows. Expired and returned outgoings are skipped; other live statuses,
-   * including sender-key-tweak pending, can match. If that snapshot fails, the send
-   * is not attempted. Recipients are decoded using the Spark wallet's network, not
-   * the WDK config default. A failed Spark send is never retried with a second
-   * `transfer()`; the original error is rethrown if no new matching outgoing exists.
-   * Concurrent identical sends (same amount and recipient) from one wallet can be
-   * misattributed, so callers should not run those payments in parallel.
+   * When `syncAndRetry` is true, the transaction is submitted at most once: if the send
+   * fails, the account reconciles against transfer history and returns the transfer that
+   * reached the network, so a lost response is never paid twice. Concurrent identical
+   * sends (same amount and recipient) from one wallet cannot be told apart, so callers
+   * should not run those payments in parallel.
    *
    * @param {SparkTransaction} tx - The transaction.
    * @returns {Promise<TransactionResult>} The transaction's result.
-   * @throws {SparkValidationError} If the recipient address is not valid for the wallet network.
+   * @throws {SparkValidationError} When `syncAndRetry` is true and the recipient address is not valid for the wallet's network.
+   * @throws {SparkError} When `syncAndRetry` is true and the transfer history cannot be read. The transaction is not submitted.
+   * @throws {SparkError} If the send fails and no matching transfer appears in history.
    */
   async sendTransaction ({ to, value }) {
     const params = { receiverSparkAddress: to, amountSats: Number(value) }
@@ -423,9 +420,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Pays a Lightning invoice.
    *
-   * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller did not
-   * pass one and reused for a single stale-leaf retry, so a failed payment can be retried
-   * with the same id instead of being paid twice.
+   * When `syncAndRetry` is true, the payment carries a Spark transfer id that is reused if
+   * the payment is retried, so the retry settles once instead of paying twice. The id is
+   * available on the thrown error as `transferId`.
    *
    * @param {PayLightningInvoiceParams} options - The payment options.
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
