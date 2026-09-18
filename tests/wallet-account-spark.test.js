@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
+import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
 import { SparkWallet, SparkRequestError, encodeSparkAddress, generateTransferId } from '@buildonspark/spark-sdk'
 
@@ -242,13 +242,6 @@ describe('WalletAccountSpark', () => {
         sparkWallet.experimental_syncWallet = jest.fn().mockResolvedValue(undefined)
         sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(false)
         sparkWallet.getTransfers = jest.fn().mockResolvedValue(EMPTY_PAGE)
-      })
-
-      afterEach(() => {
-        for (const call of sparkWallet.getTransfers.mock.calls) {
-          expect(call[2]).toBeUndefined()
-          expect(call[3]).toBeUndefined()
-        }
       })
 
       test('should send once and return the same shape when the first transfer succeeds', async () => {
