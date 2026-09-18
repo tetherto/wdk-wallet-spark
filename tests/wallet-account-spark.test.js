@@ -261,7 +261,8 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
         expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
         expect(sparkWallet.isOptimizationInProgress).not.toHaveBeenCalled()
-        expect({ hash, fee }).toEqual({ hash: DUMMY_WALLET_TRANSFER.id, fee: 0n })
+        expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
+        expect(fee).toBe(0n)
       })
 
       test('should decode the recipient using the Spark wallet network when WDK config omits network', async () => {
@@ -285,7 +286,8 @@ describe('WalletAccountSpark', () => {
             receiverSparkAddress: DUMMY_REGTEST_ADDRESS,
             amountSats: DUMMY_TRANSACTION.value
           })
-          expect({ hash, fee }).toEqual({ hash: DUMMY_WALLET_TRANSFER.id, fee: 0n })
+          expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
+        expect(fee).toBe(0n)
         } finally {
           getNetworkType.mockRestore()
         }
