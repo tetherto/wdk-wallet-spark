@@ -256,6 +256,7 @@ export type CreateLightningInvoiceParams = import("@buildonspark/spark-sdk").Cre
 export type PayLightningInvoiceParams = import("@buildonspark/spark-sdk").PayLightningInvoiceParams;
 export type SparkAddressFormat = import("@buildonspark/spark-sdk").SparkAddressFormat;
 export type FulfillSparkInvoiceResponse = import("@buildonspark/spark-sdk").FulfillSparkInvoiceResponse;
+export type SparkValidationError = import("@buildonspark/spark-sdk").SparkValidationError;
 export type IWalletAccount = import("@tetherto/wdk-wallet").IWalletAccount;
 export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
