@@ -56,8 +56,12 @@
 /** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').SparkInvoice} SparkInvoice */
 
+/** @typedef {import('./src/errors.js').LightningPaymentErrorOptions} LightningPaymentErrorOptions */
+
 export { default } from './src/wallet-manager-spark.js'
 
 export { default as WalletAccountReadOnlySpark } from './src/wallet-account-read-only-spark.js'
 
 export { default as WalletAccountSpark } from './src/wallet-account-spark.js'
+
+export { LightningPaymentError } from './src/errors.js'

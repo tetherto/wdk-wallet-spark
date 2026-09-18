@@ -167,13 +167,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Pays a Lightning invoice.
      *
-     * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller
-     * did not pass one, reused for a single stale-leaf retry, and set on any thrown
-     * error as `error.transferId` so the same payment can be retried without double-paying.
+     * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller did not
+     * pass one and reused for a single stale-leaf retry, so a failed payment can be retried
+     * with the same id instead of being paid twice.
      *
      * @param {PayLightningInvoiceParams} options - The payment options.
      * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
-     * @throws {Error} If the pay fails. When `syncAndRetry` is true, the error includes `transferId`.
+     * @throws {LightningPaymentError} When `syncAndRetry` is true and the payment fails with an error that is not retried. Its `transferId` is the id the payment was sent with.
+     * @throws {LightningPaymentError} When `syncAndRetry` is true and the stale-leaf retry also fails. Its `transferId` is the id both attempts were sent with.
      */
     payLightningInvoice(options: PayLightningInvoiceParams): Promise<LightningSendRequest>;
     /**

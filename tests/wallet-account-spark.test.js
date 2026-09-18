@@ -6,7 +6,7 @@ import * as bip39 from 'bip39'
 
 import { ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
-import { WalletAccountSpark, WalletAccountReadOnlySpark } from '../index.js'
+import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
 
@@ -987,7 +987,8 @@ describe('WalletAccountSpark', () => {
 
         const error = await retryAccount.payLightningInvoice(options).catch(err => err)
 
-        expect(error.message).toBe('timeout')
+        expect(error).toBeInstanceOf(LightningPaymentError)
+        expect(error.cause.message).toBe('timeout')
         expect(error.transferId).toBe(transferId)
         expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
         expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
@@ -1006,7 +1007,8 @@ describe('WalletAccountSpark', () => {
           transferId
         }
 
-        expect(error.message).toBe('timeout')
+        expect(error).toBeInstanceOf(LightningPaymentError)
+        expect(error.cause.message).toBe('timeout')
         expect(error.transferId).toBe(transferId)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(params)
@@ -1021,7 +1023,8 @@ describe('WalletAccountSpark', () => {
 
         const error = await retryAccount.payLightningInvoice(options).catch(err => err)
 
-        expect(error.message).toBe('timeout')
+        expect(error).toBeInstanceOf(LightningPaymentError)
+        expect(error.cause.message).toBe('timeout')
         expect(error.transferId).toBe(transferId)
         expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
         expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, options)

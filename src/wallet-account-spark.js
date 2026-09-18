@@ -23,6 +23,8 @@ import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
+import { LightningPaymentError } from './errors.js'
+
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
 /** @typedef {import('@buildonspark/spark-sdk/types').LightningReceiveRequest} LightningReceiveRequest */
@@ -102,14 +104,6 @@ function isExpiredOrReturnedStatus (status) {
     status === TRANSFER_STATUS_EXPIRED ||
     status === TRANSFER_STATUS_RETURNED
   )
-}
-
-function attachLightningTransferId (error, transferId) {
-  if (error && typeof error === 'object') {
-    error.transferId = transferId
-  }
-
-  return error
 }
 
 /** @implements {IWalletAccount} */
@@ -428,13 +422,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Pays a Lightning invoice.
    *
-   * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller
-   * did not pass one, reused for a single stale-leaf retry, and set on any thrown
-   * error as `error.transferId` so the same payment can be retried without double-paying.
+   * When `syncAndRetry` is true, a Spark `transferId` is generated if the caller did not
+   * pass one and reused for a single stale-leaf retry, so a failed payment can be retried
+   * with the same id instead of being paid twice.
    *
    * @param {PayLightningInvoiceParams} options - The payment options.
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
-   * @throws {Error} If the pay fails. When `syncAndRetry` is true, the error includes `transferId`.
+   * @throws {LightningPaymentError} When `syncAndRetry` is true and the payment fails with an error that is not retried. Its `transferId` is the id the payment was sent with.
+   * @throws {LightningPaymentError} When `syncAndRetry` is true and the stale-leaf retry also fails. Its `transferId` is the id both attempts were sent with.
    */
   async payLightningInvoice (options) {
     if (!this._config.syncAndRetry) {
@@ -452,13 +447,19 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       await this.syncWalletBalance()
 
       if (!this._isStaleLeafError(error)) {
-        throw attachLightningTransferId(error, params.transferId)
+        throw new LightningPaymentError('The Lightning payment failed.', {
+          transferId: params.transferId,
+          cause: error
+        })
       }
 
       try {
         return await this._wallet.payLightningInvoice(params)
       } catch (retryError) {
-        throw attachLightningTransferId(retryError, params.transferId)
+        throw new LightningPaymentError('The Lightning payment failed after retrying a stale-leaf error.', {
+          transferId: params.transferId,
+          cause: retryError
+        })
       }
     }
   }
