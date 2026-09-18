@@ -90,6 +90,13 @@ import { LightningPaymentError } from './errors.js'
 const TRANSFER_LOOKUP_PAGE_SIZE = 20
 const TRANSFER_LOOKUP_MAX_PAGES = 5
 
+const STALE_LEAF_ERROR_FRAGMENTS = [
+  'not available to transfer',
+  'not owned by',
+  'leaf is unavailable',
+  'leaf is not available'
+]
+
 const WALLET_TRANSFER_STATUS_EXPIRED = 'TRANSFER_STATUS_EXPIRED'
 const WALLET_TRANSFER_STATUS_RETURNED = 'TRANSFER_STATUS_RETURNED'
 
@@ -502,12 +509,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /** @private */
   _isStaleLeafError (error) {
     const message = error.message.toLowerCase()
-    return (
-      message.includes('not available to transfer') ||
-      message.includes('not owned by') ||
-      message.includes('leaf is unavailable') ||
-      message.includes('leaf is not available')
-    )
+    return STALE_LEAF_ERROR_FRAGMENTS.some(fragment => message.includes(fragment))
   }
 
   /** @private */
