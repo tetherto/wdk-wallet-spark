@@ -149,7 +149,7 @@ export type SparkWalletConfig = {
      */
     sparkscan?: SparkScanConfig;
     /**
-     * - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+     * - When true, failed sends and Lightning payments reconcile with the network before the error is surfaced, so a lost response is not paid twice; see `sendTransaction` and `payLightningInvoice` (default: false).
      */
     syncAndRetry?: boolean;
     /**

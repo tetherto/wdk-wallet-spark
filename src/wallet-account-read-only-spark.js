@@ -47,6 +47,8 @@ import { SparkScanClient } from '#libs/sparkscan-client'
  * @property {SparkTransfer} transfer - The native Spark transfer.
  */
 
+// SparkReadonlyClient Transfer.status is numeric TransferStatus, not the
+// WalletTransfer protobuf enum names used by SparkWallet.getTransfers.
 const TRANSFER_STATUS_COMPLETED = 5
 const TRANSFER_STATUS_EXPIRED = 6
 const TRANSFER_STATUS_RETURNED = 7
@@ -61,7 +63,7 @@ const TRANSFER_STATUS_RETURNED = 7
  * @typedef {Object} SparkWalletConfig
  * @property {NetworkType} [network] - The network (default: "MAINNET").
  * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
- * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments will automatically sync wallet state and retry once (default: false).
+ * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments reconcile with the network before the error is surfaced, so a lost response is not paid twice; see `sendTransaction` and `payLightningInvoice` (default: false).
  * @property {boolean} [enableLogging] - When true, enable logging from within spark sdk (default: false).
  */
 

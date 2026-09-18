@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError } from '@buildonspark/spark-sdk'
+
+import { UUID } from 'uuidv7'
 
 import * as bip39 from 'bip39'
 
 import { ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
-import { WalletAccountSpark, WalletAccountReadOnlySpark } from '../index.js'
+import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
 
@@ -192,6 +194,359 @@ describe('WalletAccountSpark', () => {
       expect(fee).toBe(0n)
     })
 
+    test('should not retry a failed send when syncAndRetry is off', async () => {
+      sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+
+      await expect(account.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+      expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+      expect(sparkWallet.transfer).toHaveBeenCalledWith({
+        receiverSparkAddress: DUMMY_TRANSACTION.to,
+        amountSats: DUMMY_TRANSACTION.value
+      })
+    })
+
+    describe('with syncAndRetry', () => {
+      const TRANSFER_PARAMS = {
+        receiverSparkAddress: DUMMY_TRANSACTION.to,
+        amountSats: DUMMY_TRANSACTION.value
+      }
+
+      const DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY = '033674c2986b02f95a687841a4d24c22dc2e0363ae631bf7948671ac86f99e197b'
+
+      const DUMMY_REGTEST_ADDRESS = 'sparkrt1pgssxdn5c2vxkqhetf58ssdy6fxz9hpwqd36uccm772gvudvsmueuxtm5u4lkv'
+
+      const DUMMY_EMPTY_PAGE = {
+        transfers: [],
+        offset: 0
+      }
+
+      const DUMMY_OUTGOING_TRANSFER = {
+        id: 'existing-outgoing-1',
+        transferDirection: 'OUTGOING',
+        totalValue: DUMMY_TRANSACTION.value,
+        receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY,
+        status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
+      }
+
+      const DUMMY_OTHER_RECIPIENT_OUTGOING = {
+        id: 'other-recipient-outgoing-1',
+        transferDirection: 'OUTGOING',
+        totalValue: DUMMY_TRANSACTION.value,
+        receiverIdentityPublicKey: '02d1c6f04d52a2c7b4c8e3f0a9b8d7c6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9',
+        status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
+      }
+
+      let retryAccount
+
+      beforeEach(() => {
+        retryAccount = new WalletAccountSpark(sparkWallet, {
+          network: 'MAINNET',
+          syncAndRetry: true
+        })
+
+        sparkWallet.experimental_syncWallet = jest.fn().mockResolvedValue(undefined)
+        sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(false)
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue(DUMMY_EMPTY_PAGE)
+      })
+
+      test('should send once and return the same shape when the first transfer succeeds', async () => {
+        sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
+
+        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.getTransfers).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.getTransfers).toHaveBeenCalledWith(20, 0)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
+        expect(sparkWallet.isOptimizationInProgress).not.toHaveBeenCalled()
+        expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
+        expect(fee).toBe(0n)
+      })
+
+      test('should decode the recipient using the Spark wallet network when WDK config omits network', async () => {
+        const getNetworkType = jest.spyOn(sparkWallet.config, 'getNetworkType')
+          .mockReturnValue('REGTEST')
+        try {
+          const retryWithoutNetwork = new WalletAccountSpark(sparkWallet, {
+            syncAndRetry: true
+          })
+          sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
+
+          const { hash, fee } = await retryWithoutNetwork.sendTransaction({
+            to: DUMMY_REGTEST_ADDRESS,
+            value: DUMMY_TRANSACTION.value
+          })
+
+          expect(sparkWallet.getTransfers).toHaveBeenCalledTimes(1)
+          expect(sparkWallet.getTransfers).toHaveBeenCalledWith(20, 0)
+          expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+          expect(sparkWallet.transfer).toHaveBeenCalledWith({
+            receiverSparkAddress: DUMMY_REGTEST_ADDRESS,
+            amountSats: DUMMY_TRANSACTION.value
+          })
+          expect(hash).toBe(DUMMY_WALLET_TRANSFER.id)
+        expect(fee).toBe(0n)
+        } finally {
+          getNetworkType.mockRestore()
+        }
+      })
+
+      test('should return a newly appeared outgoing instead of sending again after a timeout', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [DUMMY_OUTGOING_TRANSFER],
+            offset: 0
+          })
+
+        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+        expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
+        expect(fee).toBe(0n)
+      })
+
+      test('should rethrow when a timeout has no matching outgoing transfer', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenCalledTimes(2)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should rethrow the original send error when transfer lookup fails', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockRejectedValueOnce(new SparkRequestError('history unavailable'))
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should not send when the outgoing snapshot fails', async () => {
+        sparkWallet.transfer = jest.fn().mockResolvedValue(DUMMY_WALLET_TRANSFER)
+        sparkWallet.getTransfers = jest.fn().mockRejectedValue(new Error('history unavailable'))
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('history unavailable')
+
+        expect(sparkWallet.getTransfers).toHaveBeenCalledWith(20, 0)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(0)
+        expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
+      })
+
+      test('should not treat a same-amount outgoing to a different recipient as the failed send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue({
+          transfers: [DUMMY_OTHER_RECIPIENT_OUTGOING],
+          offset: 0
+        })
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should not treat an earlier identical outgoing as this send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('insufficient balance'))
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue({
+          transfers: [DUMMY_OUTGOING_TRANSFER],
+          offset: 0
+        })
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('insufficient balance')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should not treat an expired outgoing as the failed send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [{
+              ...DUMMY_OUTGOING_TRANSFER,
+              id: 'expired-outgoing-1',
+              status: 'TRANSFER_STATUS_EXPIRED'
+            }],
+            offset: 0
+          })
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should not treat a returned outgoing as the failed send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [{
+              ...DUMMY_OUTGOING_TRANSFER,
+              id: 'returned-outgoing-1',
+              status: 'TRANSFER_STATUS_RETURNED'
+            }],
+            offset: 0
+          })
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+      })
+
+      test('should treat a sender-key-tweaked outgoing as the failed send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [{
+              ...DUMMY_OUTGOING_TRANSFER,
+              status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
+            }],
+            offset: 0
+          })
+
+        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+        expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
+        expect(fee).toBe(0n)
+      })
+
+      test('should treat a sender-key-tweak-pending outgoing as the failed send', async () => {
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [{
+              ...DUMMY_OUTGOING_TRANSFER,
+              status: 'TRANSFER_STATUS_SENDER_KEY_TWEAK_PENDING'
+            }],
+            offset: 0
+          })
+
+        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(1, 20, 0)
+        expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
+        expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
+        expect(fee).toBe(0n)
+      })
+
+      test('should keep looking past the first 20 transfers for a matching outgoing', async () => {
+        const DUMMY_FILLER_TRANSFERS = Array.from({ length: 20 }, (_, i) => ({
+          id: `filler-incoming-${i}`,
+          transferDirection: 'INCOMING',
+          totalValue: DUMMY_TRANSACTION.value,
+          receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+          status: 'TRANSFER_STATUS_COMPLETED'
+        }))
+
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
+          .mockResolvedValueOnce({ transfers: [], offset: 40 })
+          .mockResolvedValueOnce({ transfers: DUMMY_FILLER_TRANSFERS, offset: 20 })
+          .mockResolvedValueOnce({ transfers: [DUMMY_OUTGOING_TRANSFER], offset: 40 })
+
+        const { hash, fee } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.getTransfers.mock.calls).toEqual([
+          [20, 0],
+          [20, 20],
+          [20, 0],
+          [20, 20]
+        ])
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.transfer).toHaveBeenCalledWith(TRANSFER_PARAMS)
+        expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
+        expect(fee).toBe(0n)
+      })
+
+      test('should stop paging transfer history after the page cap', async () => {
+        const DUMMY_UNRELATED_PAGE = {
+          transfers: Array.from({ length: 20 }, (_, i) => ({
+            id: `unrelated-incoming-${i}`,
+            transferDirection: 'INCOMING',
+            totalValue: DUMMY_TRANSACTION.value,
+            receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+            status: 'TRANSFER_STATUS_COMPLETED'
+          })),
+          offset: 0
+        }
+
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn().mockResolvedValue(DUMMY_UNRELATED_PAGE)
+
+        await expect(retryAccount.sendTransaction(DUMMY_TRANSACTION)).rejects.toThrow('timeout')
+
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.getTransfers.mock.calls).toEqual([
+          [20, 0],
+          [20, 20],
+          [20, 40],
+          [20, 60],
+          [20, 80],
+          [20, 0],
+          [20, 20],
+          [20, 40],
+          [20, 60],
+          [20, 80]
+        ])
+      })
+    })
   })
 
   describe('transfer', () => {
@@ -431,23 +786,136 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('payLightningInvoice', () => {
+    const DUMMY_OPTIONS = {
+      invoice: 'lnbc1500...',
+      maxFeeSats: 50
+    }
+
+    const DUMMY_LIGHTNING_SEND_REQUEST = {
+      id: 'lightning-send-request-1',
+      status: 'PENDING'
+    }
+
     test('should successfully pay a lightning invoice', async () => {
-      const DUMMY_OPTIONS = {
-        invoice: 'lnbc1500...',
-        maxFeeSats: 50
-      }
-
-      const DUMMY_LIGHTNING_SEND_REQUEST = {
-        id: 'lightning-send-request-1',
-        status: 'PENDING'
-      }
-
       sparkWallet.payLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_SEND_REQUEST)
 
       const result = await account.payLightningInvoice(DUMMY_OPTIONS)
 
       expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(DUMMY_OPTIONS)
       expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
+    })
+
+    test('should not retry a failed pay when syncAndRetry is off', async () => {
+      sparkWallet.payLightningInvoice = jest.fn().mockRejectedValue(new Error('timeout'))
+
+      await expect(account.payLightningInvoice(DUMMY_OPTIONS)).rejects.toThrow('timeout')
+
+      expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
+      expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(DUMMY_OPTIONS)
+    })
+
+    describe('with syncAndRetry', () => {
+      const TRANSFER_ID = UUID.parse('01890a5d-ac96-774b-bcce-b302099a8057')
+
+      const OPTIONS = { ...DUMMY_OPTIONS, transferId: TRANSFER_ID }
+
+      let retryAccount
+
+      beforeEach(() => {
+        retryAccount = new WalletAccountSpark(sparkWallet, {
+          network: 'MAINNET',
+          syncAndRetry: true
+        })
+
+        sparkWallet.experimental_syncWallet = jest.fn().mockResolvedValue(undefined)
+        sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(false)
+      })
+
+      test('should pay once when the first lightning pay succeeds', async () => {
+        sparkWallet.payLightningInvoice = jest.fn().mockResolvedValue(DUMMY_LIGHTNING_SEND_REQUEST)
+
+        const result = await retryAccount.payLightningInvoice(OPTIONS)
+
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.experimental_syncWallet).not.toHaveBeenCalled()
+        expect(sparkWallet.isOptimizationInProgress).not.toHaveBeenCalled()
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(OPTIONS)
+        expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
+      })
+
+      test('should retry with the same transferId after a stale-leaf error', async () => {
+        sparkWallet.payLightningInvoice = jest.fn()
+          .mockRejectedValueOnce(new Error('leaf is not available'))
+          .mockResolvedValueOnce(DUMMY_LIGHTNING_SEND_REQUEST)
+
+        const result = await retryAccount.payLightningInvoice(OPTIONS)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, OPTIONS)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, OPTIONS)
+        expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
+      })
+
+      test('should generate one transferId and reuse it after a stale-leaf error', async () => {
+        sparkWallet.payLightningInvoice = jest.fn()
+          .mockRejectedValueOnce(new Error('leaf is not available'))
+          .mockResolvedValueOnce(DUMMY_LIGHTNING_SEND_REQUEST)
+
+        const result = await retryAccount.payLightningInvoice(DUMMY_OPTIONS)
+
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
+        const [[firstParams], [secondParams]] = sparkWallet.payLightningInvoice.mock.calls
+        expect(firstParams).toEqual({ ...DUMMY_OPTIONS, transferId: expect.any(UUID) })
+        expect(secondParams.transferId).toBe(firstParams.transferId)
+        expect(result).toEqual(DUMMY_LIGHTNING_SEND_REQUEST)
+      })
+
+      test('should not retry a lightning pay after a timeout', async () => {
+        sparkWallet.payLightningInvoice = jest.fn().mockRejectedValue(new Error('timeout'))
+
+        const promise = retryAccount.payLightningInvoice(OPTIONS)
+
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toMatchObject({ transferId: TRANSFER_ID })
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
+        expect(sparkWallet.experimental_syncWallet).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith(OPTIONS)
+      })
+
+      test('should attach the generated transferId to a failed payment', async () => {
+        sparkWallet.payLightningInvoice = jest.fn().mockRejectedValue(new Error('timeout'))
+
+        const promise = retryAccount.payLightningInvoice(DUMMY_OPTIONS)
+
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(1)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledWith({ ...DUMMY_OPTIONS, transferId: expect.any(UUID) })
+
+        const [[params]] = sparkWallet.payLightningInvoice.mock.calls
+        await expect(promise).rejects.toMatchObject({ transferId: params.transferId })
+      })
+
+      test('should attach the transferId when a stale-leaf retry also fails', async () => {
+        sparkWallet.payLightningInvoice = jest.fn()
+          .mockRejectedValueOnce(new Error('leaf is not available'))
+          .mockRejectedValueOnce(new Error('timeout'))
+
+        const promise = retryAccount.payLightningInvoice(OPTIONS)
+
+        await expect(promise).rejects.toThrow(LightningPaymentError)
+        await expect(promise).rejects.toMatchObject({ transferId: TRANSFER_ID })
+        await expect(promise).rejects.toHaveProperty('cause.message', 'timeout')
+        expect(sparkWallet.payLightningInvoice).toHaveBeenCalledTimes(2)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(1, OPTIONS)
+        expect(sparkWallet.payLightningInvoice).toHaveBeenNthCalledWith(2, OPTIONS)
+      })
     })
   })
 

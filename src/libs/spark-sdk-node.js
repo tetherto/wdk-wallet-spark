@@ -4,7 +4,9 @@ export {
   SparkWallet,
   SparkReadonlyClient,
   Network,
+  SparkError,
   SparkValidationError as ValidationError,
   DefaultSparkSigner,
-  decodeSparkAddress
+  decodeSparkAddress,
+  generateTransferId
 } from '@buildonspark/spark-sdk'

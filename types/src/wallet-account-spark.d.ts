@@ -70,16 +70,25 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Sends a transaction.
      *
+     * When `syncAndRetry` is true, the transaction is submitted at most once: if the send
+     * fails, the account reconciles against transfer history and returns the transfer that
+     * reached the network, so a lost response is never paid twice. Concurrent identical
+     * sends (same amount and recipient) from one wallet cannot be told apart, so callers
+     * should not run those payments in parallel.
+     *
      * @param {SparkTransaction} tx - The transaction.
      * @returns {Promise<TransactionResult>} The transaction's result.
+     * @throws {SparkValidationError} When `syncAndRetry` is true and the recipient address is not valid for the wallet's network.
+     * @throws {SparkError} When `syncAndRetry` is true and the transfer history cannot be read. The transaction is not submitted.
+     * @throws {SparkError} If the send fails and no matching transfer appears in history.
      */
     sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
-   * Transfers a token to another address.
-   *
-   * @param {TransferOptions} options - The transfer's options.
-   * @returns {Promise<TransferResult>} The transfer's result.
-   */
+     * Transfers a token to another address.
+     *
+     * @param {TransferOptions} options - The transfer's options.
+     * @returns {Promise<TransferResult>} The transfer's result.
+     */
     transfer(options: TransferOptions): Promise<TransferResult>;
     /**
      * Generates a single-use deposit address for bitcoin deposits from layer 1.
@@ -155,8 +164,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Pays a Lightning invoice.
      *
+     * When `syncAndRetry` is true, the payment carries a Spark transfer id that is reused if
+     * the payment is retried, so the retry settles once instead of paying twice. The id is
+     * available on the thrown error as `transferId`.
+     *
      * @param {PayLightningInvoiceParams} options - The payment options.
      * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
+     * @throws {LightningPaymentError} When `syncAndRetry` is true and the payment fails with an error that is not retried. Its `transferId` is the id the payment was sent with.
+     * @throws {LightningPaymentError} When `syncAndRetry` is true and the stale-leaf retry also fails. Its `transferId` is the id both attempts were sent with.
      */
     payLightningInvoice(options: PayLightningInvoiceParams): Promise<LightningSendRequest>;
     /**
@@ -212,6 +227,23 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {void}
      */
     dispose(): void;
+    /**
+     * Tells whether an error reports leaves the wallet still believes it can spend, but
+     * which the operators have already locked or reassigned.
+     *
+     * The operators report this condition as message text on a gRPC error. The SDK exposes
+     * no error class or code that distinguishes it, and matches the same fragments in its
+     * own leaf manager. Override this if a future SDK version identifies it properly.
+     *
+     * @protected
+     * @param {Error} error - An error thrown by the Spark SDK.
+     * @returns {boolean} Whether the error reports stale leaves.
+     */
+    protected _isStaleLeafError(error: Error): boolean;
+    /** @private */
+    private _listMatchingOutgoingTransfers;
+    /** @private */
+    private _findOutgoingTransfer;
 }
 export type WalletLeaf = import("@buildonspark/spark-sdk/types").WalletLeaf;
 export type CoopExitRequest = import("@buildonspark/spark-sdk/types").CoopExitRequest;
@@ -224,6 +256,7 @@ export type CreateLightningInvoiceParams = import("@buildonspark/spark-sdk").Cre
 export type PayLightningInvoiceParams = import("@buildonspark/spark-sdk").PayLightningInvoiceParams;
 export type SparkAddressFormat = import("@buildonspark/spark-sdk").SparkAddressFormat;
 export type FulfillSparkInvoiceResponse = import("@buildonspark/spark-sdk").FulfillSparkInvoiceResponse;
+export type SparkValidationError = import("@buildonspark/spark-sdk").SparkValidationError;
 export type IWalletAccount = import("@tetherto/wdk-wallet").IWalletAccount;
 export type KeyPair = import("@tetherto/wdk-wallet").KeyPair;
 export type TransactionResult = import("@tetherto/wdk-wallet").TransactionResult;
