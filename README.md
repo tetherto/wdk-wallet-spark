@@ -23,6 +23,8 @@ npm install @tetherto/wdk-wallet-spark
 
 ## Quick Start
 
+The mnemonic below is public and for development only. Never send funds to its addresses. Use a securely generated seed phrase before handling funds.
+
 ```javascript
 import WalletManagerSpark from '@tetherto/wdk-wallet-spark'
 
@@ -32,16 +34,18 @@ const wallet = new WalletManagerSpark(seedPhrase, {
   network: 'MAINNET'
 })
 
-const account = await wallet.getAccount(0)
-const address = await account.getAddress()
-console.log('Address:', address)
-
-wallet.dispose()
+try {
+  const account = await wallet.getAccount(0)
+  const address = await account.getAddress()
+  console.log('Address:', address)
+} finally {
+  wallet.dispose()
+}
 ```
 
-The mnemonic above is for development only. Use a securely generated seed phrase before handling funds.
+The Spark SDK selects and manages network endpoints; this module does not expose a custom RPC provider. Optional wallet configuration includes SparkScan balance polling, send recovery with `syncAndRetry`, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
 
-The Spark SDK selects and manages network endpoints; this module does not expose a custom RPC provider. Optional wallet configuration includes SparkScan balance polling, one sync-and-retry attempt after failed sends or Lightning payments, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
+On `main`, enabling `syncAndRetry` (default: `false`) snapshots outgoing history before a Spark send. If the send fails, the account syncs and returns a newly appeared matching transfer or throws, without submitting again. Avoid concurrent identical sends from the same wallet. Lightning payments retry once only for stale-leaf errors, reusing the same `transferId`. This behavior is not yet included in the published `1.0.0-beta.26` release.
 
 ## Key Capabilities
 
@@ -52,11 +56,11 @@ The Spark SDK selects and manages network endpoints; this module does not expose
 - **Bitcoin Deposits and Withdrawals**: Use single-use or reusable deposit addresses, claim or refund deposits, and quote cooperative withdrawals to Bitcoin layer 1
 - **Balances and History**: Query sats and token balances, inspect Spark transfer history, and optionally use SparkScan-backed balance polling
 - **Read-Only Accounts and Message Signing**: Monitor an address without private keys, sign messages, and verify signatures
-- **Operational Controls**: Enable Spark SDK logging, sync wallet state and retry failed sends or Lightning payments once, and clear private key material when done
+- **Operational Controls**: Enable Spark SDK logging, configure send recovery with `syncAndRetry`, and clear private key material when done
 
 ## Compatibility
 
-- **Spark Networks**: `MAINNET`, `TESTNET`, `SIGNET`, and `REGTEST` network values supported by the Spark SDK; `MAINNET` is the default
+- **Spark Networks**: Use `MAINNET` (default) or `REGTEST`. `TESTNET` and `SIGNET` fall back to local endpoints in the bundled Spark SDK; this module does not expose overrides for those endpoints
 - **Node.js**: Default package entry point backed by `@buildonspark/spark-sdk`
 - **Bare and Pear**: Dedicated runtime entry points backed by `@buildonspark/bare`
 - **SparkScan**: Optional balance polling on `MAINNET` and `REGTEST`
