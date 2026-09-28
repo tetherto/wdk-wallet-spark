@@ -23,8 +23,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     protected _client: SparkReadonlyClient;
     protected _sparkscan?: SparkScanClient;
     /**
-     * Builds the read-only Spark client from the configuration, reusing an already-built client
-     * as-is so a manager can build a single client and share it across every account it creates.
+     * Builds the read-only Spark client from the configuration, reusing an already-built client as-is.
      *
      * @protected
      * @param {SparkWalletConfig} [config] - The configuration object.
