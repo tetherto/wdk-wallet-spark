@@ -7,6 +7,14 @@ export default class WalletManagerSpark extends WalletManager {
      */
     constructor(seed: string | Uint8Array, config?: SparkWalletConfig);
     /**
+     * A read-only Spark client shared with every account this manager creates, so two accounts
+     * never open two clients for the same network.
+     *
+     * @protected
+     * @type {SparkReadonlyClient}
+     */
+    protected _client: SparkReadonlyClient;
+    /**
      * Returns the wallet account at a specific index (see [BIP-44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki)).
      *
      * @example
@@ -26,7 +34,16 @@ export default class WalletManagerSpark extends WalletManager {
      * @throws {UnsupportedOperationError} Always — the spark blockchain doesn't support derivation paths.
      */
     getAccountByPath(path: string): Promise<WalletAccountSpark>;
+    /**
+     * Builds the account config, injecting the manager's shared read-only client so accounts
+     * reuse it instead of opening their own.
+     *
+     * @private
+     * @returns {SparkWalletConfig} The account configuration.
+     */
+    private _accountConfig;
 }
+export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type FeeRates = import("@tetherto/wdk-wallet").FeeRates;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 import WalletManager from '@tetherto/wdk-wallet';

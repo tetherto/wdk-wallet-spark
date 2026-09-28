@@ -16,6 +16,8 @@
 import WalletManager, { UnsupportedOperationError } from '@tetherto/wdk-wallet'
 import WalletAccountSpark from './wallet-account-spark.js'
 
+/** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
+
 /** @typedef {import('@tetherto/wdk-wallet').FeeRates} FeeRates */
 
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
@@ -29,6 +31,15 @@ export default class WalletManagerSpark extends WalletManager {
    */
   constructor (seed, config = {}) {
     super(seed, config)
+
+    /**
+     * A read-only Spark client shared with every account this manager creates, so two accounts
+     * never open two clients for the same network.
+     *
+     * @protected
+     * @type {SparkReadonlyClient}
+     */
+    this._client = WalletAccountSpark._buildClient(config)
   }
 
   /**
@@ -42,12 +53,23 @@ export default class WalletManagerSpark extends WalletManager {
    */
   async getAccount (index = 0) {
     if (!this._accounts[index]) {
-      const account = await WalletAccountSpark.at(this.seed, index, this._config)
+      const account = await WalletAccountSpark.at(this.seed, index, this._accountConfig())
 
       this._accounts[index] = account
     }
 
     return this._accounts[index]
+  }
+
+  /**
+   * Builds the account config, injecting the manager's shared read-only client so accounts
+   * reuse it instead of opening their own.
+   *
+   * @private
+   * @returns {SparkWalletConfig} The account configuration.
+   */
+  _accountConfig () {
+    return { ...this._config, client: this._client }
   }
 
   /**

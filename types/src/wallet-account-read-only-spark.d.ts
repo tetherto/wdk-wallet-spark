@@ -23,6 +23,15 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
     protected _client: SparkReadonlyClient;
     protected _sparkscan?: SparkScanClient;
     /**
+     * Builds the read-only Spark client from the configuration, reusing an already-built client
+     * as-is so a manager can build a single client and share it across every account it creates.
+     *
+     * @protected
+     * @param {SparkWalletConfig} [config] - The configuration object.
+     * @returns {SparkReadonlyClient} The read-only client.
+     */
+    protected static _buildClient(config?: SparkWalletConfig): SparkReadonlyClient;
+    /**
      * Returns a Spark transfer by its ID. Only returns Spark transfers, not on-chain Bitcoin transactions.
      *
      * @deprecated Use {@link getTransaction} instead, which returns a normalized, finality-based receipt. The raw Spark transfer remains available on its `transfer` property.
@@ -144,6 +153,10 @@ export type SparkWalletConfig = {
      * - The network (default: "MAINNET").
      */
     network?: NetworkType;
+    /**
+     * - An already-built read-only Spark client, reused as-is. This lets a manager build a single client and share it across all the accounts it creates.
+     */
+    client?: SparkReadonlyClient;
     /**
      * - Optional sparkscan client config
      */
