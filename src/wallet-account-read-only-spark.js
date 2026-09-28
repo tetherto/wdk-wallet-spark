@@ -62,6 +62,7 @@ const TRANSFER_STATUS_RETURNED = 7
 /**
  * @typedef {Object} SparkWalletConfig
  * @property {NetworkType} [network] - The network (default: "MAINNET").
+ * @property {SparkReadonlyClient} [client] - An already-built read-only Spark client, reused as-is. This lets a manager build a single client and share it across all the accounts it creates.
  * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
  * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments reconcile with the network before the error is surfaced, so a lost response is not paid twice; see `sendTransaction` and `payLightningInvoice` (default: false).
  * @property {boolean} [enableLogging] - When true, enable logging from within spark sdk (default: false).
@@ -103,10 +104,7 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
      * @protected
      * @type {SparkReadonlyClient}
      */
-    this._client = SparkReadonlyClient.createPublic({
-      network: this._config.network,
-      log: this._config.enableLogging || false
-    })
+    this._client = WalletAccountReadOnlySpark._buildClient(this._config)
 
     /**
      * @protected
@@ -118,6 +116,24 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
         ...this._config.sparkscan
       })
     }
+  }
+
+  /**
+   * Builds the read-only Spark client from the configuration, reusing an already-built client as-is.
+   *
+   * @protected
+   * @param {SparkWalletConfig} [config] - The configuration object.
+   * @returns {SparkReadonlyClient} The read-only client.
+   */
+  static _buildClient (config = {}) {
+    if (config.client) {
+      return config.client
+    }
+
+    return SparkReadonlyClient.createPublic({
+      network: config.network || DEFAULT_NETWORK,
+      log: config.enableLogging || false
+    })
   }
 
   /**

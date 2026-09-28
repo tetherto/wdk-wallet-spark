@@ -60,4 +60,14 @@ describe('WalletManagerSpark', () => {
       expect(feeRates.fast).toBe(0n)
     })
   })
+
+  describe('shared client', () => {
+    test('should share a single read-only client across all the accounts it creates', async () => {
+      const first = await wallet.getAccount(0)
+      const second = await wallet.getAccount(1)
+
+      expect(first._client).toBe(wallet._client)
+      expect(second._client).toBe(wallet._client)
+    })
+  })
 })
