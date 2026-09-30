@@ -2,17 +2,17 @@
 
 **Note**: This package is currently in beta. Please test thoroughly in development environments before using in production.
 
-A simple and secure package to manage BIP-44 wallets for the Spark blockchain. This package provides a clean API for creating, managing, and interacting with Spark wallets using BIP-39 seed phrases and Liquid Bitcoin (LBTC) derivation paths.
+A [Spark wallet module](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/) for WDK (Wallet Development Kit) by Tether. This package provides a clean API for creating, managing, and interacting with Spark wallets using BIP-39 seed phrases and the module's BIP-44 derivation paths.
 
 ## 🔍 About WDK
 
-This module is part of the [**WDK (Wallet Development Kit)**](https://wallet.tether.io/) project, which empowers developers to build secure, non-custodial wallets with unified blockchain access, stateless architecture, and complete user control. 
+This module is part of the [**WDK (Wallet Development Kit)**](https://docs.wdk.tether.io/) project, which empowers developers to build secure, non-custodial wallets with unified blockchain access, stateless architecture, and complete user control.
 
-For detailed documentation about the complete WDK ecosystem, visit [docs.wallet.tether.io](https://docs.wallet.tether.io).
+For detailed documentation about the complete WDK ecosystem, visit [docs.wdk.tether.io](https://docs.wdk.tether.io/).
 
 ## 🌟 Features
 
-- **Liquid Bitcoin (LBTC) Derivation Paths**: Support for BIP-44 standard derivation paths (m/44'/998')
+- **Spark Derivation Paths**: Uses the module's BIP-44 path prefix `m/44'/998'`
 - **Multi-Account Management**: Create and manage multiple accounts from a single seed phrase
 - **Transaction Management**: Send transactions and get fee estimates with zero fees
 - **Lightning Network Integration**: Create invoices, pay Lightning invoices, and manage Lightning payments
@@ -80,8 +80,8 @@ const address2 = await account2.getAddress()
 console.log('Account 2 address:', address2)
 
 // Note: All accounts use BIP-44 derivation paths with pattern:
-// m/44'/998'/{network}'/0/{index} where 998 is the coin type for Liquid Bitcoin
-// and {network} is the network number (MAINNET=0, TESTNET=1, REGTEST=2)
+// m/44'/998'/{network}'/0/{index}
+// where {network} is the network number (MAINNET=0, TESTNET=1, REGTEST=2)
 ```
 
 **Important Note**: Custom derivation paths via `getAccountByPath()` are not supported on the Spark blockchain. Only indexed accounts using the standard BIP-44 pattern are available.
@@ -224,7 +224,7 @@ const address = await account.getAddress()
 console.log('Spark account address:', address)
 ```
 
-**Note:** Uses derivation path pattern `m/44'/998'/{network}'/0/{index}` where 998 is the coin type for Liquid Bitcoin and `{network}` is the network number (MAINNET=0, TESTNET=1, REGTEST=2).
+**Note:** Uses the module's derivation path pattern `m/44'/998'/{network}'/0/{index}`; `{network}` is the network number (MAINNET=0, TESTNET=1, REGTEST=2).
 
 ##### `getAccountByPath(path)`
 **Not supported on Spark blockchain.** This method throws an error when called. Use `getAccount(index)` instead.
@@ -263,7 +263,7 @@ wallet.dispose()
 **Important Notes:**
 - All Spark transactions have zero fees
 - Network configuration is limited to predefined values
-- Uses BIP-44 derivation paths with coin type 998 for Liquid Bitcoin
+- Uses the BIP-44 path prefix `m/44'/998'` for Spark accounts
 
 ### WalletAccountReadOnlySpark
 
