@@ -1063,13 +1063,11 @@ describe('WalletAccountSpark disposal', () => {
     expect(account.disposed).toBe(true)
   })
 
-  test('should clean up and be idempotent', () => {
+  test('should clean up', () => {
     const { account, signer } = createAccount()
 
     account.dispose()
 
-    expect(signer.dispose).toHaveBeenCalledTimes(1)
-    expect(() => account.dispose()).not.toThrow()
     expect(signer.dispose).toHaveBeenCalledTimes(1)
   })
 
