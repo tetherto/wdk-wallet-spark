@@ -20,6 +20,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     private _wallet;
     /** @private */
     private _signer;
+    /** @private */
+    private _disposed;
+    /**
+     * True if the account has been disposed.
+     *
+     * @type {boolean}
+     */
+    get disposed(): boolean;
     /**
      * The derivation path's index of this account.
      *
@@ -53,6 +61,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {string} message - The message to sign.
      * @returns {Promise<string>} The message's signature.
+     * @throws {DisposalError} If the account has been disposed.
      */
     sign(message: string): Promise<string>;
     /**
@@ -81,6 +90,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @throws {SparkValidationError} When `syncAndRetry` is true and the recipient address is not valid for the wallet's network.
      * @throws {SparkError} When `syncAndRetry` is true and the transfer history cannot be read. The transaction is not submitted.
      * @throws {SparkError} If the send fails and no matching transfer appears in history.
+     * @throws {DisposalError} If the account has been disposed.
      */
     sendTransaction({ to, value }: SparkTransaction): Promise<TransactionResult>;
     /**
@@ -88,6 +98,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {TransferOptions} options - The transfer's options.
      * @returns {Promise<TransferResult>} The transfer's result.
+     * @throws {DisposalError} If the account has been disposed.
      */
     transfer(options: TransferOptions): Promise<TransferResult>;
     /**
@@ -138,6 +149,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {WithdrawOptions} options - The withdrawal's options.
      * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
+     * @throws {DisposalError} If the account has been disposed.
      */
     withdraw(options: WithdrawOptions): Promise<CoopExitRequest | null | undefined>;
     /**
@@ -172,6 +184,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
      * @throws {LightningPaymentError} When `syncAndRetry` is true and the payment fails with an error that is not retried. Its `transferId` is the id the payment was sent with.
      * @throws {LightningPaymentError} When `syncAndRetry` is true and the stale-leaf retry also fails. Its `transferId` is the id both attempts were sent with.
+     * @throws {DisposalError} If the account has been disposed.
      */
     payLightningInvoice(options: PayLightningInvoiceParams): Promise<LightningSendRequest>;
     /**
@@ -200,6 +213,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {SparkInvoice[]} invoices - Array of invoices to fulfill.
      * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
+     * @throws {DisposalError} If the account has been disposed.
      */
     paySparkInvoice(invoices: SparkInvoice[]): Promise<FulfillSparkInvoiceResponse>;
     /**

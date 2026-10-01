@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import WalletManager, { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+import WalletManager, { DisposalError, UnsupportedOperationError } from '@tetherto/wdk-wallet'
 import WalletAccountSpark from './wallet-account-spark.js'
 
 /** @typedef {import('@buildonspark/spark-sdk').SparkReadonlyClient} SparkReadonlyClient */
@@ -50,8 +50,13 @@ export default class WalletManagerSpark extends WalletManager {
    * const account = await wallet.getAccount(1);
    * @param {number} index - The index of the account to get (default: 0).
    * @returns {Promise<WalletAccountSpark>} The account.
+   * @throws {DisposalError} If the wallet manager has been disposed.
    */
   async getAccount (index = 0) {
+    if (this.disposed) {
+      throw new DisposalError('The wallet manager has been disposed.')
+    }
+
     if (!this._accounts[index]) {
       const account = await WalletAccountSpark.at(this.seed, index, this._accountConfig())
 
@@ -79,9 +84,14 @@ export default class WalletManagerSpark extends WalletManager {
    *
    * @param {string} path - The derivation path (e.g. "0'/0/0").
    * @returns {Promise<WalletAccountSpark>} The account.
-   * @throws {UnsupportedOperationError} Always — the spark blockchain doesn't support derivation paths.
+   * @throws {DisposalError} If the wallet manager has been disposed.
+   * @throws {UnsupportedOperationError} Always (when not disposed) — the spark blockchain doesn't support derivation paths.
    */
   async getAccountByPath (path) {
+    if (this.disposed) {
+      throw new DisposalError('The wallet manager has been disposed.')
+    }
+
     throw new UnsupportedOperationError('getAccountByPath(path)')
   }
 

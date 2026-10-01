@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+import { DisposalError, UnsupportedOperationError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
@@ -123,6 +123,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
     /** @private */
     this._signer = wallet.config.signer
+
+    /** @private */
+    this._disposed = false
+  }
+
+  /**
+   * True if the account has been disposed.
+   *
+   * @type {boolean}
+   */
+  get disposed () {
+    return this._disposed
   }
 
   /**
@@ -216,8 +228,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {string} message - The message to sign.
    * @returns {Promise<string>} The message's signature.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async sign (message) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     return await this._wallet.signMessageWithIdentityKey(message)
   }
 
@@ -250,8 +267,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @throws {SparkValidationError} When `syncAndRetry` is true and the recipient address is not valid for the wallet's network.
    * @throws {SparkError} When `syncAndRetry` is true and the transfer history cannot be read. The transaction is not submitted.
    * @throws {SparkError} If the send fails and no matching transfer appears in history.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async sendTransaction ({ to, value }) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     const params = { receiverSparkAddress: to, amountSats: Number(value) }
 
     if (!this._config.syncAndRetry) {
@@ -290,8 +312,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {TransferOptions} options - The transfer's options.
    * @returns {Promise<TransferResult>} The transfer's result.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async transfer (options) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     const txId = await this._wallet.transferTokens({
       tokenIdentifier: options.token,
       tokenAmount: BigInt(options.amount),
@@ -373,8 +400,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async withdraw (options) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     options.exitSpeed = options.exitSpeed || 'MEDIUM'
     const feeQuote = await this.quoteWithdraw({
       withdrawalAddress: options.onchainAddress,
@@ -428,8 +460,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {Promise<LightningSendRequest>} The Lightning payment request details.
    * @throws {LightningPaymentError} When `syncAndRetry` is true and the payment fails with an error that is not retried. Its `transferId` is the id the payment was sent with.
    * @throws {LightningPaymentError} When `syncAndRetry` is true and the stale-leaf retry also fails. Its `transferId` is the id both attempts were sent with.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async payLightningInvoice (options) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     if (!this._config.syncAndRetry) {
       return await this._wallet.payLightningInvoice(options)
     }
@@ -498,8 +535,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {SparkInvoice[]} invoices - Array of invoices to fulfill.
    * @returns {Promise<FulfillSparkInvoiceResponse>} Response containing transaction results and errors.
+   * @throws {DisposalError} If the account has been disposed.
    */
   async paySparkInvoice (invoices) {
+    if (this.disposed) {
+      throw new DisposalError('The account has been disposed.')
+    }
+
     return await this._wallet.fulfillSparkInvoice(invoices)
   }
 
@@ -548,9 +590,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @returns {void}
    */
   dispose () {
+    if (this._disposed) return
+
     this.cleanupConnections().catch(console.error)
 
     this._signer.dispose()
+
+    this._disposed = true
   }
 
   /**

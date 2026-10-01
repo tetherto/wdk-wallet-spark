@@ -6,7 +6,7 @@ import { UUID } from 'uuidv7'
 
 import * as bip39 from 'bip39'
 
-import { ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
+import { DisposalError, ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
 import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
 
@@ -1025,5 +1025,62 @@ describe('WalletAccountSpark', () => {
 
       expect(sparkWallet.cleanup).toHaveBeenCalled()
     })
+  })
+})
+
+describe('WalletAccountSpark disposal', () => {
+  const IDENTITY_PUBLIC_KEY = new Uint8Array(Buffer.from('02eda86793ac263f053b14e6ea92e7c2050951ab13ada0f1405919734fe45bdc15', 'hex'))
+  const IDENTITY_PRIVATE_KEY = new Uint8Array(Buffer.from('d5d117a4be53b177b4ba48fc709539e37e24e72d4a90f1d47daf309ec3e8ae7b', 'hex'))
+
+  function createAccount () {
+    const signer = {
+      index: 0,
+      identityKey: { publicKey: IDENTITY_PUBLIC_KEY, privateKey: IDENTITY_PRIVATE_KEY },
+      dispose: jest.fn()
+    }
+
+    const wallet = {
+      config: {
+        signer,
+        config: { network: 'MAINNET' },
+        getNetworkType: () => 'MAINNET'
+      },
+      cleanup: jest.fn().mockResolvedValue(undefined)
+    }
+
+    const account = new WalletAccountSpark(wallet, { network: 'MAINNET' })
+
+    return { account, signer, wallet }
+  }
+
+  test('should expose the disposed state', () => {
+    const { account } = createAccount()
+
+    expect(account.disposed).toBe(false)
+
+    account.dispose()
+
+    expect(account.disposed).toBe(true)
+  })
+
+  test('should clean up', () => {
+    const { account, signer } = createAccount()
+
+    account.dispose()
+
+    expect(signer.dispose).toHaveBeenCalledTimes(1)
+  })
+
+  test('should throw DisposalError from signing and payment methods once disposed', async () => {
+    const { account } = createAccount()
+
+    account.dispose()
+
+    await expect(account.sign('message')).rejects.toThrow(DisposalError)
+    await expect(account.sendTransaction({ to: 'sp1', value: 1 })).rejects.toThrow(DisposalError)
+    await expect(account.transfer({ token: 'btkn1', amount: 1, recipient: 'sp1' })).rejects.toThrow(DisposalError)
+    await expect(account.withdraw({ onchainAddress: 'bc1', amountSats: 1 })).rejects.toThrow(DisposalError)
+    await expect(account.payLightningInvoice({ invoice: 'lnbc1' })).rejects.toThrow(DisposalError)
+    await expect(account.paySparkInvoice([{ invoice: 'sp1' }])).rejects.toThrow(DisposalError)
   })
 })
