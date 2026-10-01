@@ -14,6 +14,7 @@ export default class WalletManagerSpark extends WalletManager {
      * const account = await wallet.getAccount(1);
      * @param {number} index - The index of the account to get (default: 0).
      * @returns {Promise<WalletAccountSpark>} The account.
+     * @throws {DisposalError} If the wallet manager has been disposed.
      */
     getAccount(index?: number): Promise<WalletAccountSpark>;
     /**
@@ -23,7 +24,8 @@ export default class WalletManagerSpark extends WalletManager {
      *
      * @param {string} path - The derivation path (e.g. "0'/0/0").
      * @returns {Promise<WalletAccountSpark>} The account.
-     * @throws {UnsupportedOperationError} Always — the spark blockchain doesn't support derivation paths.
+     * @throws {DisposalError} If the wallet manager has been disposed.
+     * @throws {UnsupportedOperationError} Always (when not disposed) — the spark blockchain doesn't support derivation paths.
      */
     getAccountByPath(path: string): Promise<WalletAccountSpark>;
 }
