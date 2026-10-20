@@ -43,9 +43,9 @@ try {
 }
 ```
 
-The Spark SDK selects and manages network endpoints; this module does not expose a custom RPC provider. Optional wallet configuration includes SparkScan balance polling, send recovery with `syncAndRetry`, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
+The Spark SDK manages the signing wallet's network endpoints; this module does not expose overrides for those endpoints. Optional wallet configuration includes a read-only Spark client (`client`), SparkScan balance polling, send recovery with `syncAndRetry`, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
 
-Enabling `syncAndRetry` (default: `false`) snapshots outgoing history before a Spark send. If the send fails, the account syncs and returns a newly appeared matching transfer or throws, without submitting again. Avoid concurrent identical sends from the same wallet. Lightning payments retry once only for stale-leaf errors, reusing the same `transferId`.
+Enabling `syncAndRetry` (default: `false`) snapshots outgoing history before a Spark send. If the send fails, the account syncs and returns a newly appeared matching transfer or throws, without submitting again. Avoid concurrent identical sends from the same wallet. With `syncAndRetry` enabled, Lightning payments retry once only for stale-leaf errors, reusing the same `transferId`.
 
 ## Key Capabilities
 
@@ -56,11 +56,11 @@ Enabling `syncAndRetry` (default: `false`) snapshots outgoing history before a S
 - **Bitcoin Deposits and Withdrawals**: Use single-use or reusable deposit addresses, claim or refund deposits, and quote cooperative withdrawals to Bitcoin layer 1
 - **Balances and History**: Query sats and token balances, inspect Spark transfer history, and optionally use SparkScan-backed balance polling
 - **Read-Only Accounts and Message Signing**: Monitor an address without private keys, sign messages, and verify signatures
-- **Operational Controls**: Enable Spark SDK logging, configure send recovery with `syncAndRetry`, and clear private key material when done
+- **Operational Controls**: Enable Spark SDK logging, configure send recovery with `syncAndRetry`, and initiate cleanup with `dispose()` when done
 
 ## Compatibility
 
-- **Spark Networks**: Use `MAINNET` (default) or `REGTEST`. `TESTNET` and `SIGNET` fall back to local endpoints in the bundled Spark SDK; this module does not expose overrides for those endpoints
+- **Spark Networks**: Use `MAINNET` (default) or `REGTEST`. `TESTNET` and `SIGNET` fall back to local endpoints in the bundled Spark SDK; this module does not expose overrides for those signing endpoints
 - **Node.js**: Default package entry point backed by `@buildonspark/spark-sdk`
 - **Bare and Pear**: Dedicated runtime entry points backed by `@buildonspark/bare`
 - **SparkScan**: Optional balance polling on `MAINNET` and `REGTEST`
