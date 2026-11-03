@@ -633,6 +633,86 @@ describe('WalletAccountSpark', () => {
 
       expect(result).toEqual(DUMMY_WALLET_LEAFS)
     })
+
+    test('should refuse a quote that credits nothing', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: 0
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      const promise = account.claimStaticDeposit('dummy-transaction-id')
+
+      await expect(promise).rejects.toThrow(ValueError)
+      await expect(promise).rejects.toThrow('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+
+    test('should refuse a quote that credits a negative amount', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: -1
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+
+    test('should refuse a quote that credits a fractional amount', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000.5
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+
+    test('should refuse a quote that credits more than a safe integer', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: Number.MAX_SAFE_INTEGER + 1
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+
+    test('should refuse a quote whose credit is a string', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: '1000'
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+
+    test('should refuse a quote that carries no credit amount', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature'
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn()
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
+
+      expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
   })
 
   describe('refundStaticDeposit', () => {
