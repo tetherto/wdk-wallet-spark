@@ -43,7 +43,7 @@ try {
 }
 ```
 
-The Spark SDK manages the signing wallet's network endpoints; this module does not expose overrides for those endpoints. Optional wallet configuration includes a read-only Spark client (`client`), SparkScan balance polling, send recovery with `syncAndRetry`, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
+The Spark SDK manages the signing wallet's network endpoints; this module does not expose overrides for those endpoints. Optional wallet configuration includes a read-only Spark client (`client`), SparkScan balance polling, send recovery with `syncAndRetry`, a withdrawal fee ceiling with `withdrawMaxFee`, and Spark SDK logging. See the [Configuration guide](https://docs.wdk.tether.io/sdk/wallet-modules/wallet-spark/configuration) for setup details.
 
 Enabling `syncAndRetry` (default: `false`) snapshots outgoing history before a Spark send. If the send fails, the account syncs and returns a newly appeared matching transfer or throws, without submitting again. Avoid concurrent identical sends from the same wallet. With `syncAndRetry` enabled, Lightning payments retry once only for stale-leaf errors, reusing the same `transferId`.
 

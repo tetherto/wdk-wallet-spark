@@ -138,6 +138,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {WithdrawOptions} options - The withdrawal's options.
      * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
+     * @throws {SparkValidationError} If the withdraw max. fee option is set and the exit speed is not "FAST", "MEDIUM" or "SLOW".
+     * @throws {MaximumFeeExceededError} If the quoted fee for the chosen exit speed surpasses the withdraw max. fee option.
      */
     withdraw(options: WithdrawOptions): Promise<CoopExitRequest | null | undefined>;
     /**

@@ -13,11 +13,11 @@
 // limitations under the License.
 'use strict'
 
-import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+import { MaximumFeeExceededError, UnsupportedOperationError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, ValidationError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
@@ -105,6 +105,19 @@ function isExpiredOrReturnedStatus (status) {
     status === WALLET_TRANSFER_STATUS_EXPIRED ||
     status === WALLET_TRANSFER_STATUS_RETURNED
   )
+}
+
+function getWithdrawalFeeSats (feeQuote, exitSpeed) {
+  switch (exitSpeed) {
+    case 'FAST':
+      return feeQuote.l1BroadcastFeeFast.originalValue + feeQuote.userFeeFast.originalValue
+    case 'MEDIUM':
+      return feeQuote.l1BroadcastFeeMedium.originalValue + feeQuote.userFeeMedium.originalValue
+    case 'SLOW':
+      return feeQuote.l1BroadcastFeeSlow.originalValue + feeQuote.userFeeSlow.originalValue
+    default:
+      throw new ValidationError('Invalid exit speed', { field: 'exitSpeed', value: exitSpeed, expected: 'FAST, MEDIUM, or SLOW' })
+  }
 }
 
 /** @implements {IWalletAccount} */
@@ -373,6 +386,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
+   * @throws {SparkValidationError} If the withdraw max. fee option is set and the exit speed is not "FAST", "MEDIUM" or "SLOW".
+   * @throws {MaximumFeeExceededError} If the quoted fee for the chosen exit speed surpasses the withdraw max. fee option.
    */
   async withdraw (options) {
     options.exitSpeed = options.exitSpeed || 'MEDIUM'
@@ -380,6 +395,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       withdrawalAddress: options.onchainAddress,
       amountSats: options.amountSats
     })
+
+    if (this._config.withdrawMaxFee !== undefined && getWithdrawalFeeSats(feeQuote, options.exitSpeed) > this._config.withdrawMaxFee) {
+      throw new MaximumFeeExceededError('Exceeded maximum fee cost for withdraw operation.')
+    }
 
     return await this._wallet.withdraw({
       ...options,

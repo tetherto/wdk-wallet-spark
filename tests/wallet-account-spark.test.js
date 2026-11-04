@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkRequestError } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError, SparkValidationError } from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
 import * as bip39 from 'bip39'
 
-import { ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
+import { MaximumFeeExceededError, ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
 import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
 
@@ -709,6 +709,131 @@ describe('WalletAccountSpark', () => {
       })
 
       expect(coopExitRequest).toEqual(DUMMY_COOP_EXIT_REQUEST)
+    })
+
+    describe('with a withdraw max fee', () => {
+      const OPTIONS = {
+        onchainAddress: 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        amountSats: 100_000
+      }
+
+      const DUMMY_FEE_QUOTE = {
+        id: 'dummy-fee-quote-id',
+        l1BroadcastFeeFast: { originalValue: 3_000, originalUnit: 'SATOSHI' },
+        userFeeFast: { originalValue: 200, originalUnit: 'SATOSHI' },
+        l1BroadcastFeeMedium: { originalValue: 2_000, originalUnit: 'SATOSHI' },
+        userFeeMedium: { originalValue: 100, originalUnit: 'SATOSHI' },
+        l1BroadcastFeeSlow: { originalValue: 1_000, originalUnit: 'SATOSHI' },
+        userFeeSlow: { originalValue: 50, originalUnit: 'SATOSHI' }
+      }
+
+      const DUMMY_COOP_EXIT_REQUEST = {
+        id: 'dummy-coop-exit-request-id'
+      }
+
+      beforeEach(() => {
+        sparkWallet.getWithdrawalFeeQuote = jest.fn().mockResolvedValue(DUMMY_FEE_QUOTE)
+        sparkWallet.withdraw = jest.fn().mockResolvedValue(DUMMY_COOP_EXIT_REQUEST)
+      })
+
+      test('should withdraw if the quoted fee equals the withdraw max fee', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_100 })
+
+        const coopExitRequest = await account.withdraw({ ...OPTIONS })
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).toHaveBeenCalledWith({
+          ...OPTIONS,
+          exitSpeed: 'MEDIUM',
+          feeQuote: DUMMY_FEE_QUOTE
+        })
+
+        expect(coopExitRequest).toEqual(DUMMY_COOP_EXIT_REQUEST)
+      })
+
+      test('should throw if the quoted fee exceeds the withdraw max fee', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_099 })
+
+        const promise = account.withdraw({ ...OPTIONS })
+
+        await expect(promise).rejects.toThrow(MaximumFeeExceededError)
+        await expect(promise).rejects.toThrow('Exceeded maximum fee cost for withdraw operation.')
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).not.toHaveBeenCalled()
+      })
+
+      test('should throw if the quoted fee for the given exit speed exceeds the withdraw max fee', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 3_199 })
+
+        const promise = account.withdraw({ ...OPTIONS, exitSpeed: 'FAST' })
+
+        await expect(promise).rejects.toThrow(MaximumFeeExceededError)
+        await expect(promise).rejects.toThrow('Exceeded maximum fee cost for withdraw operation.')
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).not.toHaveBeenCalled()
+      })
+
+      test('should throw if the quoted fee exceeds a bigint withdraw max fee', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_099n })
+
+        const promise = account.withdraw({ ...OPTIONS })
+
+        await expect(promise).rejects.toThrow(MaximumFeeExceededError)
+        await expect(promise).rejects.toThrow('Exceeded maximum fee cost for withdraw operation.')
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).not.toHaveBeenCalled()
+      })
+
+      test('should throw on any fee if the withdraw max fee is zero', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 0 })
+
+        const promise = account.withdraw({ ...OPTIONS })
+
+        await expect(promise).rejects.toThrow(MaximumFeeExceededError)
+        await expect(promise).rejects.toThrow('Exceeded maximum fee cost for withdraw operation.')
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).not.toHaveBeenCalled()
+      })
+
+      test('should throw if the exit speed is not supported', async () => {
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_100 })
+
+        const promise = account.withdraw({ ...OPTIONS, exitSpeed: 'FUTURE_VALUE' })
+
+        await expect(promise).rejects.toThrow(SparkValidationError)
+        await expect(promise).rejects.toThrow('Invalid exit speed')
+
+        expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
+          withdrawalAddress: OPTIONS.onchainAddress,
+          amountSats: OPTIONS.amountSats
+        })
+
+        expect(sparkWallet.withdraw).not.toHaveBeenCalled()
+      })
     })
   })
 
