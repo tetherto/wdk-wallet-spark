@@ -114,8 +114,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Claims a static deposit to the wallet.
      *
+     * The SSP quotes the credit and this account signs it, so a quote that is not a plain
+     * amount in satoshis is refused: claiming hands over the deposit's secret key and cannot
+     * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
+     *
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+     * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
      */
     claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
@@ -225,6 +230,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     cleanupConnections(): Promise<void>;
     /**
      * Disposes the wallet account, erasing its private keys from the memory.
+     *
+     * The private key bytes held by the account's signer are zeroed. Other copies made while deriving the keys,
+     * including the master key derived from the seed and the bigint form of each key, are not zeroed and are
+     * left to the garbage collector.
      *
      * @returns {void}
      */
