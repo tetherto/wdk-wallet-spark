@@ -224,8 +224,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Disposes the wallet account, erasing its private keys from the memory.
      *
-     * The private key bytes are zeroed. The key derivation library also holds each private key as a bigint,
-     * which cannot be zeroed; those copies are released to the garbage collector.
+     * The private key bytes held by the account's signer are zeroed. Other copies made while deriving the keys,
+     * including the master key derived from the seed and the bigint form of each key, are not zeroed and are
+     * left to the garbage collector.
      *
      * @returns {void}
      */
