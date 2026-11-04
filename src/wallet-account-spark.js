@@ -13,11 +13,11 @@
 // limitations under the License.
 'use strict'
 
-import { MaximumFeeExceededError, UnsupportedOperationError } from '@tetherto/wdk-wallet'
+import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, SparkError, ValidationError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
@@ -110,13 +110,13 @@ function isExpiredOrReturnedStatus (status) {
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
   switch (exitSpeed) {
     case 'FAST':
-      return feeQuote.l1BroadcastFeeFast.originalValue + feeQuote.userFeeFast.originalValue
+      return (feeQuote?.l1BroadcastFeeFast?.originalValue || 0) + (feeQuote?.userFeeFast?.originalValue || 0)
     case 'MEDIUM':
-      return feeQuote.l1BroadcastFeeMedium.originalValue + feeQuote.userFeeMedium.originalValue
+      return (feeQuote?.l1BroadcastFeeMedium?.originalValue || 0) + (feeQuote?.userFeeMedium?.originalValue || 0)
     case 'SLOW':
-      return feeQuote.l1BroadcastFeeSlow.originalValue + feeQuote.userFeeSlow.originalValue
+      return (feeQuote?.l1BroadcastFeeSlow?.originalValue || 0) + (feeQuote?.userFeeSlow?.originalValue || 0)
     default:
-      throw new ValidationError('Invalid exit speed', { field: 'exitSpeed', value: exitSpeed, expected: 'FAST, MEDIUM, or SLOW' })
+      throw new ValueError('Invalid exit speed.')
   }
 }
 
@@ -386,7 +386,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
-   * @throws {SparkValidationError} If the withdraw max. fee option is set and the exit speed is not "FAST", "MEDIUM" or "SLOW".
+   * @throws {ValueError} If the withdraw max. fee option is set and the exit speed is not "FAST", "MEDIUM" or "SLOW".
    * @throws {MaximumFeeExceededError} If the quoted fee for the chosen exit speed surpasses the withdraw max. fee option.
    */
   async withdraw (options) {

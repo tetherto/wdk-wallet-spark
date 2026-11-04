@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkRequestError, SparkValidationError } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError } from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
@@ -819,13 +819,47 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.withdraw).not.toHaveBeenCalled()
       })
 
+      test('should pass a null fee quote through to the sdk', async () => {
+        sparkWallet.getWithdrawalFeeQuote = jest.fn().mockResolvedValue(null)
+
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_100 })
+
+        const coopExitRequest = await account.withdraw({ ...OPTIONS })
+
+        expect(sparkWallet.withdraw).toHaveBeenCalledWith({
+          ...OPTIONS,
+          exitSpeed: 'MEDIUM',
+          feeQuote: null
+        })
+
+        expect(coopExitRequest).toEqual(DUMMY_COOP_EXIT_REQUEST)
+      })
+
+      test('should count a missing fee in the fee quote as zero', async () => {
+        const { userFeeMedium, ...feeQuote } = DUMMY_FEE_QUOTE
+
+        sparkWallet.getWithdrawalFeeQuote = jest.fn().mockResolvedValue(feeQuote)
+
+        const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_000 })
+
+        const coopExitRequest = await account.withdraw({ ...OPTIONS })
+
+        expect(sparkWallet.withdraw).toHaveBeenCalledWith({
+          ...OPTIONS,
+          exitSpeed: 'MEDIUM',
+          feeQuote
+        })
+
+        expect(coopExitRequest).toEqual(DUMMY_COOP_EXIT_REQUEST)
+      })
+
       test('should throw if the exit speed is not supported', async () => {
         const account = new WalletAccountSpark(sparkWallet, { network: 'MAINNET', withdrawMaxFee: 2_100 })
 
         const promise = account.withdraw({ ...OPTIONS, exitSpeed: 'FUTURE_VALUE' })
 
-        await expect(promise).rejects.toThrow(SparkValidationError)
-        await expect(promise).rejects.toThrow('Invalid exit speed')
+        await expect(promise).rejects.toThrow(ValueError)
+        await expect(promise).rejects.toThrow('Invalid exit speed.')
 
         expect(sparkWallet.getWithdrawalFeeQuote).toHaveBeenCalledWith({
           withdrawalAddress: OPTIONS.onchainAddress,
