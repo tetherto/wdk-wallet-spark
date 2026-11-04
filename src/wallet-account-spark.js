@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { UnsupportedOperationError } from '@tetherto/wdk-wallet'
+import { UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
@@ -105,6 +105,10 @@ function isExpiredOrReturnedStatus (status) {
     status === WALLET_TRANSFER_STATUS_EXPIRED ||
     status === WALLET_TRANSFER_STATUS_RETURNED
   )
+}
+
+function isCreditAmountInSats (amount) {
+  return Number.isSafeInteger(amount) && amount > 0
 }
 
 /** @implements {IWalletAccount} */
@@ -334,11 +338,20 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Claims a static deposit to the wallet.
    *
+   * The SSP quotes the credit and this account signs it, so a quote that is not a plain
+   * amount in satoshis is refused: claiming hands over the deposit's secret key and cannot
+   * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
+   *
    * @param {string} txId - The transaction id of the deposit.
    * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+   * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
    */
   async claimStaticDeposit (txId) {
     const quote = await this._wallet.getClaimStaticDepositQuote(txId)
+
+    if (!isCreditAmountInSats(quote.creditAmountSats)) {
+      throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
+    }
 
     return await this._wallet.claimStaticDeposit({
       transactionId: txId,

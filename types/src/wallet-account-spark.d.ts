@@ -114,8 +114,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Claims a static deposit to the wallet.
      *
+     * The SSP quotes the credit and this account signs it, so a quote that is not a plain
+     * amount in satoshis is refused: claiming hands over the deposit's secret key and cannot
+     * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
+     *
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+     * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
      */
     claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
