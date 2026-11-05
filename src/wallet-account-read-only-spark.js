@@ -306,7 +306,10 @@ export default class WalletAccountReadOnlySpark extends WalletAccountReadOnly {
       const filtered = direction === 'all'
         ? batch
         : batch.filter(t => {
-          const isIncoming = t.receiverIdentityPublicKey.equals(identityPubKey)
+          const receiverKeys = t.receivers?.length
+            ? t.receivers.map(receiver => receiver.identityPublicKey)
+            : [t.receiverIdentityPublicKey]
+          const isIncoming = receiverKeys.some(key => key.equals(identityPubKey))
           return direction === 'incoming' ? isIncoming : !isIncoming
         })
 

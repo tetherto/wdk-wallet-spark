@@ -224,16 +224,14 @@ describe('WalletAccountSpark', () => {
       const DUMMY_OUTGOING_TRANSFER = {
         id: 'existing-outgoing-1',
         transferDirection: 'OUTGOING',
-        totalValue: DUMMY_TRANSACTION.value,
-        receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY,
+        receivers: [{ identityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY, amountSats: DUMMY_TRANSACTION.value }],
         status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
       }
 
       const DUMMY_OTHER_RECIPIENT_OUTGOING = {
         id: 'other-recipient-outgoing-1',
         transferDirection: 'OUTGOING',
-        totalValue: DUMMY_TRANSACTION.value,
-        receiverIdentityPublicKey: '02d1c6f04d52a2c7b4c8e3f0a9b8d7c6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9',
+        receivers: [{ identityPublicKey: '02d1c6f04d52a2c7b4c8e3f0a9b8d7c6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9', amountSats: DUMMY_TRANSACTION.value }],
         status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
       }
 
@@ -312,6 +310,29 @@ describe('WalletAccountSpark', () => {
         expect(sparkWallet.getTransfers).toHaveBeenNthCalledWith(2, 20, 0)
         expect(hash).toBe(DUMMY_OUTGOING_TRANSFER.id)
         expect(fee).toBe(0n)
+      })
+
+      test('should return a legacy outgoing transfer without receivers instead of sending again after a timeout', async () => {
+        const DUMMY_LEGACY_OUTGOING_TRANSFER = {
+          id: 'legacy-outgoing-1',
+          transferDirection: 'OUTGOING',
+          totalValue: DUMMY_TRANSACTION.value,
+          receiverIdentityPublicKey: DUMMY_RECEIVER_IDENTITY_PUBLIC_KEY,
+          status: 'TRANSFER_STATUS_SENDER_KEY_TWEAKED'
+        }
+
+        sparkWallet.transfer = jest.fn().mockRejectedValue(new Error('timeout'))
+        sparkWallet.getTransfers = jest.fn()
+          .mockResolvedValueOnce(DUMMY_EMPTY_PAGE)
+          .mockResolvedValueOnce({
+            transfers: [DUMMY_LEGACY_OUTGOING_TRANSFER],
+            offset: 0
+          })
+
+        const { hash } = await retryAccount.sendTransaction(DUMMY_TRANSACTION)
+
+        expect(sparkWallet.transfer).toHaveBeenCalledTimes(1)
+        expect(hash).toBe(DUMMY_LEGACY_OUTGOING_TRANSFER.id)
       })
 
       test('should rethrow when a timeout has no matching outgoing transfer', async () => {
@@ -487,8 +508,7 @@ describe('WalletAccountSpark', () => {
         const DUMMY_FILLER_TRANSFERS = Array.from({ length: 20 }, (_, i) => ({
           id: `filler-incoming-${i}`,
           transferDirection: 'INCOMING',
-          totalValue: DUMMY_TRANSACTION.value,
-          receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+          receivers: [{ identityPublicKey: ACCOUNT.keyPair.publicKey, amountSats: DUMMY_TRANSACTION.value }],
           status: 'TRANSFER_STATUS_COMPLETED'
         }))
 
@@ -520,8 +540,7 @@ describe('WalletAccountSpark', () => {
           transfers: Array.from({ length: 20 }, (_, i) => ({
             id: `unrelated-incoming-${i}`,
             transferDirection: 'INCOMING',
-            totalValue: DUMMY_TRANSACTION.value,
-            receiverIdentityPublicKey: ACCOUNT.keyPair.publicKey,
+            receivers: [{ identityPublicKey: ACCOUNT.keyPair.publicKey, amountSats: DUMMY_TRANSACTION.value }],
             status: 'TRANSFER_STATUS_COMPLETED'
           })),
           offset: 0
