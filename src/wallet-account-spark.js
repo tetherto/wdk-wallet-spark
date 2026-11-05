@@ -13,7 +13,7 @@
 // limitations under the License.
 'use strict'
 
-import { UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
+import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
@@ -109,6 +109,19 @@ function isExpiredOrReturnedStatus (status) {
 
 function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
+}
+
+function getWithdrawalFeeSats (feeQuote, exitSpeed) {
+  switch (exitSpeed) {
+    case 'FAST':
+      return (feeQuote?.l1BroadcastFeeFast?.originalValue || 0) + (feeQuote?.userFeeFast?.originalValue || 0)
+    case 'MEDIUM':
+      return (feeQuote?.l1BroadcastFeeMedium?.originalValue || 0) + (feeQuote?.userFeeMedium?.originalValue || 0)
+    case 'SLOW':
+      return (feeQuote?.l1BroadcastFeeSlow?.originalValue || 0) + (feeQuote?.userFeeSlow?.originalValue || 0)
+    default:
+      throw new ValueError('Invalid exit speed.')
+  }
 }
 
 /** @implements {IWalletAccount} */
@@ -386,6 +399,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {WithdrawOptions} options - The withdrawal's options.
    * @returns {Promise<CoopExitRequest | null | undefined>} The withdrawal request details, or null/undefined if the request cannot be completed.
+   * @throws {ValueError} If the withdraw max. fee option is set and the exit speed is not "FAST", "MEDIUM" or "SLOW".
+   * @throws {MaximumFeeExceededError} If the quoted fee for the chosen exit speed surpasses the withdraw max. fee option.
    */
   async withdraw (options) {
     options.exitSpeed = options.exitSpeed || 'MEDIUM'
@@ -393,6 +408,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       withdrawalAddress: options.onchainAddress,
       amountSats: options.amountSats
     })
+
+    if (this._config.withdrawMaxFee !== undefined && getWithdrawalFeeSats(feeQuote, options.exitSpeed) > this._config.withdrawMaxFee) {
+      throw new MaximumFeeExceededError('Exceeded maximum fee cost for withdraw operation.')
+    }
 
     return await this._wallet.withdraw({
       ...options,

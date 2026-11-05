@@ -66,6 +66,7 @@ const TRANSFER_STATUS_RETURNED = 7
  * @property {SparkScanConfig} [sparkscan] - Optional sparkscan client config
  * @property {boolean} [syncAndRetry] - When true, failed sends and Lightning payments reconcile with the network before the error is surfaced, so a lost response is not paid twice; see `sendTransaction` and `payLightningInvoice` (default: false).
  * @property {boolean} [enableLogging] - When true, enable logging from within spark sdk (default: false).
+ * @property {number | bigint} [withdrawMaxFee] - The maximum fee amount for withdraw operations (in satoshis).
  */
 
 /**

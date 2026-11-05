@@ -168,6 +168,10 @@ export type SparkWalletConfig = {
      * - When true, enable logging from within spark sdk (default: false).
      */
     enableLogging?: boolean;
+    /**
+     * - The maximum fee amount for withdraw operations (in satoshis).
+     */
+    withdrawMaxFee?: number | bigint;
 };
 export type GetTransfersOptions = {
     /**
