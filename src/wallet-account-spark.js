@@ -626,8 +626,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       for (const transfer of transfers) {
         if (
           transfer.transferDirection === 'OUTGOING' &&
-          transfer.totalValue === params.amountSats &&
-          transfer.receiverIdentityPublicKey === identityPublicKey &&
+          (transfer.receivers?.length
+            ? transfer.receivers.some(receiver =>
+              receiver.identityPublicKey === identityPublicKey &&
+              receiver.amountSats === params.amountSats
+            )
+            : transfer.receiverIdentityPublicKey === identityPublicKey &&
+              transfer.totalValue === params.amountSats) &&
           !isExpiredOrReturnedStatus(transfer.status)
         ) {
           matches.push(transfer)
