@@ -56,6 +56,22 @@ import { LightningPaymentError } from './errors.js'
  */
 
 /**
+ * @typedef {Object} ClaimStaticDepositQuoteOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
+ * @property {number} [outputIndex] - The output index of the deposit. The Spark SDK detects it when omitted.
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositQuote
+ * @property {string} transactionId - The transaction ID returned by the SSP quote.
+ * @property {number} outputIndex - The resolved output index returned by the SSP quote.
+ * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
+ * @property {number} creditAmountSats - The amount the SSP quoted for credit to Spark.
+ * @property {number} claimFeeSats - The difference between the caller-provided deposit amount and quoted credit.
+ */
+
+/**
  * @typedef {Object} QuoteWithdrawOptions
  * @property {string} withdrawalAddress - The Bitcoin address where the funds should be sent.
  * @property {number} amountSats - The amount in satoshis to withdraw.
@@ -116,8 +132,30 @@ function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
 }
 
+function isNonNegativeAmountInSats (amount) {
+  return Number.isSafeInteger(amount) && amount >= 0
+}
+
+function isOutputIndex (outputIndex) {
+  return Number.isSafeInteger(outputIndex) && outputIndex >= 0
+}
+
 function isClaimStaticDepositResult (result) {
   return typeof result?.transferId === 'string' && result.transferId.trim().length > 0
+}
+
+function getFeeChargedFromError (error) {
+  if (!(error instanceof ValidationError)) {
+    return undefined
+  }
+
+  const context = error.getContext()
+
+  if (context.field !== 'feeCharged' || !isNonNegativeAmountInSats(context.value)) {
+    return undefined
+  }
+
+  return context.value
 }
 
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
@@ -355,6 +393,66 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    */
   async claimDeposit (txId) {
     return await this._wallet.claimDeposit(txId)
+  }
+
+  /**
+   * Gets the SSP credit quote for a static deposit and calculates its fee from
+   * the caller-provided Bitcoin output amount.
+   *
+   * The deposit amount is not verified by this method. Callers must use the
+   * amount of the exact Bitcoin output identified by `txId` and `outputIndex`.
+   *
+   * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
+   * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
+   * @throws {ValueError} If an input or the SSP quote contains an invalid amount, transaction ID, or output index.
+   */
+  async getClaimStaticDepositQuote (options) {
+    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
+      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
+    }
+
+    if (!isCreditAmountInSats(options.depositAmountSats)) {
+      throw new ValueError('The static deposit amount must be a safe positive integer number of satoshis.')
+    }
+
+    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
+      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
+    }
+
+    const quote = await this._wallet.getClaimStaticDepositQuote(options.txId, options.outputIndex)
+
+    if (
+      typeof quote?.transactionId !== 'string' ||
+      quote.transactionId.toLowerCase() !== options.txId.toLowerCase()
+    ) {
+      throw new ValueError('The SSP quote transaction ID does not match the requested static deposit.')
+    }
+
+    if (!isOutputIndex(quote.outputIndex)) {
+      throw new ValueError('The SSP quoted an invalid static deposit output index.')
+    }
+
+    if (options.outputIndex !== undefined && quote.outputIndex !== options.outputIndex) {
+      throw new ValueError('The SSP quote output index does not match the requested static deposit.')
+    }
+
+    if (!isCreditAmountInSats(quote.creditAmountSats)) {
+      throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
+    }
+
+    const claimFeeSats = options.depositAmountSats - quote.creditAmountSats
+
+    if (!isNonNegativeAmountInSats(claimFeeSats)) {
+      throw new ValueError('The caller-provided deposit amount is lower than the SSP quoted credit.')
+    }
+
+    return {
+      transactionId: quote.transactionId,
+      outputIndex: quote.outputIndex,
+      depositAmountSats: options.depositAmountSats,
+      creditAmountSats: quote.creditAmountSats,
+      claimFeeSats
+    }
   }
 
   /**

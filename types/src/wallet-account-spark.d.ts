@@ -112,6 +112,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     claimDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
+     * Gets the SSP credit quote for a static deposit and calculates its fee from
+     * the caller-provided Bitcoin output amount.
+     *
+     * The deposit amount is not verified by this method. Callers must use the
+     * amount of the exact Bitcoin output identified by `txId` and `outputIndex`.
+     *
+     * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
+     * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
+     * @throws {ValueError} If an input or the SSP quote contains an invalid amount, transaction ID, or output index.
+     */
+    getClaimStaticDepositQuote(options: ClaimStaticDepositQuoteOptions): Promise<ClaimStaticDepositQuote>;
+    /**
      * Claims a static deposit to the wallet.
      *
      * The SSP quotes the credit and this account signs it, so a quote that is not a plain
@@ -282,6 +294,42 @@ export type ClaimStaticDepositResult = {
      * - The Spark transfer ID created by the claim.
      */
     transferId: string;
+};
+export type ClaimStaticDepositQuoteOptions = {
+    /**
+     * - The transaction ID of the deposit.
+     */
+    txId: string;
+    /**
+     * - The caller-provided amount of the Bitcoin deposit output.
+     */
+    depositAmountSats: number;
+    /**
+     * - The output index of the deposit. The Spark SDK detects it when omitted.
+     */
+    outputIndex?: number;
+};
+export type ClaimStaticDepositQuote = {
+    /**
+     * - The transaction ID returned by the SSP quote.
+     */
+    transactionId: string;
+    /**
+     * - The resolved output index returned by the SSP quote.
+     */
+    outputIndex: number;
+    /**
+     * - The caller-provided amount of the Bitcoin deposit output.
+     */
+    depositAmountSats: number;
+    /**
+     * - The amount the SSP quoted for credit to Spark.
+     */
+    creditAmountSats: number;
+    /**
+     * - The difference between the caller-provided deposit amount and quoted credit.
+     */
+    claimFeeSats: number;
 };
 export type QuoteWithdrawOptions = {
     /**

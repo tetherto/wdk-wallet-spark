@@ -1,7 +1,6 @@
 export { default } from "./src/wallet-manager-spark.js";
 export { default as WalletAccountReadOnlySpark } from "./src/wallet-account-read-only-spark.js";
 export { default as WalletAccountSpark } from "./src/wallet-account-spark.js";
-export { LightningPaymentError } from "./src/errors.js";
 export type NetworkType = import("@buildonspark/spark-sdk").NetworkType;
 export type SparkReadonlyClient = import("@buildonspark/spark-sdk").SparkReadonlyClient;
 export type SparkTransfer = import("@buildonspark/spark-sdk/proto/spark").Transfer;
@@ -37,8 +36,11 @@ export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySp
 export type WithdrawOptions = import("./src/wallet-account-spark.js").WithdrawOptions;
 export type QuoteWithdrawOptions = import("./src/wallet-account-spark.js").QuoteWithdrawOptions;
 export type ClaimStaticDepositResult = import("./src/wallet-account-spark.js").ClaimStaticDepositResult;
+export type ClaimStaticDepositQuoteOptions = import("./src/wallet-account-spark.js").ClaimStaticDepositQuoteOptions;
+export type ClaimStaticDepositQuote = import("./src/wallet-account-spark.js").ClaimStaticDepositQuote;
 export type RefundStaticDepositOptions = import("./src/wallet-account-spark.js").RefundStaticDepositOptions;
 export type CreateSatsInvoiceOptions = import("./src/wallet-account-spark.js").CreateSatsInvoiceOptions;
 export type CreateTokensInvoiceOptions = import("./src/wallet-account-spark.js").CreateTokensInvoiceOptions;
 export type SparkInvoice = import("./src/wallet-account-spark.js").SparkInvoice;
 export type LightningPaymentErrorOptions = import("./src/errors.js").LightningPaymentErrorOptions;
+export { LightningPaymentError, StaticDepositClaimOutcomeUnknownError } from "./src/errors.js";
