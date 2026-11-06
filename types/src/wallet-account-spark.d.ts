@@ -119,10 +119,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
      *
      * @param {string} txId - The transaction id of the deposit.
-     * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+     * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
+     * @throws {SparkError} If the Spark SDK returns an invalid claim result.
      */
-    claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
+    claimStaticDeposit(txId: string): Promise<ClaimStaticDepositResult>;
     /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
      * The minimum fee is 300 satoshis.
@@ -276,6 +277,12 @@ export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
+export type ClaimStaticDepositResult = {
+    /**
+     * - The Spark transfer ID created by the claim.
+     */
+    transferId: string;
+};
 export type QuoteWithdrawOptions = {
     /**
      * - The Bitcoin address where the funds should be sent.
