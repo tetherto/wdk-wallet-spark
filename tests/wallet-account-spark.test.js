@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkError, SparkRequestError } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkError, SparkRequestError, SparkValidationError } from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
@@ -8,7 +8,13 @@ import * as bip39 from 'bip39'
 
 import { MaximumFeeExceededError, ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
-import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
+import {
+  WalletAccountSpark,
+  WalletAccountReadOnlySpark,
+  LightningPaymentError,
+  StaticDepositClaimOutcomeUnknownError,
+  StaticDepositFeeExceededError
+} from '../index.js'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
 
@@ -828,6 +834,115 @@ describe('WalletAccountSpark', () => {
       await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
 
       expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('claimStaticDepositWithMaxFee', () => {
+    const CLAIM_RESULT = {
+      transferId: 'spark-transfer-id'
+    }
+
+    test('should delegate the atomic maximum-fee claim to the Spark SDK', async () => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
+
+      const result = await account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFee: 250
+      })
+      expect(result).toEqual(CLAIM_RESULT)
+    })
+
+    test('should allow a zero maximum fee and omit an unspecified output index', async () => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
+
+      await account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        maxFeeSats: 0
+      })
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        maxFee: 0
+      })
+    })
+
+    test('should expose an exact fee rejection as a stable typed error', async () => {
+      const sdkError = new SparkValidationError('Fee larger than max fee', {
+        field: 'feeCharged',
+        value: 251
+      })
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
+
+      const promise = account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      await expect(promise).rejects.toThrow(StaticDepositFeeExceededError)
+      await expect(promise).rejects.toMatchObject({
+        code: 'STATIC_DEPOSIT_FEE_EXCEEDED',
+        claimFeeSats: 251,
+        maxFeeSats: 250,
+        cause: sdkError
+      })
+    })
+
+    test('should preserve an ambiguous SDK failure as an unknown claim outcome', async () => {
+      const sdkError = new SparkRequestError('Claim request failed')
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
+
+      const promise = account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      await expect(promise).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
+      await expect(promise).rejects.toMatchObject({
+        code: 'STATIC_DEPOSIT_CLAIM_OUTCOME_UNKNOWN',
+        transactionId: 'dummy-transaction-id',
+        outputIndex: 1,
+        cause: sdkError
+      })
+    })
+
+    test.each([
+      null,
+      undefined,
+      {},
+      { transferId: '' },
+      { transferId: 123 }
+    ])('should treat a malformed bounded claim result as an unknown outcome %#', async (claimResult) => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(claimResult)
+
+      await expect(account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        maxFeeSats: 250
+      })).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
+    })
+
+    test.each([
+      [{ txId: '', maxFeeSats: 250 }, 'transaction ID'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: -1 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 1.5 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: Number.MAX_SAFE_INTEGER + 1 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: -1 }, 'output index'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: 1.5 }, 'output index']
+    ])('should reject invalid bounded claim options %#', async (options, message) => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn()
+
+      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(ValueError)
+      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(message)
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).not.toHaveBeenCalled()
     })
   })
 

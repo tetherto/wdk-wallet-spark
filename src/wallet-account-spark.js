@@ -17,13 +17,17 @@ import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, ValidationError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
-import { LightningPaymentError } from './errors.js'
+import {
+  LightningPaymentError,
+  StaticDepositClaimOutcomeUnknownError,
+  StaticDepositFeeExceededError
+} from './errors.js'
 
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
@@ -69,6 +73,13 @@ import { LightningPaymentError } from './errors.js'
  * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
  * @property {number} creditAmountSats - The amount the SSP quoted for credit to Spark.
  * @property {number} claimFeeSats - The difference between the caller-provided deposit amount and quoted credit.
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositWithMaxFeeOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} maxFeeSats - The maximum claim fee approved by the caller.
+ * @property {number} [outputIndex] - The output index of the deposit. The Spark SDK detects it when omitted.
  */
 
 /**
@@ -482,6 +493,79 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
     if (!isClaimStaticDepositResult(result)) {
       throw new SparkError('The SSP returned an invalid static deposit claim result.', { result })
+    }
+
+    return result
+  }
+
+  /**
+   * Claims a static deposit only when the Spark SDK's exact fee does not exceed
+   * the maximum approved by the caller.
+   *
+   * The Spark SDK independently reads the Bitcoin output and obtains a fresh SSP
+   * quote before checking the maximum. It does not rely on an earlier
+   * caller-provided deposit amount or quote.
+   *
+   * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
+   * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
+   * @throws {ValueError} If an input is invalid.
+   * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
+   * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
+   */
+  async claimStaticDepositWithMaxFee (options) {
+    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
+      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
+    }
+
+    if (!isNonNegativeAmountInSats(options.maxFeeSats)) {
+      throw new ValueError('The maximum static deposit claim fee must be a safe non-negative integer number of satoshis.')
+    }
+
+    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
+      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
+    }
+
+    let result
+
+    try {
+      result = await this._wallet.claimStaticDepositWithMaxFee({
+        transactionId: options.txId,
+        maxFee: options.maxFeeSats,
+        ...(options.outputIndex === undefined ? {} : { outputIndex: options.outputIndex })
+      })
+    } catch (error) {
+      const claimFeeSats = getFeeChargedFromError(error)
+
+      if (claimFeeSats !== undefined) {
+        throw new StaticDepositFeeExceededError(
+          'The static deposit claim fee exceeds the approved maximum.',
+          {
+            claimFeeSats,
+            maxFeeSats: options.maxFeeSats,
+            cause: error
+          }
+        )
+      }
+
+      throw new StaticDepositClaimOutcomeUnknownError(
+        'The static deposit claim outcome is unknown.',
+        {
+          transactionId: options.txId,
+          outputIndex: options.outputIndex,
+          cause: error
+        }
+      )
+    }
+
+    if (!isClaimStaticDepositResult(result)) {
+      throw new StaticDepositClaimOutcomeUnknownError(
+        'The static deposit claim outcome is unknown.',
+        {
+          transactionId: options.txId,
+          outputIndex: options.outputIndex,
+          cause: new SparkError('The Spark SDK returned an invalid static deposit claim result.', { result })
+        }
+      )
     }
 
     return result

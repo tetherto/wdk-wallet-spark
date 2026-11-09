@@ -137,6 +137,21 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     claimStaticDeposit(txId: string): Promise<ClaimStaticDepositResult>;
     /**
+     * Claims a static deposit only when the Spark SDK's exact fee does not exceed
+     * the maximum approved by the caller.
+     *
+     * The Spark SDK independently reads the Bitcoin output and obtains a fresh SSP
+     * quote before checking the maximum. It does not rely on an earlier
+     * caller-provided deposit amount or quote.
+     *
+     * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
+     * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
+     * @throws {ValueError} If an input is invalid.
+     * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
+     * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
+     */
+    claimStaticDepositWithMaxFee(options: ClaimStaticDepositWithMaxFeeOptions): Promise<ClaimStaticDepositResult>;
+    /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
      * The minimum fee is 300 satoshis.
      *
@@ -235,6 +250,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
      */
     toReadOnlyAccount(): Promise<WalletAccountReadOnlySpark>;
+    _sparkReadOnlyAccount: WalletAccountReadOnlySpark;
     /**
      * Cleans up and closes the connections with the spark blockchain.
      *
@@ -330,6 +346,20 @@ export type ClaimStaticDepositQuote = {
      * - The difference between the caller-provided deposit amount and quoted credit.
      */
     claimFeeSats: number;
+};
+export type ClaimStaticDepositWithMaxFeeOptions = {
+    /**
+     * - The transaction ID of the deposit.
+     */
+    txId: string;
+    /**
+     * - The maximum claim fee approved by the caller.
+     */
+    maxFeeSats: number;
+    /**
+     * - The output index of the deposit. The Spark SDK detects it when omitted.
+     */
+    outputIndex?: number;
 };
 export type QuoteWithdrawOptions = {
     /**

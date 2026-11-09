@@ -38,9 +38,10 @@ export type QuoteWithdrawOptions = import("./src/wallet-account-spark.js").Quote
 export type ClaimStaticDepositResult = import("./src/wallet-account-spark.js").ClaimStaticDepositResult;
 export type ClaimStaticDepositQuoteOptions = import("./src/wallet-account-spark.js").ClaimStaticDepositQuoteOptions;
 export type ClaimStaticDepositQuote = import("./src/wallet-account-spark.js").ClaimStaticDepositQuote;
+export type ClaimStaticDepositWithMaxFeeOptions = import("./src/wallet-account-spark.js").ClaimStaticDepositWithMaxFeeOptions;
 export type RefundStaticDepositOptions = import("./src/wallet-account-spark.js").RefundStaticDepositOptions;
 export type CreateSatsInvoiceOptions = import("./src/wallet-account-spark.js").CreateSatsInvoiceOptions;
 export type CreateTokensInvoiceOptions = import("./src/wallet-account-spark.js").CreateTokensInvoiceOptions;
 export type SparkInvoice = import("./src/wallet-account-spark.js").SparkInvoice;
 export type LightningPaymentErrorOptions = import("./src/errors.js").LightningPaymentErrorOptions;
-export { LightningPaymentError, StaticDepositClaimOutcomeUnknownError } from "./src/errors.js";
+export { LightningPaymentError, StaticDepositClaimOutcomeUnknownError, StaticDepositFeeExceededError } from "./src/errors.js";

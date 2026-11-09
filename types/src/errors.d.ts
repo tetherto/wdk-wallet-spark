@@ -25,6 +25,22 @@ export class LightningPaymentError extends WdkError {
     transferId: UUID;
 }
 /**
+ * @typedef {Object} StaticDepositFeeExceededErrorOptions
+ * @property {number} claimFeeSats - The exact fee quoted by the Spark SDK.
+ * @property {number} maxFeeSats - The maximum fee approved by the caller.
+ */
+/**
+ * A static-deposit claim whose exact fee exceeds the caller's approved maximum.
+ */
+export class StaticDepositFeeExceededError extends MaximumFeeExceededError {
+    /** @type {'STATIC_DEPOSIT_FEE_EXCEEDED'} */
+    code: "STATIC_DEPOSIT_FEE_EXCEEDED";
+    /** @type {number} */
+    claimFeeSats: number;
+    /** @type {number} */
+    maxFeeSats: number;
+}
+/**
  * @typedef {Object} StaticDepositClaimOutcomeUnknownErrorOptions
  * @property {string} transactionId - The Bitcoin transaction ID of the deposit.
  * @property {number} [outputIndex] - The Bitcoin output index of the deposit.
@@ -54,6 +70,16 @@ export type LightningPaymentErrorOptions = {
      */
     transferId: UUID;
 };
+export type StaticDepositFeeExceededErrorOptions = {
+    /**
+     * - The exact fee quoted by the Spark SDK.
+     */
+    claimFeeSats: number;
+    /**
+     * - The maximum fee approved by the caller.
+     */
+    maxFeeSats: number;
+};
 export type StaticDepositClaimOutcomeUnknownErrorOptions = {
     /**
      * - The Bitcoin transaction ID of the deposit.
@@ -65,3 +91,4 @@ export type StaticDepositClaimOutcomeUnknownErrorOptions = {
     outputIndex?: number;
 };
 import { WdkError } from '@tetherto/wdk-wallet';
+import { MaximumFeeExceededError } from '@tetherto/wdk-wallet';
