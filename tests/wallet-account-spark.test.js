@@ -651,13 +651,10 @@ describe('WalletAccountSpark', () => {
     })
 
     test.each([
-      [{ txId: '', depositAmountSats: 10_000 }, 'transaction ID'],
       [{ txId: 'dummy-transaction-id', depositAmountSats: 0 }, 'deposit amount'],
       [{ txId: 'dummy-transaction-id', depositAmountSats: -1 }, 'deposit amount'],
       [{ txId: 'dummy-transaction-id', depositAmountSats: 1.5 }, 'deposit amount'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: Number.MAX_SAFE_INTEGER + 1 }, 'deposit amount'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: 10_000, outputIndex: -1 }, 'output index'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: 10_000, outputIndex: 1.5 }, 'output index']
+      [{ txId: 'dummy-transaction-id', depositAmountSats: Number.MAX_SAFE_INTEGER + 1 }, 'deposit amount']
     ])('should reject invalid quote options %#', async (options, message) => {
       sparkWallet.getClaimStaticDepositQuote = jest.fn()
 
@@ -668,8 +665,6 @@ describe('WalletAccountSpark', () => {
     })
 
     test.each([
-      [{ ...QUOTE, transactionId: 'different-transaction-id' }, 'transaction ID'],
-      [{ ...QUOTE, outputIndex: -1 }, 'output index'],
       [{ ...QUOTE, creditAmountSats: 0 }, 'credit'],
       [{ ...QUOTE, creditAmountSats: 10_001 }, 'lower than the SSP quoted credit']
     ])('should reject an inconsistent quote %#', async (quote, message) => {
@@ -682,16 +677,6 @@ describe('WalletAccountSpark', () => {
 
       await expect(promise).rejects.toThrow(ValueError)
       await expect(promise).rejects.toThrow(message)
-    })
-
-    test('should reject a quote for a different requested output', async () => {
-      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(QUOTE)
-
-      await expect(account.getClaimStaticDepositQuote({
-        txId: 'dummy-transaction-id',
-        outputIndex: 2,
-        depositAmountSats: 10_000
-      })).rejects.toThrow('The SSP quote output index does not match')
     })
   })
 

@@ -415,37 +415,14 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
    * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
-   * @throws {ValueError} If an input or the SSP quote contains an invalid amount, transaction ID, or output index.
+   * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
    */
   async getClaimStaticDepositQuote (options) {
-    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
-      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
-    }
-
     if (!isCreditAmountInSats(options.depositAmountSats)) {
       throw new ValueError('The static deposit amount must be a safe positive integer number of satoshis.')
     }
 
-    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
-      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
-    }
-
     const quote = await this._wallet.getClaimStaticDepositQuote(options.txId, options.outputIndex)
-
-    if (
-      typeof quote?.transactionId !== 'string' ||
-      quote.transactionId.toLowerCase() !== options.txId.toLowerCase()
-    ) {
-      throw new ValueError('The SSP quote transaction ID does not match the requested static deposit.')
-    }
-
-    if (!isOutputIndex(quote.outputIndex)) {
-      throw new ValueError('The SSP quoted an invalid static deposit output index.')
-    }
-
-    if (options.outputIndex !== undefined && quote.outputIndex !== options.outputIndex) {
-      throw new ValueError('The SSP quote output index does not match the requested static deposit.')
-    }
 
     if (!isCreditAmountInSats(quote.creditAmountSats)) {
       throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')

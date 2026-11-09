@@ -120,7 +120,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
      * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
-     * @throws {ValueError} If an input or the SSP quote contains an invalid amount, transaction ID, or output index.
+     * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
      */
     getClaimStaticDepositQuote(options: ClaimStaticDepositQuoteOptions): Promise<ClaimStaticDepositQuote>;
     /**
