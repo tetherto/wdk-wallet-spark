@@ -55,6 +55,8 @@
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositQuoteOptions} ClaimStaticDepositQuoteOptions */
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositQuote} ClaimStaticDepositQuote */
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositWithMaxFeeOptions} ClaimStaticDepositWithMaxFeeOptions */
+/** @typedef {import('./src/wallet-account-spark.js').GetStaticDepositStatusOptions} GetStaticDepositStatusOptions */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositStatus} StaticDepositStatus */
 /** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateSatsInvoiceOptions} CreateSatsInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */

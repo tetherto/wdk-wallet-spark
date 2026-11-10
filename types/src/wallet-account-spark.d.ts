@@ -105,6 +105,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getStaticDepositAddress(): Promise<string>;
     /**
+     * Reconciles a static deposit using only positive coordinator and SSP evidence.
+     *
+     * This method never infers that a deposit is unclaimed from missing history or
+     * credit. `claimable` is a read-only snapshot and is not authorization to
+     * refund. Spark currently exposes no authoritative refunded/spent status.
+     *
+     * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
+     * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
+     * @throws {ValueError} If the transaction ID or output index is invalid.
+     */
+    getStaticDepositStatus(options: GetStaticDepositStatusOptions): Promise<StaticDepositStatus>;
+    /**
      * Claims a deposit to the wallet.
      *
      * @param {string} txId - The transaction id of the deposit.
@@ -361,6 +373,111 @@ export type ClaimStaticDepositWithMaxFeeOptions = {
      */
     outputIndex?: number;
 };
+export type GetStaticDepositStatusOptions = {
+    /**
+     * - The transaction ID of the deposit.
+     */
+    txId: string;
+    /**
+     * - The output index of the deposit.
+     */
+    outputIndex?: number;
+};
+export type StaticDepositAwaitingConfirmationsStatus = {
+    /**
+     * - The deposit is visible to the coordinator but is not yet confirmed.
+     */
+    status: "awaiting-confirmations";
+    /**
+     * - The transaction ID of the deposit.
+     */
+    transactionId: string;
+    /**
+     * - The output index of the deposit.
+     */
+    outputIndex: number;
+};
+export type StaticDepositClaimableStatus = {
+    /**
+     * - The coordinator reports the confirmed outpoint as unclaimed.
+     */
+    status: "claimable";
+    /**
+     * - The transaction ID of the deposit.
+     */
+    transactionId: string;
+    /**
+     * - The output index of the deposit.
+     */
+    outputIndex: number;
+};
+export type StaticDepositClaimInProgressStatus = {
+    /**
+     * - The SSP has an active claim request for the outpoint.
+     */
+    status: "claim-in-progress";
+    /**
+     * - The transaction ID of the deposit.
+     */
+    transactionId: string;
+    /**
+     * - The output index of the deposit.
+     */
+    outputIndex: number;
+    /**
+     * - The SSP claim request ID.
+     */
+    requestId: string;
+    /**
+     * - The observed SSP claim request status.
+     */
+    requestStatus: "CREATED" | "TRANSFER_CREATED";
+};
+export type StaticDepositClaimedStatus = {
+    /**
+     * - The SSP reports the claim transfer as completed.
+     */
+    status: "claimed";
+    /**
+     * - The transaction ID of the deposit.
+     */
+    transactionId: string;
+    /**
+     * - The output index of the deposit.
+     */
+    outputIndex: number;
+    /**
+     * - The SSP claim request ID.
+     */
+    requestId: string;
+    /**
+     * - The Spark transfer ID created by the claim.
+     */
+    transferId: string;
+};
+export type StaticDepositUnknownStatus = {
+    /**
+     * - Available evidence does not prove another state.
+     */
+    status: "unknown";
+    /**
+     * - The transaction ID of the deposit.
+     */
+    transactionId: string;
+    /**
+     * - The output index when it can be resolved unambiguously.
+     */
+    outputIndex?: number;
+    /**
+     * - Why no authoritative state was returned.
+     */
+    reason: "NOT_FOUND" | "AMBIGUOUS_OUTPUT" | "CONFLICTING_EVIDENCE" | "INCOMPLETE_EVIDENCE" | "UNSUPPORTED_CLAIM_STATUS" | "MALFORMED_CLAIM_RESULT";
+    /**
+     * - Claim request statuses observed for the outpoint.
+     */
+    observedClaimStatuses?: string[];
+};
+export type StaticDepositStatus = StaticDepositAwaitingConfirmationsStatus | StaticDepositClaimableStatus | StaticDepositClaimInProgressStatus | StaticDepositClaimedStatus | StaticDepositUnknownStatus;
 export type QuoteWithdrawOptions = {
     /**
      * - The Bitcoin address where the funds should be sent.
