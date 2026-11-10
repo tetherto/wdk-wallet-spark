@@ -242,11 +242,11 @@ describe('WalletAccountReadOnlySpark', () => {
 
   describe('getTransfers', () => {
     const DUMMY_TRANSFERS = [
-      { id: 'dummy-transfer-1', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 1_000 },
-      { id: 'dummy-transfer-2', receiverIdentityPublicKey: OTHER_KEY_BYTES, totalValue: 2_000 },
-      { id: 'dummy-transfer-3', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 3_000 },
-      { id: 'dummy-transfer-4', receiverIdentityPublicKey: OTHER_KEY_BYTES, totalValue: 4_000 },
-      { id: 'dummy-transfer-5', receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 5_000 }
+      { id: 'dummy-transfer-1', receivers: [{ identityPublicKey: IDENTITY_KEY_BYTES, amountSats: 1_000 }] },
+      { id: 'dummy-transfer-2', receivers: [{ identityPublicKey: OTHER_KEY_BYTES, amountSats: 2_000 }] },
+      { id: 'dummy-transfer-3', receivers: [{ identityPublicKey: IDENTITY_KEY_BYTES, amountSats: 3_000 }] },
+      { id: 'dummy-transfer-4', receivers: [{ identityPublicKey: OTHER_KEY_BYTES, amountSats: 4_000 }] },
+      { id: 'dummy-transfer-5', receivers: [{ identityPublicKey: IDENTITY_KEY_BYTES, amountSats: 5_000 }] }
     ]
 
     test('should return an empty transfer history', async () => {
@@ -302,6 +302,42 @@ describe('WalletAccountReadOnlySpark', () => {
         offset: 0
       })
       expect(transfers).toEqual([DUMMY_TRANSFERS[1], DUMMY_TRANSFERS[3]])
+    })
+
+    test('should classify a transfer to several receivers that includes the account as incoming', async () => {
+      const DUMMY_MULTI_RECEIVER_TRANSFER = {
+        id: 'multi-receiver-transfer',
+        receivers: [
+          { identityPublicKey: OTHER_KEY_BYTES, amountSats: 1_000 },
+          { identityPublicKey: IDENTITY_KEY_BYTES, amountSats: 2_000 }
+        ]
+      }
+      mockClient.getTransfers.mockResolvedValueOnce({ transfers: [DUMMY_MULTI_RECEIVER_TRANSFER] })
+        .mockResolvedValue({ transfers: [] })
+
+      const transfers = await account.getTransfers({ direction: 'incoming' })
+
+      expect(transfers).toEqual([DUMMY_MULTI_RECEIVER_TRANSFER])
+    })
+
+    test('should classify a legacy transfer without receivers as incoming by its receiver identity key', async () => {
+      const DUMMY_LEGACY_TRANSFER = { id: 'legacy-incoming', receivers: [], receiverIdentityPublicKey: IDENTITY_KEY_BYTES, totalValue: 1_000 }
+      mockClient.getTransfers.mockResolvedValueOnce({ transfers: [DUMMY_LEGACY_TRANSFER] })
+        .mockResolvedValue({ transfers: [] })
+
+      const transfers = await account.getTransfers({ direction: 'incoming' })
+
+      expect(transfers).toEqual([DUMMY_LEGACY_TRANSFER])
+    })
+
+    test('should classify a legacy transfer without receivers as outgoing by its receiver identity key', async () => {
+      const DUMMY_LEGACY_TRANSFER = { id: 'legacy-outgoing', receivers: [], receiverIdentityPublicKey: OTHER_KEY_BYTES, totalValue: 2_000 }
+      mockClient.getTransfers.mockResolvedValueOnce({ transfers: [DUMMY_LEGACY_TRANSFER] })
+        .mockResolvedValue({ transfers: [] })
+
+      const transfers = await account.getTransfers({ direction: 'outgoing' })
+
+      expect(transfers).toEqual([DUMMY_LEGACY_TRANSFER])
     })
 
     test('should correctly paginate the transfer history', async () => {
