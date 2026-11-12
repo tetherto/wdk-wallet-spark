@@ -17,13 +17,24 @@ import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import {
+  SparkWallet,
+  Network,
+  SparkError,
+  ValidationError,
+  decodeSparkAddress,
+  generateTransferId
+} from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
-import { LightningPaymentError } from './errors.js'
+import {
+  LightningPaymentError,
+  StaticDepositClaimOutcomeUnknownError,
+  StaticDepositFeeExceededError
+} from './errors.js'
 
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
@@ -49,6 +60,83 @@ import { LightningPaymentError } from './errors.js'
 /** @typedef {import('./wallet-account-read-only-spark.js').SparkWalletConfig} SparkWalletConfig */
 
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
+
+/**
+ * @typedef {Object} ClaimStaticDepositResult
+ * @property {string} transferId - The Spark transfer ID created by the claim.
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositQuoteOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
+ * @property {number} [outputIndex] - The output index of the deposit. The Spark SDK detects it when omitted.
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositQuote
+ * @property {string} transactionId - The transaction ID returned by the SSP quote.
+ * @property {number} outputIndex - The resolved output index returned by the SSP quote.
+ * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
+ * @property {number} creditAmountSats - The amount the SSP quoted for credit to Spark.
+ * @property {number} claimFeeSats - The difference between the caller-provided deposit amount and quoted credit.
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositWithMaxFeeOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} maxFeeSats - The maximum claim fee approved by the caller.
+ * @property {number} [outputIndex] - The output index of the deposit. The Spark SDK detects it when omitted.
+ */
+
+/**
+ * @typedef {Object} GetStaticDepositStatusOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} [outputIndex] - The output index of the deposit.
+ */
+
+/**
+ * @typedef {Object} StaticDepositAwaitingConfirmationsStatus
+ * @property {'awaiting-confirmations'} status - The deposit is visible to the coordinator but is not yet confirmed.
+ * @property {string} transactionId - The transaction ID of the deposit.
+ * @property {number} outputIndex - The output index of the deposit.
+ */
+
+/**
+ * @typedef {Object} StaticDepositClaimableStatus
+ * @property {'claimable'} status - The coordinator reports the confirmed outpoint as unclaimed.
+ * @property {string} transactionId - The transaction ID of the deposit.
+ * @property {number} outputIndex - The output index of the deposit.
+ */
+
+/**
+ * @typedef {Object} StaticDepositClaimInProgressStatus
+ * @property {'claim-in-progress'} status - The SSP has an active claim request for the outpoint.
+ * @property {string} transactionId - The transaction ID of the deposit.
+ * @property {number} outputIndex - The output index of the deposit.
+ * @property {string} requestId - The SSP claim request ID.
+ * @property {'CREATED' | 'TRANSFER_CREATED'} requestStatus - The observed SSP claim request status.
+ */
+
+/**
+ * @typedef {Object} StaticDepositClaimedStatus
+ * @property {'claimed'} status - The SSP reports the claim transfer as completed.
+ * @property {string} transactionId - The transaction ID of the deposit.
+ * @property {number} outputIndex - The output index of the deposit.
+ * @property {string} requestId - The SSP claim request ID.
+ * @property {string} transferId - The Spark transfer ID created by the claim.
+ */
+
+/**
+ * @typedef {Object} StaticDepositUnknownStatus
+ * @property {'unknown'} status - Available evidence does not prove another state.
+ * @property {string} transactionId - The transaction ID of the deposit.
+ * @property {number} [outputIndex] - The output index when it can be resolved unambiguously.
+ * @property {'NOT_FOUND' | 'AMBIGUOUS_OUTPUT' | 'CONFLICTING_EVIDENCE' | 'INCOMPLETE_EVIDENCE' | 'UNSUPPORTED_CLAIM_STATUS' | 'MALFORMED_CLAIM_RESULT'} reason - Why no authoritative state was returned.
+ * @property {string[]} [observedClaimStatuses] - Claim request statuses observed for the outpoint.
+ */
+
+/** @typedef {StaticDepositAwaitingConfirmationsStatus | StaticDepositClaimableStatus | StaticDepositClaimInProgressStatus | StaticDepositClaimedStatus | StaticDepositUnknownStatus} StaticDepositStatus */
 
 /**
  * @typedef {Object} QuoteWithdrawOptions
@@ -99,6 +187,31 @@ const STALE_LEAF_ERROR_FRAGMENTS = [
 
 const WALLET_TRANSFER_STATUS_EXPIRED = 'TRANSFER_STATUS_EXPIRED'
 const WALLET_TRANSFER_STATUS_RETURNED = 'TRANSFER_STATUS_RETURNED'
+const STATIC_DEPOSIT_STATUS_PAGE_SIZE = 50
+const STATIC_DEPOSIT_STATUS_MAX_PAGES = 100
+const SPARK_USER_REQUEST_TYPE_CLAIM_STATIC_DEPOSIT = 'CLAIM_STATIC_DEPOSIT'
+
+const CLAIM_STATIC_DEPOSIT_STATUS = Object.freeze({
+  CREATED: 'CREATED',
+  TRANSFER_CREATED: 'TRANSFER_CREATED',
+  TRANSFER_CREATION_FAILED: 'TRANSFER_CREATION_FAILED',
+  REFUND_SIGNING_COMMITMENTS_QUERYING_FAILED: 'REFUND_SIGNING_COMMITMENTS_QUERYING_FAILED',
+  REFUND_SIGNING_FAILED: 'REFUND_SIGNING_FAILED',
+  UTXO_SWAPPING_FAILED: 'UTXO_SWAPPING_FAILED',
+  TRANSFER_COMPLETED: 'TRANSFER_COMPLETED'
+})
+
+const CLAIM_STATIC_DEPOSIT_IN_PROGRESS_STATUSES = new Set([
+  CLAIM_STATIC_DEPOSIT_STATUS.CREATED,
+  CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_CREATED
+])
+
+const CLAIM_STATIC_DEPOSIT_TERMINAL_FAILURE_STATUSES = new Set([
+  CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_CREATION_FAILED,
+  CLAIM_STATIC_DEPOSIT_STATUS.REFUND_SIGNING_COMMITMENTS_QUERYING_FAILED,
+  CLAIM_STATIC_DEPOSIT_STATUS.REFUND_SIGNING_FAILED,
+  CLAIM_STATIC_DEPOSIT_STATUS.UTXO_SWAPPING_FAILED
+])
 
 function isExpiredOrReturnedStatus (status) {
   return (
@@ -109,6 +222,123 @@ function isExpiredOrReturnedStatus (status) {
 
 function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
+}
+
+function isNonNegativeAmountInSats (amount) {
+  return Number.isSafeInteger(amount) && amount >= 0
+}
+
+function isOutputIndex (outputIndex) {
+  return Number.isSafeInteger(outputIndex) && outputIndex >= 0
+}
+
+function isClaimStaticDepositResult (result) {
+  return typeof result?.transferId === 'string' && result.transferId.trim().length > 0
+}
+
+function getFeeChargedFromError (error) {
+  if (!(error instanceof ValidationError)) {
+    return undefined
+  }
+
+  const context = error.getContext()
+
+  if (context.field !== 'feeCharged' || !isNonNegativeAmountInSats(context.value)) {
+    return undefined
+  }
+
+  return context.value
+}
+
+async function getAllStaticDepositUtxos (wallet) {
+  const utxos = []
+  const seenCursors = new Set()
+  let cursor = ''
+
+  for (let page = 0; page < STATIC_DEPOSIT_STATUS_MAX_PAGES; page++) {
+    const response = await wallet.getUtxosForIdentity({
+      pageSize: STATIC_DEPOSIT_STATUS_PAGE_SIZE,
+      cursor,
+      direction: 'NEXT',
+      excludeClaimed: true,
+      includePending: true
+    })
+
+    utxos.push(...response.utxos)
+
+    if (!response.pageResponse.hasNextPage) {
+      return utxos
+    }
+
+    const nextCursor = response.pageResponse.nextCursor
+
+    if (!nextCursor || seenCursors.has(nextCursor)) {
+      throw new Error('Incomplete static deposit UTXO pagination.')
+    }
+
+    seenCursors.add(nextCursor)
+    cursor = nextCursor
+  }
+
+  throw new Error('Static deposit UTXO pagination exceeded its safety limit.')
+}
+
+async function getAllStaticDepositClaimRequests (wallet) {
+  const requests = []
+  const seenCursors = new Set()
+  let after
+
+  for (let page = 0; page < STATIC_DEPOSIT_STATUS_MAX_PAGES; page++) {
+    const response = await wallet.getUserRequests({
+      first: STATIC_DEPOSIT_STATUS_PAGE_SIZE,
+      after,
+      types: [SPARK_USER_REQUEST_TYPE_CLAIM_STATIC_DEPOSIT]
+    })
+
+    if (!response) {
+      if (after !== undefined) {
+        throw new Error('Incomplete static deposit claim request pagination.')
+      }
+
+      return requests
+    }
+
+    requests.push(...response.entities.filter(request => request.typename === 'ClaimStaticDeposit'))
+
+    if (!response.pageInfo.hasNextPage) {
+      return requests
+    }
+
+    const nextCursor = response.pageInfo.endCursor
+
+    if (!nextCursor || seenCursors.has(nextCursor)) {
+      throw new Error('Incomplete static deposit claim request pagination.')
+    }
+
+    seenCursors.add(nextCursor)
+    after = nextCursor
+  }
+
+  throw new Error('Static deposit claim request pagination exceeded its safety limit.')
+}
+
+function isSameTransactionId (first, second) {
+  return typeof first === 'string' && first.toLowerCase() === second.toLowerCase()
+}
+
+function getStaticDepositOutputIndexes (txId, utxos, requests) {
+  return new Set([
+    ...utxos
+      .filter(utxo => isSameTransactionId(utxo.txid, txId))
+      .map(utxo => utxo.vout),
+    ...requests
+      .filter(request => isSameTransactionId(request.transactionId, txId))
+      .map(request => request.outputIndex)
+  ].filter(isOutputIndex))
+}
+
+function getObservedClaimStatuses (requests) {
+  return [...new Set(requests.map(request => request.status))]
 }
 
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
@@ -339,6 +569,190 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Reconciles a static deposit using only positive coordinator and SSP evidence.
+   *
+   * This method never infers that a deposit is unclaimed from missing history or
+   * credit. `claimable` is a read-only snapshot and is not authorization to
+   * refund. Spark currently exposes no authoritative refunded/spent status.
+   *
+   * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
+   * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
+   * @throws {ValueError} If the transaction ID or output index is invalid.
+   */
+  async getStaticDepositStatus (options) {
+    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
+      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
+    }
+
+    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
+      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
+    }
+
+    let utxos
+    let requests
+
+    try {
+      [utxos, requests] = await Promise.all([
+        getAllStaticDepositUtxos(this._wallet),
+        getAllStaticDepositClaimRequests(this._wallet)
+      ])
+    } catch {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex: options.outputIndex,
+        reason: 'INCOMPLETE_EVIDENCE'
+      }
+    }
+
+    const outputIndexes = getStaticDepositOutputIndexes(options.txId, utxos, requests)
+    let outputIndex = options.outputIndex
+
+    if (outputIndex === undefined) {
+      if (outputIndexes.size === 0) {
+        return {
+          status: 'unknown',
+          transactionId: options.txId,
+          reason: 'NOT_FOUND'
+        }
+      }
+
+      if (outputIndexes.size > 1) {
+        return {
+          status: 'unknown',
+          transactionId: options.txId,
+          reason: 'AMBIGUOUS_OUTPUT'
+        }
+      }
+
+      outputIndex = outputIndexes.values().next().value
+    }
+
+    const matchingUtxos = utxos.filter(utxo =>
+      isSameTransactionId(utxo.txid, options.txId) && utxo.vout === outputIndex
+    )
+    const matchingRequests = requests.filter(request =>
+      isSameTransactionId(request.transactionId, options.txId) &&
+      request.outputIndex === outputIndex
+    )
+    const observedClaimStatuses = getObservedClaimStatuses(matchingRequests)
+
+    if (
+      matchingUtxos.length > 1 &&
+      matchingUtxos.some(utxo => utxo.isConfirmed !== matchingUtxos[0].isConfirmed)
+    ) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'CONFLICTING_EVIDENCE',
+        observedClaimStatuses
+      }
+    }
+
+    const completedRequests = matchingRequests.filter(request =>
+      request.status === CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_COMPLETED
+    )
+
+    if (completedRequests.some(request =>
+      typeof request.transferSparkId !== 'string' || request.transferSparkId.trim().length === 0
+    )) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'MALFORMED_CLAIM_RESULT',
+        observedClaimStatuses
+      }
+    }
+
+    const completedTransferIds = new Set(completedRequests.map(request => request.transferSparkId))
+
+    if (completedTransferIds.size > 1 || (completedRequests.length > 0 && matchingUtxos.length > 0)) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'CONFLICTING_EVIDENCE',
+        observedClaimStatuses
+      }
+    }
+
+    if (completedRequests.length > 0) {
+      return {
+        status: 'claimed',
+        transactionId: options.txId,
+        outputIndex,
+        requestId: completedRequests[0].id,
+        transferId: completedRequests[0].transferSparkId
+      }
+    }
+
+    const inProgressRequests = matchingRequests.filter(request =>
+      CLAIM_STATIC_DEPOSIT_IN_PROGRESS_STATUSES.has(request.status)
+    )
+
+    if (inProgressRequests.length > 1) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'CONFLICTING_EVIDENCE',
+        observedClaimStatuses
+      }
+    }
+
+    if (inProgressRequests.length === 1) {
+      return {
+        status: 'claim-in-progress',
+        transactionId: options.txId,
+        outputIndex,
+        requestId: inProgressRequests[0].id,
+        requestStatus: inProgressRequests[0].status
+      }
+    }
+
+    const hasUnsupportedClaimStatus = matchingRequests.some(request =>
+      !CLAIM_STATIC_DEPOSIT_TERMINAL_FAILURE_STATUSES.has(request.status)
+    )
+
+    if (hasUnsupportedClaimStatus) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'UNSUPPORTED_CLAIM_STATUS',
+        observedClaimStatuses
+      }
+    }
+
+    if (matchingUtxos.length > 0) {
+      return {
+        status: matchingUtxos[0].isConfirmed ? 'claimable' : 'awaiting-confirmations',
+        transactionId: options.txId,
+        outputIndex
+      }
+    }
+
+    if (matchingRequests.length === 0) {
+      return {
+        status: 'unknown',
+        transactionId: options.txId,
+        outputIndex,
+        reason: 'NOT_FOUND'
+      }
+    }
+
+    return {
+      status: 'unknown',
+      transactionId: options.txId,
+      outputIndex,
+      reason: 'INCOMPLETE_EVIDENCE',
+      observedClaimStatuses
+    }
+  }
+
+  /**
    * Claims a deposit to the wallet.
    *
    * @param {string} txId - The transaction id of the deposit.
@@ -349,6 +763,43 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Gets the SSP credit quote for a static deposit and calculates its fee from
+   * the caller-provided Bitcoin output amount.
+   *
+   * The deposit amount is not verified by this method. Callers must use the
+   * amount of the exact Bitcoin output identified by `txId` and `outputIndex`.
+   *
+   * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
+   * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
+   * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
+   */
+  async getClaimStaticDepositQuote (options) {
+    if (!isCreditAmountInSats(options.depositAmountSats)) {
+      throw new ValueError('The static deposit amount must be a safe positive integer number of satoshis.')
+    }
+
+    const quote = await this._wallet.getClaimStaticDepositQuote(options.txId, options.outputIndex)
+
+    if (!isCreditAmountInSats(quote.creditAmountSats)) {
+      throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
+    }
+
+    const claimFeeSats = options.depositAmountSats - quote.creditAmountSats
+
+    if (!isNonNegativeAmountInSats(claimFeeSats)) {
+      throw new ValueError('The caller-provided deposit amount is lower than the SSP quoted credit.')
+    }
+
+    return {
+      transactionId: quote.transactionId,
+      outputIndex: quote.outputIndex,
+      depositAmountSats: options.depositAmountSats,
+      creditAmountSats: quote.creditAmountSats,
+      claimFeeSats
+    }
+  }
+
+  /**
    * Claims a static deposit to the wallet.
    *
    * The SSP quotes the credit and this account signs it, so a quote that is not a plain
@@ -356,8 +807,9 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
    *
    * @param {string} txId - The transaction id of the deposit.
-   * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+   * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
+   * @throws {SparkError} If the Spark SDK returns an invalid claim result.
    */
   async claimStaticDeposit (txId) {
     const quote = await this._wallet.getClaimStaticDepositQuote(txId)
@@ -366,11 +818,90 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
     }
 
-    return await this._wallet.claimStaticDeposit({
+    const result = await this._wallet.claimStaticDeposit({
       transactionId: txId,
       creditAmountSats: quote.creditAmountSats,
       sspSignature: quote.signature
     })
+
+    if (!isClaimStaticDepositResult(result)) {
+      throw new SparkError('The SSP returned an invalid static deposit claim result.', { result })
+    }
+
+    return result
+  }
+
+  /**
+   * Claims a static deposit only when the Spark SDK's exact fee does not exceed
+   * the maximum approved by the caller.
+   *
+   * The Spark SDK independently reads the Bitcoin output and obtains a fresh SSP
+   * quote before checking the maximum. It does not rely on an earlier
+   * caller-provided deposit amount or quote.
+   *
+   * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
+   * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
+   * @throws {ValueError} If an input is invalid.
+   * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
+   * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
+   */
+  async claimStaticDepositWithMaxFee (options) {
+    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
+      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
+    }
+
+    if (!isNonNegativeAmountInSats(options.maxFeeSats)) {
+      throw new ValueError('The maximum static deposit claim fee must be a safe non-negative integer number of satoshis.')
+    }
+
+    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
+      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
+    }
+
+    let result
+
+    try {
+      result = await this._wallet.claimStaticDepositWithMaxFee({
+        transactionId: options.txId,
+        maxFee: options.maxFeeSats,
+        ...(options.outputIndex === undefined ? {} : { outputIndex: options.outputIndex })
+      })
+    } catch (error) {
+      const claimFeeSats = getFeeChargedFromError(error)
+
+      if (claimFeeSats !== undefined) {
+        throw new StaticDepositFeeExceededError(
+          'The static deposit claim fee exceeds the approved maximum.',
+          {
+            claimFeeSats,
+            maxFeeSats: options.maxFeeSats,
+            cause: error
+          }
+        )
+      }
+
+      throw new StaticDepositClaimOutcomeUnknownError(
+        'The static deposit claim outcome is unknown.',
+        {
+          transactionId: options.txId,
+          outputIndex: options.outputIndex,
+          cause: error
+        }
+      )
+    }
+
+    if (!isClaimStaticDepositResult(result)) {
+      throw new StaticDepositClaimOutcomeUnknownError(
+        'The static deposit claim outcome is unknown.',
+        {
+          transactionId: options.txId,
+          outputIndex: options.outputIndex,
+          cause: new SparkError('The Spark SDK returned an invalid static deposit claim result.', { result })
+        }
+      )
+    }
+
+    return result
   }
 
   /**

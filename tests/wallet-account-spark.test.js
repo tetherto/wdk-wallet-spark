@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkRequestError } from '@buildonspark/spark-sdk'
+import {
+  SparkWallet,
+  SparkError,
+  SparkRequestError,
+  SparkValidationError
+} from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
@@ -8,13 +13,28 @@ import * as bip39 from 'bip39'
 
 import { MaximumFeeExceededError, ProviderError, ProviderErrorReason, UnsupportedOperationError, ValueError } from '@tetherto/wdk-wallet'
 
-import { WalletAccountSpark, WalletAccountReadOnlySpark, LightningPaymentError } from '../index.js'
+import {
+  WalletAccountSpark,
+  WalletAccountReadOnlySpark,
+  LightningPaymentError,
+  StaticDepositClaimOutcomeUnknownError,
+  StaticDepositFeeExceededError
+} from '../index.js'
 
 import Bip44SparkSigner from '../src/bip-44/spark-signer.js'
 
 const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink uncle term abuse'
 
 const SEED = bip39.mnemonicToSeedSync(SEED_PHRASE)
+
+const CLAIM_STATIC_DEPOSIT_STATUS = Object.freeze({
+  CREATED: 'CREATED',
+  TRANSFER_CREATED: 'TRANSFER_CREATED',
+  TRANSFER_CREATION_FAILED: 'TRANSFER_CREATION_FAILED',
+  UTXO_SWAPPING_FAILED: 'UTXO_SWAPPING_FAILED',
+  TRANSFER_COMPLETED: 'TRANSFER_COMPLETED',
+  SPEND_TX_BROADCAST: 'SPEND_TX_BROADCAST'
+})
 
 const ACCOUNT = {
   index: 0,
@@ -656,6 +676,292 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getStaticDepositStatus', () => {
+    const TX_ID = 'dummy-static-deposit-tx-id'
+    const OUTPUT_INDEX = 1
+
+    const utxoPage = (utxos, pageResponse = {}) => ({
+      utxos,
+      pageResponse: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        nextCursor: '',
+        previousCursor: '',
+        ...pageResponse
+      }
+    })
+
+    const requestPage = (entities, pageInfo = {}) => ({
+      count: entities.length,
+      entities,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: '',
+        endCursor: '',
+        ...pageInfo
+      }
+    })
+
+    const claimRequest = (status, options = {}) => ({
+      id: options.id || 'claim-request-id',
+      typename: 'ClaimStaticDeposit',
+      transactionId: TX_ID,
+      outputIndex: OUTPUT_INDEX,
+      status,
+      transferSparkId: options.transferSparkId
+    })
+
+    test('should report an unconfirmed coordinator UTXO as awaiting confirmations', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: OUTPUT_INDEX, isConfirmed: false }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'awaiting-confirmations',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })
+    })
+
+    test('should report a confirmed coordinator UTXO as claimable', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: OUTPUT_INDEX, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      const result = await account.getStaticDepositStatus({ txId: TX_ID })
+
+      expect(result).toEqual({
+        status: 'claimable',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })
+      expect(sparkWallet.getUtxosForIdentity).toHaveBeenCalledWith({
+        pageSize: 50,
+        cursor: '',
+        direction: 'NEXT',
+        excludeClaimed: true,
+        includePending: true
+      })
+      expect(sparkWallet.getUserRequests).toHaveBeenCalledWith({
+        first: 50,
+        after: undefined,
+        types: ['CLAIM_STATIC_DEPOSIT']
+      })
+    })
+
+    test.each([
+      CLAIM_STATIC_DEPOSIT_STATUS.CREATED,
+      CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_CREATED
+    ])('should report %s as claim in progress', async (requestStatus) => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(requestStatus)
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'claim-in-progress',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        requestId: 'claim-request-id',
+        requestStatus
+      })
+    })
+
+    test('should report a completed claim with its transfer ID', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_COMPLETED, {
+          transferSparkId: 'spark-transfer-id'
+        })
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'claimed',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        requestId: 'claim-request-id',
+        transferId: 'spark-transfer-id'
+      })
+    })
+
+    test('should use positive UTXO evidence after a failed claim request', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: OUTPUT_INDEX, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.UTXO_SWAPPING_FAILED)
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'claimable',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })
+    })
+
+    test('should not infer unclaimed from a failed request without UTXO evidence', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.UTXO_SWAPPING_FAILED)
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toMatchObject({
+        status: 'unknown',
+        reason: 'INCOMPLETE_EVIDENCE',
+        observedClaimStatuses: [CLAIM_STATIC_DEPOSIT_STATUS.UTXO_SWAPPING_FAILED]
+      })
+    })
+
+    test('should report conflicting claimed and unclaimed evidence as unknown', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: OUTPUT_INDEX, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_COMPLETED, {
+          transferSparkId: 'spark-transfer-id'
+        })
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toMatchObject({
+        status: 'unknown',
+        reason: 'CONFLICTING_EVIDENCE'
+      })
+    })
+
+    test('should not classify a spend status as refunded or spent', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: OUTPUT_INDEX, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([
+        claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.SPEND_TX_BROADCAST)
+      ]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toMatchObject({
+        status: 'unknown',
+        reason: 'UNSUPPORTED_CLAIM_STATUS',
+        observedClaimStatuses: [CLAIM_STATIC_DEPOSIT_STATUS.SPEND_TX_BROADCAST]
+      })
+    })
+
+    test('should return unknown when the outpoint has no positive evidence', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'unknown',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        reason: 'NOT_FOUND'
+      })
+    })
+
+    test('should return unknown when an omitted output index resolves ambiguously', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID, vout: 1, isConfirmed: true },
+        { txid: TX_ID, vout: 2, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      await expect(account.getStaticDepositStatus({ txId: TX_ID })).resolves.toEqual({
+        status: 'unknown',
+        transactionId: TX_ID,
+        reason: 'AMBIGUOUS_OUTPUT'
+      })
+    })
+
+    test('should paginate all coordinator UTXOs and SSP claim requests', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn()
+        .mockResolvedValueOnce(utxoPage([], {
+          hasNextPage: true,
+          nextCursor: 'utxo-page-2'
+        }))
+        .mockResolvedValueOnce(utxoPage([]))
+      sparkWallet.getUserRequests = jest.fn()
+        .mockResolvedValueOnce(requestPage([], {
+          hasNextPage: true,
+          endCursor: 'request-page-2'
+        }))
+        .mockResolvedValueOnce(requestPage([
+          claimRequest(CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_COMPLETED, {
+            transferSparkId: 'spark-transfer-id'
+          })
+        ]))
+
+      await expect(account.getStaticDepositStatus({ txId: TX_ID })).resolves.toMatchObject({
+        status: 'claimed',
+        transferId: 'spark-transfer-id'
+      })
+      expect(sparkWallet.getUtxosForIdentity).toHaveBeenNthCalledWith(2, {
+        pageSize: 50,
+        cursor: 'utxo-page-2',
+        direction: 'NEXT',
+        excludeClaimed: true,
+        includePending: true
+      })
+      expect(sparkWallet.getUserRequests).toHaveBeenNthCalledWith(2, {
+        first: 50,
+        after: 'request-page-2',
+        types: ['CLAIM_STATIC_DEPOSIT']
+      })
+    })
+
+    test('should return unknown when either evidence source fails', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockRejectedValue(new Error('coordinator unavailable'))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).resolves.toEqual({
+        status: 'unknown',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        reason: 'INCOMPLETE_EVIDENCE'
+      })
+    })
+
+    test.each([
+      [{ txId: '' }, 'transaction ID'],
+      [{ txId: TX_ID, outputIndex: -1 }, 'output index'],
+      [{ txId: TX_ID, outputIndex: 1.5 }, 'output index']
+    ])('should reject invalid status options %#', async (options, message) => {
+      sparkWallet.getUtxosForIdentity = jest.fn()
+      sparkWallet.getUserRequests = jest.fn()
+
+      await expect(account.getStaticDepositStatus(options)).rejects.toThrow(ValueError)
+      await expect(account.getStaticDepositStatus(options)).rejects.toThrow(message)
+      expect(sparkWallet.getUtxosForIdentity).not.toHaveBeenCalled()
+      expect(sparkWallet.getUserRequests).not.toHaveBeenCalled()
+    })
+  })
+
   describe('claimDeposit', () => {
     test('should successfully claim a deposit', async () => {
       const DUMMY_TX_ID = 'dummy-tx-id'
@@ -674,6 +980,74 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getClaimStaticDepositQuote', () => {
+    const QUOTE = {
+      transactionId: 'dummy-transaction-id',
+      outputIndex: 1,
+      creditAmountSats: 9_750,
+      signature: 'dummy-signature'
+    }
+
+    test('should calculate the claim fee from the caller-provided deposit amount', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(QUOTE)
+
+      const result = await account.getClaimStaticDepositQuote({
+        txId: 'dummy-transaction-id',
+        depositAmountSats: 10_000
+      })
+
+      expect(sparkWallet.getClaimStaticDepositQuote).toHaveBeenCalledWith('dummy-transaction-id', undefined)
+      expect(result).toEqual({
+        transactionId: 'dummy-transaction-id',
+        outputIndex: 1,
+        depositAmountSats: 10_000,
+        creditAmountSats: 9_750,
+        claimFeeSats: 250
+      })
+    })
+
+    test('should pass the output index to the Spark SDK', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(QUOTE)
+
+      await account.getClaimStaticDepositQuote({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        depositAmountSats: 10_000
+      })
+
+      expect(sparkWallet.getClaimStaticDepositQuote).toHaveBeenCalledWith('dummy-transaction-id', 1)
+    })
+
+    test.each([
+      [{ txId: 'dummy-transaction-id', depositAmountSats: 0 }, 'deposit amount'],
+      [{ txId: 'dummy-transaction-id', depositAmountSats: -1 }, 'deposit amount'],
+      [{ txId: 'dummy-transaction-id', depositAmountSats: 1.5 }, 'deposit amount'],
+      [{ txId: 'dummy-transaction-id', depositAmountSats: Number.MAX_SAFE_INTEGER + 1 }, 'deposit amount']
+    ])('should reject invalid quote options %#', async (options, message) => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn()
+
+      await expect(account.getClaimStaticDepositQuote(options)).rejects.toThrow(ValueError)
+      await expect(account.getClaimStaticDepositQuote(options)).rejects.toThrow(message)
+
+      expect(sparkWallet.getClaimStaticDepositQuote).not.toHaveBeenCalled()
+    })
+
+    test.each([
+      [{ ...QUOTE, creditAmountSats: 0 }, 'credit'],
+      [{ ...QUOTE, creditAmountSats: 10_001 }, 'lower than the SSP quoted credit']
+    ])('should reject an inconsistent quote %#', async (quote, message) => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(quote)
+
+      const promise = account.getClaimStaticDepositQuote({
+        txId: 'dummy-transaction-id',
+        depositAmountSats: 10_000
+      })
+
+      await expect(promise).rejects.toThrow(ValueError)
+      await expect(promise).rejects.toThrow(message)
+    })
+  })
+
   describe('claimStaticDeposit', () => {
     test('should successfully claim a static deposit', async () => {
       const DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE = {
@@ -681,13 +1055,13 @@ describe('WalletAccountSpark', () => {
         creditAmountSats: 1_000
       }
 
-      const DUMMY_WALLET_LEAFS = [
-        { id: 'wallet-leaf-1' }
-      ]
+      const DUMMY_CLAIM_RESULT = {
+        transferId: 'spark-transfer-id'
+      }
 
       sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
 
-      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
+      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(DUMMY_CLAIM_RESULT)
 
       const result = await account.claimStaticDeposit('dummy-transaction-id')
 
@@ -699,7 +1073,40 @@ describe('WalletAccountSpark', () => {
         sspSignature: 'dummy-signature'
       })
 
-      expect(result).toEqual(DUMMY_WALLET_LEAFS)
+      expect(result).toEqual(DUMMY_CLAIM_RESULT)
+    })
+
+    test('should preserve a Spark SDK claim failure', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000
+      })
+
+      const error = new SparkRequestError('Claim request failed')
+      sparkWallet.claimStaticDeposit = jest.fn().mockRejectedValue(error)
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toBe(error)
+    })
+
+    test.each([
+      null,
+      undefined,
+      {},
+      { transferId: '' },
+      { transferId: '   ' },
+      { transferId: 123 }
+    ])('should reject malformed claim result %#', async (claimResult) => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000
+      })
+
+      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(claimResult)
+
+      const promise = account.claimStaticDeposit('dummy-transaction-id')
+
+      await expect(promise).rejects.toThrow(SparkError)
+      await expect(promise).rejects.toThrow('The SSP returned an invalid static deposit claim result')
     })
 
     test('should refuse a quote that credits nothing', async () => {
@@ -780,6 +1187,115 @@ describe('WalletAccountSpark', () => {
       await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toThrow(ValueError)
 
       expect(sparkWallet.claimStaticDeposit).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('claimStaticDepositWithMaxFee', () => {
+    const CLAIM_RESULT = {
+      transferId: 'spark-transfer-id'
+    }
+
+    test('should delegate the atomic maximum-fee claim to the Spark SDK', async () => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
+
+      const result = await account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFee: 250
+      })
+      expect(result).toEqual(CLAIM_RESULT)
+    })
+
+    test('should allow a zero maximum fee and omit an unspecified output index', async () => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
+
+      await account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        maxFeeSats: 0
+      })
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).toHaveBeenCalledWith({
+        transactionId: 'dummy-transaction-id',
+        maxFee: 0
+      })
+    })
+
+    test('should expose an exact fee rejection as a stable typed error', async () => {
+      const sdkError = new SparkValidationError('Fee larger than max fee', {
+        field: 'feeCharged',
+        value: 251
+      })
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
+
+      const promise = account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      await expect(promise).rejects.toThrow(StaticDepositFeeExceededError)
+      await expect(promise).rejects.toMatchObject({
+        code: 'STATIC_DEPOSIT_FEE_EXCEEDED',
+        claimFeeSats: 251,
+        maxFeeSats: 250,
+        cause: sdkError
+      })
+    })
+
+    test('should preserve an ambiguous SDK failure as an unknown claim outcome', async () => {
+      const sdkError = new SparkRequestError('Claim request failed')
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
+
+      const promise = account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        outputIndex: 1,
+        maxFeeSats: 250
+      })
+
+      await expect(promise).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
+      await expect(promise).rejects.toMatchObject({
+        code: 'STATIC_DEPOSIT_CLAIM_OUTCOME_UNKNOWN',
+        transactionId: 'dummy-transaction-id',
+        outputIndex: 1,
+        cause: sdkError
+      })
+    })
+
+    test.each([
+      null,
+      undefined,
+      {},
+      { transferId: '' },
+      { transferId: 123 }
+    ])('should treat a malformed bounded claim result as an unknown outcome %#', async (claimResult) => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(claimResult)
+
+      await expect(account.claimStaticDepositWithMaxFee({
+        txId: 'dummy-transaction-id',
+        maxFeeSats: 250
+      })).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
+    })
+
+    test.each([
+      [{ txId: '', maxFeeSats: 250 }, 'transaction ID'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: -1 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 1.5 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: Number.MAX_SAFE_INTEGER + 1 }, 'maximum'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: -1 }, 'output index'],
+      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: 1.5 }, 'output index']
+    ])('should reject invalid bounded claim options %#', async (options, message) => {
+      sparkWallet.claimStaticDepositWithMaxFee = jest.fn()
+
+      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(ValueError)
+      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(message)
+
+      expect(sparkWallet.claimStaticDepositWithMaxFee).not.toHaveBeenCalled()
     })
   })
 
