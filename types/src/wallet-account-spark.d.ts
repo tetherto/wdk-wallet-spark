@@ -112,6 +112,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     claimDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
+     * Gets the SSP credit quote for a static deposit and calculates its fee from
+     * the caller-provided Bitcoin output amount.
+     *
+     * The deposit amount is not verified by this method. Callers must use the
+     * amount of the exact Bitcoin output identified by `txId` and `outputIndex`.
+     *
+     * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
+     * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
+     * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
+     */
+    getClaimStaticDepositQuote(options: ClaimStaticDepositQuoteOptions): Promise<ClaimStaticDepositQuote>;
+    /**
      * Claims a static deposit to the wallet.
      *
      * The SSP quotes the credit and this account signs it, so a quote that is not a plain
@@ -119,10 +131,26 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
      *
      * @param {string} txId - The transaction id of the deposit.
-     * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+     * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
+     * @throws {SparkError} If the Spark SDK returns an invalid claim result.
      */
-    claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
+    claimStaticDeposit(txId: string): Promise<ClaimStaticDepositResult>;
+    /**
+     * Claims a static deposit only when the Spark SDK's exact fee does not exceed
+     * the maximum approved by the caller.
+     *
+     * The Spark SDK independently reads the Bitcoin output and obtains a fresh SSP
+     * quote before checking the maximum. It does not rely on an earlier
+     * caller-provided deposit amount or quote.
+     *
+     * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
+     * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
+     * @throws {ValueError} If an input is invalid.
+     * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
+     * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
+     */
+    claimStaticDepositWithMaxFee(options: ClaimStaticDepositWithMaxFeeOptions): Promise<ClaimStaticDepositResult>;
     /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
      * The minimum fee is 300 satoshis.
@@ -222,6 +250,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
      */
     toReadOnlyAccount(): Promise<WalletAccountReadOnlySpark>;
+    _sparkReadOnlyAccount: WalletAccountReadOnlySpark;
     /**
      * Cleans up and closes the connections with the spark blockchain.
      *
@@ -276,6 +305,62 @@ export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
+export type ClaimStaticDepositResult = {
+    /**
+     * - The Spark transfer ID created by the claim.
+     */
+    transferId: string;
+};
+export type ClaimStaticDepositQuoteOptions = {
+    /**
+     * - The transaction ID of the deposit.
+     */
+    txId: string;
+    /**
+     * - The caller-provided amount of the Bitcoin deposit output.
+     */
+    depositAmountSats: number;
+    /**
+     * - The output index of the deposit. The Spark SDK detects it when omitted.
+     */
+    outputIndex?: number;
+};
+export type ClaimStaticDepositQuote = {
+    /**
+     * - The transaction ID returned by the SSP quote.
+     */
+    transactionId: string;
+    /**
+     * - The resolved output index returned by the SSP quote.
+     */
+    outputIndex: number;
+    /**
+     * - The caller-provided amount of the Bitcoin deposit output.
+     */
+    depositAmountSats: number;
+    /**
+     * - The amount the SSP quoted for credit to Spark.
+     */
+    creditAmountSats: number;
+    /**
+     * - The difference between the caller-provided deposit amount and quoted credit.
+     */
+    claimFeeSats: number;
+};
+export type ClaimStaticDepositWithMaxFeeOptions = {
+    /**
+     * - The transaction ID of the deposit.
+     */
+    txId: string;
+    /**
+     * - The maximum claim fee approved by the caller.
+     */
+    maxFeeSats: number;
+    /**
+     * - The output index of the deposit. The Spark SDK detects it when omitted.
+     */
+    outputIndex?: number;
+};
 export type QuoteWithdrawOptions = {
     /**
      * - The Bitcoin address where the funds should be sent.

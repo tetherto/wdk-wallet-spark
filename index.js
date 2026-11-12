@@ -51,6 +51,10 @@
 
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
+/** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositResult} ClaimStaticDepositResult */
+/** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositQuoteOptions} ClaimStaticDepositQuoteOptions */
+/** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositQuote} ClaimStaticDepositQuote */
+/** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositWithMaxFeeOptions} ClaimStaticDepositWithMaxFeeOptions */
 /** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateSatsInvoiceOptions} CreateSatsInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */
@@ -64,4 +68,8 @@ export { default as WalletAccountReadOnlySpark } from './src/wallet-account-read
 
 export { default as WalletAccountSpark } from './src/wallet-account-spark.js'
 
-export { LightningPaymentError } from './src/errors.js'
+export {
+  LightningPaymentError,
+  StaticDepositClaimOutcomeUnknownError,
+  StaticDepositFeeExceededError
+} from './src/errors.js'
