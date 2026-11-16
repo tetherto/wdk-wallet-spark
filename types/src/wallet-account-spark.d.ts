@@ -109,7 +109,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * This method never infers that a deposit is unclaimed from missing history or
      * credit. `claimable` is a read-only snapshot and is not authorization to
-     * refund. Spark currently exposes no authoritative refunded/spent status.
+     * refund. `unknown` is inconclusive rather than terminal, so callers may poll
+     * again. Spark currently exposes no authoritative refunded/spent status.
      *
      * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
      * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
