@@ -125,7 +125,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     claimStaticDeposit(txId: string): Promise<WalletLeaf[] | undefined>;
     /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
-     * The minimum fee is 300 satoshis.
+     * The fee rate must be less than 150 sats per vbyte, and the resulting transaction fee
+     * must be at least 194 satoshis.
      *
      * @param {RefundStaticDepositOptions} options - The refund options.
      * @returns {Promise<string>} The refund transaction as a hex string that needs to be broadcast.
