@@ -120,7 +120,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
      * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
-     * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
      */
     getClaimStaticDepositQuote(options: ClaimStaticDepositQuoteOptions): Promise<ClaimStaticDepositQuote>;
     /**
@@ -146,7 +145,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      *
      * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
      * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
-     * @throws {ValueError} If an input is invalid.
      * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
      * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
      */

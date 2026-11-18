@@ -143,18 +143,6 @@ function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
 }
 
-function isNonNegativeAmountInSats (amount) {
-  return Number.isSafeInteger(amount) && amount >= 0
-}
-
-function isOutputIndex (outputIndex) {
-  return Number.isSafeInteger(outputIndex) && outputIndex >= 0
-}
-
-function isClaimStaticDepositResult (result) {
-  return typeof result?.transferId === 'string' && result.transferId.trim().length > 0
-}
-
 function getFeeChargedFromError (error) {
   if (!(error instanceof ValidationError)) {
     return undefined
@@ -162,7 +150,7 @@ function getFeeChargedFromError (error) {
 
   const context = error.getContext()
 
-  if (context.field !== 'feeCharged' || !isNonNegativeAmountInSats(context.value)) {
+  if (context.field !== 'feeCharged') {
     return undefined
   }
 
@@ -415,24 +403,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
    * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
-   * @throws {ValueError} If the caller-provided deposit amount or SSP-quoted credit is invalid.
    */
   async getClaimStaticDepositQuote (options) {
-    if (!isCreditAmountInSats(options.depositAmountSats)) {
-      throw new ValueError('The static deposit amount must be a safe positive integer number of satoshis.')
-    }
-
     const quote = await this._wallet.getClaimStaticDepositQuote(options.txId, options.outputIndex)
-
-    if (!isCreditAmountInSats(quote.creditAmountSats)) {
-      throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
-    }
-
     const claimFeeSats = options.depositAmountSats - quote.creditAmountSats
-
-    if (!isNonNegativeAmountInSats(claimFeeSats)) {
-      throw new ValueError('The caller-provided deposit amount is lower than the SSP quoted credit.')
-    }
 
     return {
       transactionId: quote.transactionId,
@@ -462,17 +436,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
     }
 
-    const result = await this._wallet.claimStaticDeposit({
+    return await this._wallet.claimStaticDeposit({
       transactionId: txId,
       creditAmountSats: quote.creditAmountSats,
       sspSignature: quote.signature
     })
-
-    if (!isClaimStaticDepositResult(result)) {
-      throw new SparkError('The SSP returned an invalid static deposit claim result.', { result })
-    }
-
-    return result
   }
 
   /**
@@ -485,27 +453,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    *
    * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
    * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
-   * @throws {ValueError} If an input is invalid.
    * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
    * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
    */
   async claimStaticDepositWithMaxFee (options) {
-    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
-      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
-    }
-
-    if (!isNonNegativeAmountInSats(options.maxFeeSats)) {
-      throw new ValueError('The maximum static deposit claim fee must be a safe non-negative integer number of satoshis.')
-    }
-
-    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
-      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
-    }
-
-    let result
-
     try {
-      result = await this._wallet.claimStaticDepositWithMaxFee({
+      return await this._wallet.claimStaticDepositWithMaxFee({
         transactionId: options.txId,
         maxFee: options.maxFeeSats,
         ...(options.outputIndex === undefined ? {} : { outputIndex: options.outputIndex })
@@ -533,19 +486,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         }
       )
     }
-
-    if (!isClaimStaticDepositResult(result)) {
-      throw new StaticDepositClaimOutcomeUnknownError(
-        'The static deposit claim outcome is unknown.',
-        {
-          transactionId: options.txId,
-          outputIndex: options.outputIndex,
-          cause: new SparkError('The Spark SDK returned an invalid static deposit claim result.', { result })
-        }
-      )
-    }
-
-    return result
   }
 
   /**

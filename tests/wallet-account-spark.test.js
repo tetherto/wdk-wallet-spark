@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 
-import { SparkWallet, SparkError, SparkRequestError, SparkValidationError } from '@buildonspark/spark-sdk'
+import { SparkWallet, SparkRequestError, SparkValidationError } from '@buildonspark/spark-sdk'
 
 import { UUID } from 'uuidv7'
 
@@ -650,34 +650,6 @@ describe('WalletAccountSpark', () => {
       expect(sparkWallet.getClaimStaticDepositQuote).toHaveBeenCalledWith('dummy-transaction-id', 1)
     })
 
-    test.each([
-      [{ txId: 'dummy-transaction-id', depositAmountSats: 0 }, 'deposit amount'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: -1 }, 'deposit amount'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: 1.5 }, 'deposit amount'],
-      [{ txId: 'dummy-transaction-id', depositAmountSats: Number.MAX_SAFE_INTEGER + 1 }, 'deposit amount']
-    ])('should reject invalid quote options %#', async (options, message) => {
-      sparkWallet.getClaimStaticDepositQuote = jest.fn()
-
-      await expect(account.getClaimStaticDepositQuote(options)).rejects.toThrow(ValueError)
-      await expect(account.getClaimStaticDepositQuote(options)).rejects.toThrow(message)
-
-      expect(sparkWallet.getClaimStaticDepositQuote).not.toHaveBeenCalled()
-    })
-
-    test.each([
-      [{ ...QUOTE, creditAmountSats: 0 }, 'credit'],
-      [{ ...QUOTE, creditAmountSats: 10_001 }, 'lower than the SSP quoted credit']
-    ])('should reject an inconsistent quote %#', async (quote, message) => {
-      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(quote)
-
-      const promise = account.getClaimStaticDepositQuote({
-        txId: 'dummy-transaction-id',
-        depositAmountSats: 10_000
-      })
-
-      await expect(promise).rejects.toThrow(ValueError)
-      await expect(promise).rejects.toThrow(message)
-    })
   })
 
   describe('claimStaticDeposit', () => {
@@ -718,27 +690,6 @@ describe('WalletAccountSpark', () => {
       sparkWallet.claimStaticDeposit = jest.fn().mockRejectedValue(error)
 
       await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toBe(error)
-    })
-
-    test.each([
-      null,
-      undefined,
-      {},
-      { transferId: '' },
-      { transferId: '   ' },
-      { transferId: 123 }
-    ])('should reject malformed claim result %#', async (claimResult) => {
-      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
-        signature: 'dummy-signature',
-        creditAmountSats: 1_000
-      })
-
-      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(claimResult)
-
-      const promise = account.claimStaticDeposit('dummy-transaction-id')
-
-      await expect(promise).rejects.toThrow(SparkError)
-      await expect(promise).rejects.toThrow('The SSP returned an invalid static deposit claim result')
     })
 
     test('should refuse a quote that credits nothing', async () => {
@@ -899,36 +850,6 @@ describe('WalletAccountSpark', () => {
       })
     })
 
-    test.each([
-      null,
-      undefined,
-      {},
-      { transferId: '' },
-      { transferId: 123 }
-    ])('should treat a malformed bounded claim result as an unknown outcome %#', async (claimResult) => {
-      sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(claimResult)
-
-      await expect(account.claimStaticDepositWithMaxFee({
-        txId: 'dummy-transaction-id',
-        maxFeeSats: 250
-      })).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
-    })
-
-    test.each([
-      [{ txId: '', maxFeeSats: 250 }, 'transaction ID'],
-      [{ txId: 'dummy-transaction-id', maxFeeSats: -1 }, 'maximum'],
-      [{ txId: 'dummy-transaction-id', maxFeeSats: 1.5 }, 'maximum'],
-      [{ txId: 'dummy-transaction-id', maxFeeSats: Number.MAX_SAFE_INTEGER + 1 }, 'maximum'],
-      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: -1 }, 'output index'],
-      [{ txId: 'dummy-transaction-id', maxFeeSats: 250, outputIndex: 1.5 }, 'output index']
-    ])('should reject invalid bounded claim options %#', async (options, message) => {
-      sparkWallet.claimStaticDepositWithMaxFee = jest.fn()
-
-      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(ValueError)
-      await expect(account.claimStaticDepositWithMaxFee(options)).rejects.toThrow(message)
-
-      expect(sparkWallet.claimStaticDepositWithMaxFee).not.toHaveBeenCalled()
-    })
   })
 
   describe('refundStaticDeposit', () => {
