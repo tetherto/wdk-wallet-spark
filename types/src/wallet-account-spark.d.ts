@@ -317,26 +317,8 @@ export type ClaimStaticDepositQuoteOptions = {
      */
     outputIndex?: number;
 };
-export type ClaimStaticDepositQuote = {
-    /**
-     * - The transaction ID returned by the SSP quote.
-     */
-    transactionId: string;
-    /**
-     * - The resolved output index returned by the SSP quote.
-     */
-    outputIndex: number;
-    /**
-     * - The caller-provided amount of the Bitcoin deposit output.
-     */
+export type ClaimStaticDepositQuote = Pick<import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput, "transactionId" | "outputIndex" | "creditAmountSats"> & {
     depositAmountSats: number;
-    /**
-     * - The amount the SSP quoted for credit to Spark.
-     */
-    creditAmountSats: number;
-    /**
-     * - The difference between the caller-provided deposit amount and quoted credit.
-     */
     claimFeeSats: number;
 };
 export type ClaimStaticDepositWithMaxFeeOptions = {

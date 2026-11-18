@@ -63,12 +63,11 @@ import {
  */
 
 /**
- * @typedef {Object} ClaimStaticDepositQuote
- * @property {string} transactionId - The transaction ID returned by the SSP quote.
- * @property {number} outputIndex - The resolved output index returned by the SSP quote.
- * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
- * @property {number} creditAmountSats - The amount the SSP quoted for credit to Spark.
- * @property {number} claimFeeSats - The difference between the caller-provided deposit amount and quoted credit.
+ * @typedef {Pick<import('@buildonspark/spark-sdk/types').StaticDepositQuoteOutput,
+ *   'transactionId' | 'outputIndex' | 'creditAmountSats'> & {
+ *     depositAmountSats: number,
+ *     claimFeeSats: number
+ *   }} ClaimStaticDepositQuote
  */
 
 /**
