@@ -19,6 +19,17 @@ export class LightningPaymentError extends WdkError {
      */
     transferId: UUID;
 }
+/**
+ * A static-deposit claim whose exact fee exceeds the caller's approved maximum.
+ */
+export class StaticDepositFeeExceededError extends MaximumFeeExceededError {
+    /** @type {'STATIC_DEPOSIT_FEE_EXCEEDED'} */
+    code: "STATIC_DEPOSIT_FEE_EXCEEDED";
+    /** @type {number} */
+    claimFeeSats: number;
+    /** @type {number} */
+    maxFeeSats: number;
+}
 export type UUID = import("uuidv7").UUID;
 export type LightningPaymentErrorOptions = {
     /**
@@ -26,4 +37,15 @@ export type LightningPaymentErrorOptions = {
      */
     transferId: UUID;
 };
+export type StaticDepositFeeExceededErrorOptions = {
+    /**
+     * - The exact fee quoted by the Spark SDK.
+     */
+    claimFeeSats: number;
+    /**
+     * - The maximum fee approved by the caller.
+     */
+    maxFeeSats: number;
+};
 import { WdkError } from '@tetherto/wdk-wallet';
+import { MaximumFeeExceededError } from '@tetherto/wdk-wallet';

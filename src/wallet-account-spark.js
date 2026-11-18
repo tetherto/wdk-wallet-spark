@@ -17,13 +17,16 @@ import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import { SparkWallet, Network, SparkError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, ValidationError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
 import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.js'
 
-import { LightningPaymentError } from './errors.js'
+import {
+  LightningPaymentError,
+  StaticDepositFeeExceededError
+} from './errors.js'
 
 /** @typedef {import('@buildonspark/spark-sdk/types').WalletLeaf} WalletLeaf */
 /** @typedef {import('@buildonspark/spark-sdk/types').CoopExitRequest} CoopExitRequest */
@@ -50,9 +53,26 @@ import { LightningPaymentError } from './errors.js'
 
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
+/** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
+/** @typedef {import('@buildonspark/spark-sdk/types').StaticDepositQuoteOutput} StaticDepositQuoteOutput */
+
 /**
- * @typedef {Object} ClaimStaticDepositResult
- * @property {string} transferId - The Spark transfer ID created by the claim.
+ * @typedef {Object} ClaimStaticDepositQuoteOptions
+ * @property {string} txId - The transaction ID of the deposit.
+ * @property {number} depositAmountSats - The caller-provided amount of the Bitcoin deposit output.
+ * @property {number} [outputIndex] - The output index of the deposit. The Spark SDK detects it when omitted.
+ */
+
+/**
+ * @typedef {Pick<StaticDepositQuoteOutput, 'transactionId' | 'outputIndex' | 'creditAmountSats'> & {
+ *     depositAmountSats: number,
+ *     claimFeeSats: number
+ *   }} ClaimStaticDepositQuote
+ */
+
+/**
+ * @typedef {Object} ClaimStaticDepositOptions
+ * @property {number} [maxFeeSats] - The maximum claim fee approved by the caller.
  */
 
 /**
@@ -114,6 +134,20 @@ function isExpiredOrReturnedStatus (status) {
 
 function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
+}
+
+function getFeeChargedFromError (error) {
+  if (!(error instanceof ValidationError)) {
+    return undefined
+  }
+
+  const context = error.getContext()
+
+  if (context.field !== 'feeCharged') {
+    return undefined
+  }
+
+  return context.value
 }
 
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
@@ -354,17 +388,69 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   }
 
   /**
+   * Gets the SSP credit quote for a static deposit and calculates its fee from
+   * the caller-provided Bitcoin output amount.
+   *
+   * The deposit amount is not verified by this method. Callers must use the
+   * amount of the exact Bitcoin output identified by `txId` and `outputIndex`.
+   *
+   * @param {ClaimStaticDepositQuoteOptions} options - The quote options.
+   * @returns {Promise<ClaimStaticDepositQuote>} The static-deposit claim quote.
+   */
+  async getClaimStaticDepositQuote (options) {
+    const quote = await this._wallet.getClaimStaticDepositQuote(options.txId, options.outputIndex)
+    const claimFeeSats = options.depositAmountSats - quote.creditAmountSats
+
+    return {
+      transactionId: quote.transactionId,
+      outputIndex: quote.outputIndex,
+      depositAmountSats: options.depositAmountSats,
+      creditAmountSats: quote.creditAmountSats,
+      claimFeeSats
+    }
+  }
+
+  /**
    * Claims a static deposit to the wallet.
    *
    * The SSP quotes the credit and this account signs it, so a quote that is not a plain
    * amount in satoshis is refused: claiming hands over the deposit's secret key and cannot
    * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
+   * When `maxFeeSats` is provided, the Spark SDK calculates the actual fee
+   * (deposit minus credit) from the quote and only proceeds with the claim if
+   * it does not exceed the provided maximum.
    *
    * @param {string} txId - The transaction id of the deposit.
+   * @param {ClaimStaticDepositOptions} [options] - Optional claim constraints.
    * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
+   * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
    */
-  async claimStaticDeposit (txId) {
+  async claimStaticDeposit (txId, options = {}) {
+    if (options.maxFeeSats !== undefined) {
+      try {
+        return await this._wallet.claimStaticDepositWithMaxFee({
+          transactionId: txId,
+          maxFee: options.maxFeeSats
+        })
+      } catch (error) {
+        const claimFeeSats = getFeeChargedFromError(error)
+
+        if (claimFeeSats !== undefined) {
+          throw new StaticDepositFeeExceededError(
+            'The static deposit claim fee exceeds the approved maximum.',
+            {
+              claimFeeSats,
+              maxFeeSats: options.maxFeeSats,
+              cause: error
+            }
+          )
+        }
+
+        throw error
+      }
+    }
+
     const quote = await this._wallet.getClaimStaticDepositQuote(txId)
 
     if (!isCreditAmountInSats(quote.creditAmountSats)) {
