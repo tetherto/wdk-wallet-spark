@@ -121,7 +121,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {string} txId - The transaction id of the deposit.
      * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
-     * @throws {SparkError} If the Spark SDK returns an invalid claim result.
      */
     claimStaticDeposit(txId: string): Promise<ClaimStaticDepositResult>;
     /**

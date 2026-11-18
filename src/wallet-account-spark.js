@@ -116,10 +116,6 @@ function isCreditAmountInSats (amount) {
   return Number.isSafeInteger(amount) && amount > 0
 }
 
-function isClaimStaticDepositResult (result) {
-  return typeof result?.transferId === 'string' && result.transferId.trim().length > 0
-}
-
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
   switch (exitSpeed) {
     case 'FAST':
@@ -367,7 +363,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {string} txId - The transaction id of the deposit.
    * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
-   * @throws {SparkError} If the Spark SDK returns an invalid claim result.
    */
   async claimStaticDeposit (txId) {
     const quote = await this._wallet.getClaimStaticDepositQuote(txId)
@@ -376,17 +371,11 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       throw new ValueError('The SSP quoted a credit that is not a safe positive integer number of satoshis.')
     }
 
-    const result = await this._wallet.claimStaticDeposit({
+    return await this._wallet.claimStaticDeposit({
       transactionId: txId,
       creditAmountSats: quote.creditAmountSats,
       sspSignature: quote.signature
     })
-
-    if (!isClaimStaticDepositResult(result)) {
-      throw new SparkError('The SSP returned an invalid static deposit claim result.', { result })
-    }
-
-    return result
   }
 
   /**
