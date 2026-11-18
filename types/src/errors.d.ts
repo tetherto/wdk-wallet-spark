@@ -1,8 +1,3 @@
-/** @typedef {import('uuidv7').UUID} UUID */
-/**
- * @typedef {Object} LightningPaymentErrorOptions
- * @property {UUID} transferId - The Spark transfer id the failed payment was sent with.
- */
 /**
  * A Lightning payment that did not complete, carrying the Spark transfer id it was sent with.
  *
@@ -24,11 +19,6 @@ export class LightningPaymentError extends WdkError {
      */
     transferId: UUID;
 }
-/**
- * @typedef {Object} StaticDepositFeeExceededErrorOptions
- * @property {number} claimFeeSats - The exact fee quoted by the Spark SDK.
- * @property {number} maxFeeSats - The maximum fee approved by the caller.
- */
 /**
  * A static-deposit claim whose exact fee exceeds the caller's approved maximum.
  */

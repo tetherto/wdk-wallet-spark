@@ -54,6 +54,7 @@ import {
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
 /** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
+/** @typedef {import('@buildonspark/spark-sdk/types').StaticDepositQuoteOutput} StaticDepositQuoteOutput */
 
 /**
  * @typedef {Object} ClaimStaticDepositQuoteOptions
@@ -63,8 +64,7 @@ import {
  */
 
 /**
- * @typedef {Pick<import('@buildonspark/spark-sdk/types').StaticDepositQuoteOutput,
- *   'transactionId' | 'outputIndex' | 'creditAmountSats'> & {
+ * @typedef {Pick<StaticDepositQuoteOutput, 'transactionId' | 'outputIndex' | 'creditAmountSats'> & {
  *     depositAmountSats: number,
  *     claimFeeSats: number
  *   }} ClaimStaticDepositQuote

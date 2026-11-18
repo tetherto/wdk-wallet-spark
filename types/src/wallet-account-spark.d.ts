@@ -239,7 +239,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @returns {Promise<WalletAccountReadOnlySpark>} The read-only account.
      */
     toReadOnlyAccount(): Promise<WalletAccountReadOnlySpark>;
-    _sparkReadOnlyAccount: WalletAccountReadOnlySpark;
     /**
      * Cleans up and closes the connections with the spark blockchain.
      *
@@ -295,6 +294,7 @@ export type SparkTransaction = import("./wallet-account-read-only-spark.js").Spa
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
 export type ClaimStaticDepositResult = import("@buildonspark/spark-sdk/types").ClaimStaticDepositOutput;
+export type StaticDepositQuoteOutput = import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput;
 export type ClaimStaticDepositQuoteOptions = {
     /**
      * - The transaction ID of the deposit.
@@ -309,7 +309,7 @@ export type ClaimStaticDepositQuoteOptions = {
      */
     outputIndex?: number;
 };
-export type ClaimStaticDepositQuote = Pick<import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput, "transactionId" | "outputIndex" | "creditAmountSats"> & {
+export type ClaimStaticDepositQuote = Pick<StaticDepositQuoteOutput, "transactionId" | "outputIndex" | "creditAmountSats"> & {
     depositAmountSats: number;
     claimFeeSats: number;
 };
