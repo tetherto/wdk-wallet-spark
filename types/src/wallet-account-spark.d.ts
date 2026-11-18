@@ -136,13 +136,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {ClaimStaticDepositOptions} [options] - Optional claim constraints.
      * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
-     * @throws {SparkError} If the Spark SDK returns an invalid claim result.
      * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
      */
     claimStaticDeposit(txId: string, options?: ClaimStaticDepositOptions): Promise<ClaimStaticDepositResult>;
     /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
-     * The minimum fee is 300 satoshis.
+     * The fee rate must be less than 150 sats per vbyte, and the resulting transaction fee
+     * must be at least 194 satoshis.
      *
      * @param {RefundStaticDepositOptions} options - The refund options.
      * @returns {Promise<string>} The refund transaction as a hex string that needs to be broadcast.

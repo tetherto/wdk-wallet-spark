@@ -5,7 +5,7 @@ export {
   SparkReadonlyClient,
   Network,
   SparkError,
-  ValidationError,
+  SparkValidationError as ValidationError,
   BareSparkSigner as DefaultSparkSigner,
   decodeSparkAddress
 } from '@buildonspark/bare'

@@ -424,7 +424,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {ClaimStaticDepositOptions} [options] - Optional claim constraints.
    * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
-   * @throws {SparkError} If the Spark SDK returns an invalid claim result.
    * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
    */
   async claimStaticDeposit (txId, options = {}) {
@@ -467,7 +466,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
 
   /**
    * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
-   * The minimum fee is 300 satoshis.
+   * The fee rate must be less than 150 sats per vbyte, and the resulting transaction fee
+   * must be at least 194 satoshis.
    *
    * @param {RefundStaticDepositOptions} options - The refund options.
    * @returns {Promise<string>} The refund transaction as a hex string that needs to be broadcast.
@@ -718,8 +718,13 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
       for (const transfer of transfers) {
         if (
           transfer.transferDirection === 'OUTGOING' &&
-          transfer.totalValue === params.amountSats &&
-          transfer.receiverIdentityPublicKey === identityPublicKey &&
+          (transfer.receivers?.length
+            ? transfer.receivers.some(receiver =>
+              receiver.identityPublicKey === identityPublicKey &&
+              receiver.amountSats === params.amountSats
+            )
+            : transfer.receiverIdentityPublicKey === identityPublicKey &&
+              transfer.totalValue === params.amountSats) &&
           !isExpiredOrReturnedStatus(transfer.status)
         ) {
           matches.push(transfer)
