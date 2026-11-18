@@ -302,12 +302,7 @@ export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
-export type ClaimStaticDepositResult = {
-    /**
-     * - The Spark transfer ID created by the claim.
-     */
-    transferId: string;
-};
+export type ClaimStaticDepositResult = import("@buildonspark/spark-sdk/types").ClaimStaticDepositOutput;
 export type ClaimStaticDepositQuoteOptions = {
     /**
      * - The transaction ID of the deposit.

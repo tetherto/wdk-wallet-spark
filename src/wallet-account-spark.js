@@ -53,10 +53,7 @@ import {
 
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
-/**
- * @typedef {Object} ClaimStaticDepositResult
- * @property {string} transferId - The Spark transfer ID created by the claim.
- */
+/** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
 
 /**
  * @typedef {Object} ClaimStaticDepositQuoteOptions
