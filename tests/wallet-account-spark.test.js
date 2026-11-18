@@ -772,7 +772,7 @@ describe('WalletAccountSpark', () => {
     })
   })
 
-  describe('claimStaticDepositWithMaxFee', () => {
+  describe('claimStaticDeposit with max fee', () => {
     const CLAIM_RESULT = {
       transferId: 'spark-transfer-id'
     }
@@ -780,15 +780,12 @@ describe('WalletAccountSpark', () => {
     test('should delegate the atomic maximum-fee claim to the Spark SDK', async () => {
       sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
 
-      const result = await account.claimStaticDepositWithMaxFee({
-        txId: 'dummy-transaction-id',
-        outputIndex: 1,
+      const result = await account.claimStaticDeposit('dummy-transaction-id', {
         maxFeeSats: 250
       })
 
       expect(sparkWallet.claimStaticDepositWithMaxFee).toHaveBeenCalledWith({
         transactionId: 'dummy-transaction-id',
-        outputIndex: 1,
         maxFee: 250
       })
       expect(result).toEqual(CLAIM_RESULT)
@@ -797,8 +794,7 @@ describe('WalletAccountSpark', () => {
     test('should allow a zero maximum fee and omit an unspecified output index', async () => {
       sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockResolvedValue(CLAIM_RESULT)
 
-      await account.claimStaticDepositWithMaxFee({
-        txId: 'dummy-transaction-id',
+      await account.claimStaticDeposit('dummy-transaction-id', {
         maxFeeSats: 0
       })
 
@@ -815,9 +811,7 @@ describe('WalletAccountSpark', () => {
       })
       sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
 
-      const promise = account.claimStaticDepositWithMaxFee({
-        txId: 'dummy-transaction-id',
-        outputIndex: 1,
+      const promise = account.claimStaticDeposit('dummy-transaction-id', {
         maxFeeSats: 250
       })
 
@@ -834,9 +828,7 @@ describe('WalletAccountSpark', () => {
       const sdkError = new SparkRequestError('Claim request failed')
       sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
 
-      await expect(account.claimStaticDepositWithMaxFee({
-        txId: 'dummy-transaction-id',
-        outputIndex: 1,
+      await expect(account.claimStaticDeposit('dummy-transaction-id', {
         maxFeeSats: 250
       })).rejects.toBe(sdkError)
     })

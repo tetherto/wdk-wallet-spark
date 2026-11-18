@@ -128,26 +128,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * The SSP quotes the credit and this account signs it, so a quote that is not a plain
      * amount in satoshis is refused: claiming hands over the deposit's secret key and cannot
      * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
+     * When `maxFeeSats` is provided, the Spark SDK calculates the actual fee
+     * (deposit minus credit) from the quote and only proceeds with the claim if
+     * it does not exceed the provided maximum.
      *
      * @param {string} txId - The transaction id of the deposit.
+     * @param {ClaimStaticDepositOptions} [options] - Optional claim constraints.
      * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
      * @throws {SparkError} If the Spark SDK returns an invalid claim result.
-     */
-    claimStaticDeposit(txId: string): Promise<ClaimStaticDepositResult>;
-    /**
-     * Claims a static deposit only when the Spark SDK's exact fee does not exceed
-     * the maximum approved by the caller.
-     *
-     * The Spark SDK independently reads the Bitcoin output and obtains a fresh SSP
-     * quote before checking the maximum. It does not rely on an earlier
-     * caller-provided deposit amount or quote.
-     *
-     * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
-     * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
      */
-    claimStaticDepositWithMaxFee(options: ClaimStaticDepositWithMaxFeeOptions): Promise<ClaimStaticDepositResult>;
+    claimStaticDeposit(txId: string, options?: ClaimStaticDepositOptions): Promise<ClaimStaticDepositResult>;
     /**
      * Refunds a deposit made to a static deposit address back to a specified Bitcoin address.
      * The minimum fee is 300 satoshis.
@@ -321,19 +313,11 @@ export type ClaimStaticDepositQuote = Pick<import("@buildonspark/spark-sdk/types
     depositAmountSats: number;
     claimFeeSats: number;
 };
-export type ClaimStaticDepositWithMaxFeeOptions = {
-    /**
-     * - The transaction ID of the deposit.
-     */
-    txId: string;
+export type ClaimStaticDepositOptions = {
     /**
      * - The maximum claim fee approved by the caller.
      */
-    maxFeeSats: number;
-    /**
-     * - The output index of the deposit. The Spark SDK detects it when omitted.
-     */
-    outputIndex?: number;
+    maxFeeSats?: number;
 };
 export type QuoteWithdrawOptions = {
     /**
