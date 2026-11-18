@@ -25,7 +25,6 @@ import { BIP_44_LBTC_DERIVATION_PATH_PREFIX } from './bip-44/hd-keys-generator.j
 
 import {
   LightningPaymentError,
-  StaticDepositClaimOutcomeUnknownError,
   StaticDepositFeeExceededError
 } from './errors.js'
 
@@ -454,7 +453,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
    * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
-   * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
    */
   async claimStaticDepositWithMaxFee (options) {
     try {
@@ -477,14 +475,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         )
       }
 
-      throw new StaticDepositClaimOutcomeUnknownError(
-        'The static deposit claim outcome is unknown.',
-        {
-          transactionId: options.txId,
-          outputIndex: options.outputIndex,
-          cause: error
-        }
-      )
+      throw error
     }
   }
 

@@ -12,7 +12,6 @@ import {
   WalletAccountSpark,
   WalletAccountReadOnlySpark,
   LightningPaymentError,
-  StaticDepositClaimOutcomeUnknownError,
   StaticDepositFeeExceededError
 } from '../index.js'
 
@@ -831,23 +830,15 @@ describe('WalletAccountSpark', () => {
       })
     })
 
-    test('should preserve an ambiguous SDK failure as an unknown claim outcome', async () => {
+    test('should preserve a Spark SDK claim failure', async () => {
       const sdkError = new SparkRequestError('Claim request failed')
       sparkWallet.claimStaticDepositWithMaxFee = jest.fn().mockRejectedValue(sdkError)
 
-      const promise = account.claimStaticDepositWithMaxFee({
+      await expect(account.claimStaticDepositWithMaxFee({
         txId: 'dummy-transaction-id',
         outputIndex: 1,
         maxFeeSats: 250
-      })
-
-      await expect(promise).rejects.toThrow(StaticDepositClaimOutcomeUnknownError)
-      await expect(promise).rejects.toMatchObject({
-        code: 'STATIC_DEPOSIT_CLAIM_OUTCOME_UNKNOWN',
-        transactionId: 'dummy-transaction-id',
-        outputIndex: 1,
-        cause: sdkError
-      })
+      })).rejects.toBe(sdkError)
     })
 
   })

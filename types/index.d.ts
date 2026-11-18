@@ -44,4 +44,4 @@ export type CreateSatsInvoiceOptions = import("./src/wallet-account-spark.js").C
 export type CreateTokensInvoiceOptions = import("./src/wallet-account-spark.js").CreateTokensInvoiceOptions;
 export type SparkInvoice = import("./src/wallet-account-spark.js").SparkInvoice;
 export type LightningPaymentErrorOptions = import("./src/errors.js").LightningPaymentErrorOptions;
-export { LightningPaymentError, StaticDepositClaimOutcomeUnknownError, StaticDepositFeeExceededError } from "./src/errors.js";
+export { LightningPaymentError, StaticDepositFeeExceededError } from "./src/errors.js";

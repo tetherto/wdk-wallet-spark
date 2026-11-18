@@ -80,35 +80,3 @@ export class StaticDepositFeeExceededError extends MaximumFeeExceededError {
     this.maxFeeSats = options.maxFeeSats
   }
 }
-
-/**
- * @typedef {Object} StaticDepositClaimOutcomeUnknownErrorOptions
- * @property {string} transactionId - The Bitcoin transaction ID of the deposit.
- * @property {number} [outputIndex] - The Bitcoin output index of the deposit.
- */
-
-/**
- * A static-deposit claim failure for which this package cannot prove whether the claim was dispatched.
- */
-export class StaticDepositClaimOutcomeUnknownError extends WdkError {
-  /**
-   * Creates a new static-deposit claim outcome unknown error.
-   *
-   * @param {string} message - The error's message.
-   * @param {StaticDepositClaimOutcomeUnknownErrorOptions & ErrorOptions} options - The error's options.
-   */
-  constructor (message, options) {
-    super(message, { cause: options.cause })
-
-    this.name = 'StaticDepositClaimOutcomeUnknownError'
-
-    /** @type {'STATIC_DEPOSIT_CLAIM_OUTCOME_UNKNOWN'} */
-    this.code = 'STATIC_DEPOSIT_CLAIM_OUTCOME_UNKNOWN'
-
-    /** @type {string} */
-    this.transactionId = options.transactionId
-
-    /** @type {number | undefined} */
-    this.outputIndex = options.outputIndex
-  }
-}

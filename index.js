@@ -70,6 +70,5 @@ export { default as WalletAccountSpark } from './src/wallet-account-spark.js'
 
 export {
   LightningPaymentError,
-  StaticDepositClaimOutcomeUnknownError,
   StaticDepositFeeExceededError
 } from './src/errors.js'

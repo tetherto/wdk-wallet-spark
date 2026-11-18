@@ -146,7 +146,6 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {ClaimStaticDepositWithMaxFeeOptions} options - The bounded claim options.
      * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
      * @throws {StaticDepositFeeExceededError} If the exact claim fee exceeds the approved maximum.
-     * @throws {StaticDepositClaimOutcomeUnknownError} If the SDK fails and this package cannot prove whether the claim was dispatched.
      */
     claimStaticDepositWithMaxFee(options: ClaimStaticDepositWithMaxFeeOptions): Promise<ClaimStaticDepositResult>;
     /**
