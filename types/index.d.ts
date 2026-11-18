@@ -36,6 +36,7 @@ export type GetUtxosParams = import("@buildonspark/spark-sdk").GetUtxosParams;
 export type QuerySparkInvoicesParams = import("@buildonspark/spark-sdk").QuerySparkInvoicesParams;
 export type WithdrawOptions = import("./src/wallet-account-spark.js").WithdrawOptions;
 export type QuoteWithdrawOptions = import("./src/wallet-account-spark.js").QuoteWithdrawOptions;
+export type ClaimStaticDepositResult = import("./src/wallet-account-spark.js").ClaimStaticDepositResult;
 export type RefundStaticDepositOptions = import("./src/wallet-account-spark.js").RefundStaticDepositOptions;
 export type CreateSatsInvoiceOptions = import("./src/wallet-account-spark.js").CreateSatsInvoiceOptions;
 export type CreateTokensInvoiceOptions = import("./src/wallet-account-spark.js").CreateTokensInvoiceOptions;

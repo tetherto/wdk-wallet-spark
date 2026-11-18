@@ -681,13 +681,13 @@ describe('WalletAccountSpark', () => {
         creditAmountSats: 1_000
       }
 
-      const DUMMY_WALLET_LEAFS = [
-        { id: 'wallet-leaf-1' }
-      ]
+      const DUMMY_CLAIM_RESULT = {
+        transferId: 'spark-transfer-id'
+      }
 
       sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue(DUMMY_CLAIM_STATIC_DEPOSIT_QUOTE)
 
-      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(DUMMY_WALLET_LEAFS)
+      sparkWallet.claimStaticDeposit = jest.fn().mockResolvedValue(DUMMY_CLAIM_RESULT)
 
       const result = await account.claimStaticDeposit('dummy-transaction-id')
 
@@ -699,7 +699,19 @@ describe('WalletAccountSpark', () => {
         sspSignature: 'dummy-signature'
       })
 
-      expect(result).toEqual(DUMMY_WALLET_LEAFS)
+      expect(result).toEqual(DUMMY_CLAIM_RESULT)
+    })
+
+    test('should preserve a Spark SDK claim failure', async () => {
+      sparkWallet.getClaimStaticDepositQuote = jest.fn().mockResolvedValue({
+        signature: 'dummy-signature',
+        creditAmountSats: 1_000
+      })
+
+      const error = new SparkRequestError('Claim request failed')
+      sparkWallet.claimStaticDeposit = jest.fn().mockRejectedValue(error)
+
+      await expect(account.claimStaticDeposit('dummy-transaction-id')).rejects.toBe(error)
     })
 
     test('should refuse a quote that credits nothing', async () => {

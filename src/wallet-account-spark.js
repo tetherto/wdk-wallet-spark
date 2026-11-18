@@ -51,6 +51,11 @@ import { LightningPaymentError } from './errors.js'
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
 /**
+ * @typedef {Object} ClaimStaticDepositResult
+ * @property {string} transferId - The Spark transfer ID created by the claim.
+ */
+
+/**
  * @typedef {Object} QuoteWithdrawOptions
  * @property {string} withdrawalAddress - The Bitcoin address where the funds should be sent.
  * @property {number} amountSats - The amount in satoshis to withdraw.
@@ -356,7 +361,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * be undone. The amount is not bounded — nothing here knows the deposit's on-chain value.
    *
    * @param {string} txId - The transaction id of the deposit.
-   * @returns {Promise<WalletLeaf[] | undefined>} The nodes resulting from the deposit.
+   * @returns {Promise<ClaimStaticDepositResult>} The Spark transfer created by the claim.
    * @throws {ValueError} If the SSP quotes a credit that is not a safe positive integer number of satoshis, which every credit below Bitcoin's total supply is.
    */
   async claimStaticDeposit (txId) {
