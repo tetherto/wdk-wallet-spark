@@ -53,6 +53,13 @@ import {
 
 /** @typedef {Omit<WithdrawParams, 'feeQuote'>} WithdrawOptions */
 
+/**
+ * @typedef {Object} SparkBalanceDetails
+ * @property {bigint} available - The balance immediately available to spend.
+ * @property {bigint} owned - The total owned balance, including funds locked in outgoing operations.
+ * @property {bigint} incoming - The balance in pending incoming transfers.
+ */
+
 /** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
 /** @typedef {import('@buildonspark/spark-sdk/types').StaticDepositQuoteOutput} StaticDepositQuoteOutput */
 
@@ -265,6 +272,28 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
     const { satsBalance: { owned } } = await this._wallet.getBalance()
 
     return owned
+  }
+
+  /**
+   * Returns the account's Spark SDK balance breakdown.
+   *
+   * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis.
+   */
+  async getBalanceDetails () {
+    const {
+      satsBalance: { available, owned, incoming }
+    } = await this._wallet.getBalance()
+
+    return { available, owned, incoming }
+  }
+
+  /**
+   * Returns whether the Spark wallet is currently optimizing its bitcoin leaves.
+   *
+   * @returns {Promise<boolean>} Whether bitcoin leaf optimization is in progress.
+   */
+  async isOptimizationInProgress () {
+    return await this._wallet.isOptimizationInProgress()
   }
 
   /**

@@ -49,6 +49,18 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getAddress(): Promise<SparkAddressFormat>;
     /**
+     * Returns the account's Spark SDK balance breakdown.
+     *
+     * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis.
+     */
+    getBalanceDetails(): Promise<SparkBalanceDetails>;
+    /**
+     * Returns whether the Spark wallet is currently optimizing its bitcoin leaves.
+     *
+     * @returns {Promise<boolean>} Whether bitcoin leaf optimization is in progress.
+     */
+    isOptimizationInProgress(): Promise<boolean>;
+    /**
      * Signs a message.
      *
      * @param {string} message - The message to sign.
@@ -293,6 +305,20 @@ export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
+export type SparkBalanceDetails = {
+    /**
+     * - The balance immediately available to spend.
+     */
+    available: bigint;
+    /**
+     * - The total owned balance, including funds locked in outgoing operations.
+     */
+    owned: bigint;
+    /**
+     * - The balance in pending incoming transfers.
+     */
+    incoming: bigint;
+};
 export type ClaimStaticDepositResult = import("@buildonspark/spark-sdk/types").ClaimStaticDepositOutput;
 export type StaticDepositQuoteOutput = import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput;
 export type ClaimStaticDepositQuoteOptions = {
