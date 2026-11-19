@@ -50,6 +50,7 @@
 /** @typedef {import('@buildonspark/spark-sdk').QuerySparkInvoicesParams} QuerySparkInvoicesParams */
 
 /** @typedef {import('./src/wallet-account-spark.js').WithdrawOptions} WithdrawOptions */
+/** @typedef {import('./src/wallet-account-spark.js').SparkBalanceDetails} SparkBalanceDetails */
 /** @typedef {import('./src/wallet-account-spark.js').QuoteWithdrawOptions} QuoteWithdrawOptions */
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositResult} ClaimStaticDepositResult */
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositQuoteOptions} ClaimStaticDepositQuoteOptions */

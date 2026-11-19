@@ -148,6 +148,33 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getBalanceDetails', () => {
+    test('should return the Spark SDK sats balance breakdown', async () => {
+      const DUMMY_BALANCE_DETAILS = {
+        available: 12_345n,
+        owned: 23_456n,
+        incoming: 34_567n
+      }
+      sparkWallet.getBalance = jest.fn().mockResolvedValue({
+        satsBalance: DUMMY_BALANCE_DETAILS
+      })
+
+      const balanceDetails = await account.getBalanceDetails()
+
+      expect(sparkWallet.getBalance).toHaveBeenCalled()
+      expect(balanceDetails).toEqual(DUMMY_BALANCE_DETAILS)
+    })
+  })
+
+  describe('isOptimizationInProgress', () => {
+    test.each([true, false])('should return %s from the Spark wallet', async (inProgress) => {
+      sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(inProgress)
+
+      await expect(account.isOptimizationInProgress()).resolves.toBe(inProgress)
+      expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalled()
+    })
+  })
+
   describe('sign', () => {
     const MESSAGE = 'Dummy message to sign.'
 
