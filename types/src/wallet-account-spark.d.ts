@@ -51,7 +51,12 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
     /**
      * Returns the account's Spark SDK balance breakdown.
      *
-     * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis.
+     * Refreshes the wallet's balance from the coordinator and then reads it back from the
+     * in-memory cache, so `available` reflects what the leaf manager can actually send rather
+     * than the coordinator's own available figure, which still counts leaves the leaf manager
+     * has locked for an in-flight send or an optimization swap.
+     *
+     * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis, and whether leaf optimization is in progress.
      */
     getBalanceDetails(): Promise<SparkBalanceDetails>;
     /**
@@ -311,13 +316,17 @@ export type SparkBalanceDetails = {
      */
     available: bigint;
     /**
-     * - The total owned balance, including funds locked in outgoing operations.
+     * - The total owned balance, including leaves locked or pending in outgoing transfers and in optimization swaps.
      */
     owned: bigint;
     /**
-     * - The balance in pending incoming transfers.
+     * - Inbound transfers the SDK hasn't claimed yet, plus single-use deposits still waiting to confirm. Neither is spendable until the SDK picks it up off the event stream.
      */
     incoming: bigint;
+    /**
+     * - Whether the Spark wallet is currently optimizing its bitcoin leaves.
+     */
+    optimizing: boolean;
 };
 export type ClaimStaticDepositResult = import("@buildonspark/spark-sdk/types").ClaimStaticDepositOutput;
 export type StaticDepositQuoteOutput = import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput;
