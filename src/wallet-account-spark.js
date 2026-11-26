@@ -58,6 +58,7 @@ import {
  * @property {bigint} available - The balance immediately available to spend.
  * @property {bigint} owned - The total owned balance, including leaves locked or pending in outgoing transfers and in optimization swaps.
  * @property {bigint} incoming - Inbound transfers the SDK hasn't claimed yet, plus single-use deposits still waiting to confirm. Neither is spendable until the SDK picks it up off the event stream.
+ * @property {boolean} optimizing - Whether the Spark wallet is currently optimizing its bitcoin leaves.
  */
 
 /** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
@@ -277,14 +278,23 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
   /**
    * Returns the account's Spark SDK balance breakdown.
    *
-   * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis.
+   * Refreshes the wallet's balance from the coordinator and then reads it back from the
+   * in-memory cache, so `available` reflects what the leaf manager can actually send rather
+   * than the coordinator's own available figure, which still counts leaves the leaf manager
+   * has locked for an in-flight send or an optimization swap.
+   *
+   * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis, and whether leaf optimization is in progress.
    */
   async getBalanceDetails () {
+    await this._wallet.getBalance()
+
     const {
       satsBalance: { available, owned, incoming }
-    } = await this._wallet.getBalance()
+    } = await this._wallet.getCachedBalance()
 
-    return { available, owned, incoming }
+    const optimizing = await this._wallet.isOptimizationInProgress()
+
+    return { available, owned, incoming, optimizing }
   }
 
   /**

@@ -149,20 +149,46 @@ describe('WalletAccountSpark', () => {
   })
 
   describe('getBalanceDetails', () => {
-    test('should return the Spark SDK sats balance breakdown', async () => {
-      const DUMMY_BALANCE_DETAILS = {
+    test('should refresh the wallet balance and return the cached sats balance breakdown', async () => {
+      const DUMMY_CACHED_BALANCE = {
         available: 12_345n,
         owned: 23_456n,
         incoming: 34_567n
       }
       sparkWallet.getBalance = jest.fn().mockResolvedValue({
-        satsBalance: DUMMY_BALANCE_DETAILS
+        satsBalance: { available: 99_999n, owned: 99_999n, incoming: 0n }
       })
+      sparkWallet.getCachedBalance = jest.fn().mockResolvedValue({
+        satsBalance: DUMMY_CACHED_BALANCE
+      })
+      sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(false)
 
       const balanceDetails = await account.getBalanceDetails()
 
-      expect(sparkWallet.getBalance).toHaveBeenCalled()
-      expect(balanceDetails).toEqual(DUMMY_BALANCE_DETAILS)
+      expect(sparkWallet.getBalance).toHaveBeenCalledWith()
+      expect(sparkWallet.getCachedBalance).toHaveBeenCalledWith()
+      expect(balanceDetails).toEqual({ ...DUMMY_CACHED_BALANCE, optimizing: false })
+    })
+
+    test('should return the cache\'s available balance rather than the coordinator\'s mid-optimization', async () => {
+      // The coordinator still lists leaves the leaf manager has locked for an in-flight
+      // swap as available; only the cache reflects what can actually be sent right now.
+      sparkWallet.getBalance = jest.fn().mockResolvedValue({
+        satsBalance: { available: 8_000n, owned: 8_000n, incoming: 0n }
+      })
+      sparkWallet.getCachedBalance = jest.fn().mockResolvedValue({
+        satsBalance: { available: 0n, owned: 8_000n, incoming: 0n }
+      })
+      sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(true)
+
+      const balanceDetails = await account.getBalanceDetails()
+
+      expect(balanceDetails).toEqual({
+        available: 0n,
+        owned: 8_000n,
+        incoming: 0n,
+        optimizing: true
+      })
     })
   })
 
@@ -171,7 +197,7 @@ describe('WalletAccountSpark', () => {
       sparkWallet.isOptimizationInProgress = jest.fn().mockResolvedValue(inProgress)
 
       await expect(account.isOptimizationInProgress()).resolves.toBe(inProgress)
-      expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalled()
+      expect(sparkWallet.isOptimizationInProgress).toHaveBeenCalledWith()
     })
   })
 
