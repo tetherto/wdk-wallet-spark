@@ -56,8 +56,8 @@ import {
 /**
  * @typedef {Object} SparkBalanceDetails
  * @property {bigint} available - The balance immediately available to spend.
- * @property {bigint} owned - The total owned balance, including funds locked in outgoing operations.
- * @property {bigint} incoming - The balance in pending incoming transfers.
+ * @property {bigint} owned - The total owned balance, including leaves locked or pending in outgoing transfers and in optimization swaps.
+ * @property {bigint} incoming - Inbound transfers the SDK hasn't claimed yet, plus single-use deposits still waiting to confirm. Neither is spendable until the SDK picks it up off the event stream.
  */
 
 /** @typedef {import('@buildonspark/spark-sdk/types').ClaimStaticDepositOutput} ClaimStaticDepositResult */
