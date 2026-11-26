@@ -49,6 +49,23 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     getAddress(): Promise<SparkAddressFormat>;
     /**
+     * Returns the account's Spark SDK balance breakdown.
+     *
+     * Refreshes the wallet's balance from the coordinator and then reads it back from the
+     * in-memory cache, so `available` reflects what the leaf manager can actually send rather
+     * than the coordinator's own available figure, which still counts leaves the leaf manager
+     * has locked for an in-flight send or an optimization swap.
+     *
+     * @returns {Promise<SparkBalanceDetails>} The available, owned and incoming balances in satoshis, and whether leaf optimization is in progress.
+     */
+    getBalanceDetails(): Promise<SparkBalanceDetails>;
+    /**
+     * Returns whether the Spark wallet is currently optimizing its bitcoin leaves.
+     *
+     * @returns {Promise<boolean>} Whether bitcoin leaf optimization is in progress.
+     */
+    isOptimizationInProgress(): Promise<boolean>;
+    /**
      * Signs a message.
      *
      * @param {string} message - The message to sign.
@@ -293,6 +310,24 @@ export type TransferResult = import("@tetherto/wdk-wallet").TransferResult;
 export type SparkTransaction = import("./wallet-account-read-only-spark.js").SparkTransaction;
 export type SparkWalletConfig = import("./wallet-account-read-only-spark.js").SparkWalletConfig;
 export type WithdrawOptions = Omit<WithdrawParams, "feeQuote">;
+export type SparkBalanceDetails = {
+    /**
+     * - The balance immediately available to spend.
+     */
+    available: bigint;
+    /**
+     * - The total owned balance, including leaves locked or pending in outgoing transfers and in optimization swaps.
+     */
+    owned: bigint;
+    /**
+     * - Inbound transfers the SDK hasn't claimed yet, plus single-use deposits still waiting to confirm. Neither is spendable until the SDK picks it up off the event stream.
+     */
+    incoming: bigint;
+    /**
+     * - Whether the Spark wallet is currently optimizing its bitcoin leaves.
+     */
+    optimizing: boolean;
+};
 export type ClaimStaticDepositResult = import("@buildonspark/spark-sdk/types").ClaimStaticDepositOutput;
 export type StaticDepositQuoteOutput = import("@buildonspark/spark-sdk/types").StaticDepositQuoteOutput;
 export type ClaimStaticDepositQuoteOptions = {
