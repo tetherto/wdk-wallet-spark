@@ -120,7 +120,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
      * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
      * @throws {ValueError} If the transaction ID or output index is invalid.
-     * @throws {SparkError} If the coordinator or SSP evidence cannot be fetched.
+     * @throws {Error} If the coordinator or SSP evidence cannot be fetched.
      */
     getStaticDepositStatus(options: GetStaticDepositStatusOptions): Promise<StaticDepositStatus>;
     /**
@@ -133,7 +133,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * @param {GetStaticDepositStatusOptions[]} optionsList - The static deposit outpoints.
      * @returns {Promise<StaticDepositStatus[]>} The conservatively reconciled status for each outpoint, in the given order.
      * @throws {ValueError} If any transaction ID or output index is invalid.
-     * @throws {SparkError} If the coordinator or SSP evidence cannot be fetched.
+     * @throws {Error} If the coordinator or SSP evidence cannot be fetched.
      */
     getStaticDepositStatuses(optionsList: GetStaticDepositStatusOptions[]): Promise<StaticDepositStatus[]>;
     /**
