@@ -57,6 +57,11 @@
 /** @typedef {import('./src/wallet-account-spark.js').ClaimStaticDepositOptions} ClaimStaticDepositOptions */
 /** @typedef {import('./src/wallet-account-spark.js').GetStaticDepositStatusOptions} GetStaticDepositStatusOptions */
 /** @typedef {import('./src/wallet-account-spark.js').StaticDepositStatus} StaticDepositStatus */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositAwaitingConfirmationsStatus} StaticDepositAwaitingConfirmationsStatus */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositClaimableStatus} StaticDepositClaimableStatus */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositClaimInProgressStatus} StaticDepositClaimInProgressStatus */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositClaimedStatus} StaticDepositClaimedStatus */
+/** @typedef {import('./src/wallet-account-spark.js').StaticDepositUnknownStatus} StaticDepositUnknownStatus */
 /** @typedef {import('./src/wallet-account-spark.js').RefundStaticDepositOptions} RefundStaticDepositOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateSatsInvoiceOptions} CreateSatsInvoiceOptions */
 /** @typedef {import('./src/wallet-account-spark.js').CreateTokensInvoiceOptions} CreateTokensInvoiceOptions */

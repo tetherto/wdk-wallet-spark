@@ -21,15 +21,6 @@ const SEED_PHRASE = 'cook voyage document eight skate token alien guide drink un
 
 const SEED = bip39.mnemonicToSeedSync(SEED_PHRASE)
 
-const CLAIM_STATIC_DEPOSIT_STATUS = Object.freeze({
-  CREATED: 'CREATED',
-  TRANSFER_CREATED: 'TRANSFER_CREATED',
-  TRANSFER_CREATION_FAILED: 'TRANSFER_CREATION_FAILED',
-  UTXO_SWAPPING_FAILED: 'UTXO_SWAPPING_FAILED',
-  TRANSFER_COMPLETED: 'TRANSFER_COMPLETED',
-  SPEND_TX_BROADCAST: 'SPEND_TX_BROADCAST'
-})
-
 const ACCOUNT = {
   index: 0,
   path: "m/44'/998'/0'/0/0",
@@ -673,6 +664,15 @@ describe('WalletAccountSpark', () => {
   describe('getStaticDepositStatus', () => {
     const TX_ID = 'dummy-static-deposit-tx-id'
     const OUTPUT_INDEX = 1
+
+    const CLAIM_STATIC_DEPOSIT_STATUS = Object.freeze({
+      CREATED: 'CREATED',
+      TRANSFER_CREATED: 'TRANSFER_CREATED',
+      TRANSFER_CREATION_FAILED: 'TRANSFER_CREATION_FAILED',
+      UTXO_SWAPPING_FAILED: 'UTXO_SWAPPING_FAILED',
+      TRANSFER_COMPLETED: 'TRANSFER_COMPLETED',
+      SPEND_TX_BROADCAST: 'SPEND_TX_BROADCAST'
+    })
 
     const utxoPage = (utxos, pageResponse = {}) => ({
       utxos,

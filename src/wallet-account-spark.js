@@ -17,14 +17,7 @@ import { MaximumFeeExceededError, UnsupportedOperationError, ValueError } from '
 
 import WalletAccountReadOnlySpark, { DEFAULT_NETWORK } from './wallet-account-read-only-spark.js'
 
-import {
-  SparkWallet,
-  Network,
-  SparkError,
-  ValidationError,
-  decodeSparkAddress,
-  generateTransferId
-} from '#libs/spark-sdk'
+import { SparkWallet, Network, SparkError, ValidationError, decodeSparkAddress, generateTransferId } from '#libs/spark-sdk'
 
 import Bip44SparkSigner from './bip-44/spark-signer.js'
 
