@@ -102,6 +102,7 @@ import {
  * @property {number} outputIndex - The output index of the deposit.
  * @property {string} requestId - The SSP claim request ID.
  * @property {'CREATED' | 'TRANSFER_CREATED'} requestStatus - The observed SSP claim request status.
+ * @property {number} creditAmountSats - The SSP-quoted credit amount, in satoshis.
  */
 
 /**
@@ -111,6 +112,7 @@ import {
  * @property {number} outputIndex - The output index of the deposit.
  * @property {string} requestId - The SSP claim request ID.
  * @property {string} transferId - The Spark transfer ID created by the claim.
+ * @property {number} creditAmountSats - The SSP-quoted credit amount, in satoshis.
  */
 
 /**
@@ -317,6 +319,10 @@ function getStaticDepositOutputIndexes (txId, utxos, requests) {
 
 function getObservedClaimStatuses (requests) {
   return [...new Set(requests.map(request => request.status))]
+}
+
+function getRequestCreditAmountSats (request) {
+  return request.creditAmount?.originalValue
 }
 
 function getWithdrawalFeeSats (feeQuote, exitSpeed) {
@@ -663,7 +669,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         transactionId: options.txId,
         outputIndex,
         requestId: completedRequests[0].id,
-        transferId: completedRequests[0].transferSparkId
+        transferId: completedRequests[0].transferSparkId,
+        creditAmountSats: getRequestCreditAmountSats(completedRequests[0])
       }
     }
 
@@ -687,7 +694,8 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         transactionId: options.txId,
         outputIndex,
         requestId: inProgressRequests[0].id,
-        requestStatus: inProgressRequests[0].status
+        requestStatus: inProgressRequests[0].status,
+        creditAmountSats: getRequestCreditAmountSats(inProgressRequests[0])
       }
     }
 

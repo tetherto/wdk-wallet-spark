@@ -664,6 +664,7 @@ describe('WalletAccountSpark', () => {
   describe('getStaticDepositStatus', () => {
     const TX_ID = 'dummy-static-deposit-tx-id'
     const OUTPUT_INDEX = 1
+    const CREDIT_AMOUNT_SATS = 9_750
 
     const CLAIM_STATIC_DEPOSIT_STATUS = Object.freeze({
       CREATED: 'CREATED',
@@ -703,7 +704,10 @@ describe('WalletAccountSpark', () => {
       transactionId: TX_ID,
       outputIndex: OUTPUT_INDEX,
       status,
-      transferSparkId: options.transferSparkId
+      transferSparkId: options.transferSparkId,
+      creditAmount: options.creditAmount !== undefined
+        ? options.creditAmount
+        : { originalValue: CREDIT_AMOUNT_SATS, originalUnit: 'SATOSHI' }
     })
 
     test('should report an unconfirmed coordinator UTXO as awaiting confirmations', async () => {
@@ -766,7 +770,8 @@ describe('WalletAccountSpark', () => {
         transactionId: TX_ID,
         outputIndex: OUTPUT_INDEX,
         requestId: 'claim-request-id',
-        requestStatus
+        requestStatus,
+        creditAmountSats: CREDIT_AMOUNT_SATS
       })
     })
 
@@ -786,7 +791,8 @@ describe('WalletAccountSpark', () => {
         transactionId: TX_ID,
         outputIndex: OUTPUT_INDEX,
         requestId: 'claim-request-id',
-        transferId: 'spark-transfer-id'
+        transferId: 'spark-transfer-id',
+        creditAmountSats: CREDIT_AMOUNT_SATS
       })
     })
 
@@ -817,8 +823,10 @@ describe('WalletAccountSpark', () => {
       await expect(account.getStaticDepositStatus({
         txId: TX_ID,
         outputIndex: OUTPUT_INDEX
-      })).resolves.toMatchObject({
+      })).resolves.toEqual({
         status: 'unknown',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
         reason: 'INCOMPLETE_EVIDENCE',
         observedClaimStatuses: [CLAIM_STATIC_DEPOSIT_STATUS.UTXO_SWAPPING_FAILED]
       })
@@ -837,9 +845,12 @@ describe('WalletAccountSpark', () => {
       await expect(account.getStaticDepositStatus({
         txId: TX_ID,
         outputIndex: OUTPUT_INDEX
-      })).resolves.toMatchObject({
+      })).resolves.toEqual({
         status: 'unknown',
-        reason: 'CONFLICTING_EVIDENCE'
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        reason: 'CONFLICTING_EVIDENCE',
+        observedClaimStatuses: [CLAIM_STATIC_DEPOSIT_STATUS.TRANSFER_COMPLETED]
       })
     })
 
@@ -854,8 +865,10 @@ describe('WalletAccountSpark', () => {
       await expect(account.getStaticDepositStatus({
         txId: TX_ID,
         outputIndex: OUTPUT_INDEX
-      })).resolves.toMatchObject({
+      })).resolves.toEqual({
         status: 'unknown',
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
         reason: 'UNSUPPORTED_CLAIM_STATUS',
         observedClaimStatuses: [CLAIM_STATIC_DEPOSIT_STATUS.SPEND_TX_BROADCAST]
       })
@@ -908,9 +921,13 @@ describe('WalletAccountSpark', () => {
           })
         ]))
 
-      await expect(account.getStaticDepositStatus({ txId: TX_ID })).resolves.toMatchObject({
+      await expect(account.getStaticDepositStatus({ txId: TX_ID })).resolves.toEqual({
         status: 'claimed',
-        transferId: 'spark-transfer-id'
+        transactionId: TX_ID,
+        outputIndex: OUTPUT_INDEX,
+        requestId: 'claim-request-id',
+        transferId: 'spark-transfer-id',
+        creditAmountSats: CREDIT_AMOUNT_SATS
       })
       expect(sparkWallet.getUtxosForIdentity).toHaveBeenNthCalledWith(2, {
         pageSize: 50,
