@@ -943,19 +943,27 @@ describe('WalletAccountSpark', () => {
       })
     })
 
-    test('should return unknown when either evidence source fails', async () => {
+    test('should propagate a failure from either evidence source instead of reporting unknown', async () => {
       sparkWallet.getUtxosForIdentity = jest.fn().mockRejectedValue(new Error('coordinator unavailable'))
       sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
 
       await expect(account.getStaticDepositStatus({
         txId: TX_ID,
         outputIndex: OUTPUT_INDEX
-      })).resolves.toEqual({
-        status: 'unknown',
-        transactionId: TX_ID,
-        outputIndex: OUTPUT_INDEX,
-        reason: 'INCOMPLETE_EVIDENCE'
-      })
+      })).rejects.toThrow('coordinator unavailable')
+    })
+
+    test('should propagate a pagination failure instead of reporting unknown', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([], {
+        hasNextPage: true,
+        nextCursor: ''
+      }))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      await expect(account.getStaticDepositStatus({
+        txId: TX_ID,
+        outputIndex: OUTPUT_INDEX
+      })).rejects.toThrow('Incomplete static deposit UTXO pagination.')
     })
 
     test.each([

@@ -563,6 +563,7 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
    * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
    * @throws {ValueError} If the transaction ID or output index is invalid.
+   * @throws {Error} If the coordinator or SSP evidence cannot be fetched.
    */
   async getStaticDepositStatus (options) {
     const [status] = await this.getStaticDepositStatuses([options])
@@ -579,26 +580,15 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @param {GetStaticDepositStatusOptions[]} optionsList - The static deposit outpoints.
    * @returns {Promise<StaticDepositStatus[]>} The conservatively reconciled status for each outpoint, in the given order.
    * @throws {ValueError} If any transaction ID or output index is invalid.
+   * @throws {Error} If the coordinator or SSP evidence cannot be fetched.
    */
   async getStaticDepositStatuses (optionsList) {
     optionsList.forEach(options => this._validateStaticDepositStatusOptions(options))
 
-    let utxos
-    let requests
-
-    try {
-      [utxos, requests] = await Promise.all([
-        getAllStaticDepositUtxos(this._wallet),
-        getAllStaticDepositClaimRequests(this._wallet)
-      ])
-    } catch {
-      return optionsList.map(options => ({
-        status: 'unknown',
-        transactionId: options.txId,
-        outputIndex: options.outputIndex,
-        reason: 'INCOMPLETE_EVIDENCE'
-      }))
-    }
+    const [utxos, requests] = await Promise.all([
+      getAllStaticDepositUtxos(this._wallet),
+      getAllStaticDepositClaimRequests(this._wallet)
+    ])
 
     return optionsList.map(options => this._resolveStaticDepositStatus(options, utxos, requests))
   }
