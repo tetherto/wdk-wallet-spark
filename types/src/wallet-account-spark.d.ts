@@ -112,11 +112,30 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      * refund. `unknown` is inconclusive rather than terminal, so callers may poll
      * again. Spark currently exposes no authoritative refunded/spent status.
      *
+     * A claim is decided from its Spark transfer rather than the SSP request's own status:
+     * the SSP's `SPEND_TX_*` statuses track its on-chain sweep of the deposit and are not
+     * all known to every SDK version, so a request can settle successfully while reporting
+     * a status this method doesn't recognize.
+     *
      * @param {GetStaticDepositStatusOptions} options - The static deposit outpoint.
      * @returns {Promise<StaticDepositStatus>} The conservatively reconciled status.
      * @throws {ValueError} If the transaction ID or output index is invalid.
+     * @throws {SparkError} If the coordinator or SSP evidence cannot be fetched.
      */
     getStaticDepositStatus(options: GetStaticDepositStatusOptions): Promise<StaticDepositStatus>;
+    /**
+     * Reconciles several static deposits from a single coordinator/SSP scan.
+     *
+     * Equivalent to calling `getStaticDepositStatus` once per outpoint, but pages through
+     * the unclaimed UTXOs and SSP claim requests only once, which matters for a caller
+     * polling the status of many pending deposits at once.
+     *
+     * @param {GetStaticDepositStatusOptions[]} optionsList - The static deposit outpoints.
+     * @returns {Promise<StaticDepositStatus[]>} The conservatively reconciled status for each outpoint, in the given order.
+     * @throws {ValueError} If any transaction ID or output index is invalid.
+     * @throws {SparkError} If the coordinator or SSP evidence cannot be fetched.
+     */
+    getStaticDepositStatuses(optionsList: GetStaticDepositStatusOptions[]): Promise<StaticDepositStatus[]>;
     /**
      * Claims a deposit to the wallet.
      *
@@ -282,6 +301,10 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark imple
      */
     protected _isStaleLeafError(error: Error): boolean;
     /** @private */
+    private _validateStaticDepositStatusOptions;
+    /** @private */
+    private _resolveStaticDepositStatus;
+    /** @private */
     private _listMatchingOutgoingTransfers;
     /** @private */
     private _findOutgoingTransfer;
@@ -372,7 +395,7 @@ export type StaticDepositClaimableStatus = {
 };
 export type StaticDepositClaimInProgressStatus = {
     /**
-     * - The SSP has an active claim request for the outpoint.
+     * - The SSP has an active, not-yet-completed claim request for the outpoint.
      */
     status: "claim-in-progress";
     /**
@@ -388,13 +411,17 @@ export type StaticDepositClaimInProgressStatus = {
      */
     requestId: string;
     /**
-     * - The observed SSP claim request status.
+     * - The observed SSP claim request status (e.g. `CREATED`, `TRANSFER_CREATED`, `SPEND_TX_CREATED`, `SPEND_TX_BROADCAST`). Informational only: whether the claim is in progress is decided from its transfer, not this value.
      */
-    requestStatus: "CREATED" | "TRANSFER_CREATED";
+    requestStatus: string;
+    /**
+     * - The SSP-quoted credit amount, in satoshis.
+     */
+    creditAmountSats: number;
 };
 export type StaticDepositClaimedStatus = {
     /**
-     * - The SSP reports the claim transfer as completed.
+     * - The claim's Spark transfer has completed.
      */
     status: "claimed";
     /**
@@ -413,6 +440,10 @@ export type StaticDepositClaimedStatus = {
      * - The Spark transfer ID created by the claim.
      */
     transferId: string;
+    /**
+     * - The SSP-quoted credit amount, in satoshis.
+     */
+    creditAmountSats: number;
 };
 export type StaticDepositUnknownStatus = {
     /**
@@ -430,7 +461,7 @@ export type StaticDepositUnknownStatus = {
     /**
      * - Why no authoritative state was returned.
      */
-    reason: "NOT_FOUND" | "AMBIGUOUS_OUTPUT" | "CONFLICTING_EVIDENCE" | "INCOMPLETE_EVIDENCE" | "UNSUPPORTED_CLAIM_STATUS" | "MALFORMED_CLAIM_RESULT";
+    reason: "NOT_FOUND" | "AMBIGUOUS_OUTPUT" | "CONFLICTING_EVIDENCE" | "INCOMPLETE_EVIDENCE" | "MALFORMED_CLAIM_RESULT";
     /**
      * - Claim request statuses observed for the outpoint.
      */
