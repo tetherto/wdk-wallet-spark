@@ -973,6 +973,64 @@ describe('WalletAccountSpark', () => {
     })
   })
 
+  describe('getStaticDepositStatuses', () => {
+    const TX_ID_1 = 'dummy-static-deposit-tx-id-1'
+    const TX_ID_2 = 'dummy-static-deposit-tx-id-2'
+    const OUTPUT_INDEX = 0
+
+    const utxoPage = (utxos) => ({
+      utxos,
+      pageResponse: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        nextCursor: '',
+        previousCursor: ''
+      }
+    })
+
+    const requestPage = (entities) => ({
+      count: entities.length,
+      entities,
+      pageInfo: {
+        hasNextPage: false,
+        hasPreviousPage: false,
+        startCursor: '',
+        endCursor: ''
+      }
+    })
+
+    test('should resolve every outpoint from a single coordinator/SSP scan', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn().mockResolvedValue(utxoPage([
+        { txid: TX_ID_1, vout: OUTPUT_INDEX, isConfirmed: true }
+      ]))
+      sparkWallet.getUserRequests = jest.fn().mockResolvedValue(requestPage([]))
+
+      const statuses = await account.getStaticDepositStatuses([
+        { txId: TX_ID_1, outputIndex: OUTPUT_INDEX },
+        { txId: TX_ID_2, outputIndex: OUTPUT_INDEX }
+      ])
+
+      expect(statuses).toEqual([
+        { status: 'claimable', transactionId: TX_ID_1, outputIndex: OUTPUT_INDEX },
+        { status: 'unknown', transactionId: TX_ID_2, outputIndex: OUTPUT_INDEX, reason: 'NOT_FOUND' }
+      ])
+      expect(sparkWallet.getUtxosForIdentity).toHaveBeenCalledTimes(1)
+      expect(sparkWallet.getUserRequests).toHaveBeenCalledTimes(1)
+    })
+
+    test('should reject the whole batch if any outpoint options are invalid', async () => {
+      sparkWallet.getUtxosForIdentity = jest.fn()
+      sparkWallet.getUserRequests = jest.fn()
+
+      await expect(account.getStaticDepositStatuses([
+        { txId: TX_ID_1, outputIndex: OUTPUT_INDEX },
+        { txId: '' }
+      ])).rejects.toThrow(ValueError)
+      expect(sparkWallet.getUtxosForIdentity).not.toHaveBeenCalled()
+      expect(sparkWallet.getUserRequests).not.toHaveBeenCalled()
+    })
+  })
+
   describe('claimDeposit', () => {
     test('should successfully claim a deposit', async () => {
       const DUMMY_TX_ID = 'dummy-tx-id'

@@ -565,13 +565,23 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
    * @throws {ValueError} If the transaction ID or output index is invalid.
    */
   async getStaticDepositStatus (options) {
-    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
-      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
-    }
+    const [status] = await this.getStaticDepositStatuses([options])
+    return status
+  }
 
-    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
-      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
-    }
+  /**
+   * Reconciles several static deposits from a single coordinator/SSP scan.
+   *
+   * Equivalent to calling `getStaticDepositStatus` once per outpoint, but pages through
+   * the unclaimed UTXOs and SSP claim requests only once, which matters for a caller
+   * polling the status of many pending deposits at once.
+   *
+   * @param {GetStaticDepositStatusOptions[]} optionsList - The static deposit outpoints.
+   * @returns {Promise<StaticDepositStatus[]>} The conservatively reconciled status for each outpoint, in the given order.
+   * @throws {ValueError} If any transaction ID or output index is invalid.
+   */
+  async getStaticDepositStatuses (optionsList) {
+    optionsList.forEach(options => this._validateStaticDepositStatusOptions(options))
 
     let utxos
     let requests
@@ -582,14 +592,30 @@ export default class WalletAccountSpark extends WalletAccountReadOnlySpark {
         getAllStaticDepositClaimRequests(this._wallet)
       ])
     } catch {
-      return {
+      return optionsList.map(options => ({
         status: 'unknown',
         transactionId: options.txId,
         outputIndex: options.outputIndex,
         reason: 'INCOMPLETE_EVIDENCE'
-      }
+      }))
     }
 
+    return optionsList.map(options => this._resolveStaticDepositStatus(options, utxos, requests))
+  }
+
+  /** @private */
+  _validateStaticDepositStatusOptions (options) {
+    if (!options || typeof options.txId !== 'string' || options.txId.trim().length === 0) {
+      throw new ValueError('The static deposit transaction ID must be a non-empty string.')
+    }
+
+    if (options.outputIndex !== undefined && !isOutputIndex(options.outputIndex)) {
+      throw new ValueError('The static deposit output index must be a safe non-negative integer.')
+    }
+  }
+
+  /** @private */
+  _resolveStaticDepositStatus (options, utxos, requests) {
     const outputIndexes = getStaticDepositOutputIndexes(options.txId, utxos, requests)
     let outputIndex = options.outputIndex
 
